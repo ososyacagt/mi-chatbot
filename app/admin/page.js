@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import TenantForm from "./components/TenantForm";
 
@@ -128,27 +127,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-              Panel de Administración
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Gestiona los clientes del chatbot
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            ← Volver al chat
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-8">
+    <main className="max-w-6xl mx-auto px-6 py-8">
         {error && (
           <div className="mb-6 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 rounded">
             {error}
@@ -232,6 +211,5 @@ export default function AdminPanel() {
           </>
         )}
       </main>
-    </div>
   );
 }
