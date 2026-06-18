@@ -16,6 +16,10 @@ export default function AdminLogin() {
     setError(null);
     setLoading(true);
 
+    console.log('[login] supabase url:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('[login] supabase key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    console.log('[login] supabaseClient:', supabaseClient);
+
     try {
       if (!email.trim() || !password.trim()) {
         setError("Email y contraseña son requeridos");
