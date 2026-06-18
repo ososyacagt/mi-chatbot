@@ -13,6 +13,10 @@ function mapFromDbFields(dbRecord) {
     colorPrimary: dbRecord.color_primary,
     aiProvider: dbRecord.ai_provider || "claude",
     aiModel: dbRecord.ai_model || "claude-sonnet-4-6",
+    plan: dbRecord.plan || "basic",
+    mensajeLimite: dbRecord.mensaje_limite || 100,
+    mensajesUsados: dbRecord.mensajes_usados || 0,
+    planResetDate: dbRecord.plan_reset_date,
   };
 }
 
@@ -67,11 +71,13 @@ export async function PUT(request, { params }) {
       .from("tenants")
       .update({
         nombre: body.nombre,
-        system_prompt: body.system_prompt,
-        welcome_message: body.welcome_message,
-        color_primary: body.color_primary,
-        ai_provider: body.ai_provider || "claude",
-        ai_model: body.ai_model || "claude-sonnet-4-6",
+        system_prompt: body.systemPrompt,
+        welcome_message: body.welcomeMessage,
+        color_primary: body.colorPrimary,
+        ai_provider: body.aiProvider || "claude",
+        ai_model: body.aiModel || "claude-sonnet-4-6",
+        plan: body.plan || "basic",
+        mensaje_limite: body.mensajeLimite || 100,
       })
       .eq("client_id", id)
       .select();

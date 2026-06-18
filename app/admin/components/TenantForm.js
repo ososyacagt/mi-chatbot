@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AI_PROVIDERS } from "@/lib/ai-provider";
+import { PLANS } from "@/lib/plans";
 
 function getEnvVarName(provider) {
   const map = {
@@ -25,6 +26,8 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
     colorPrimary: tenant?.colorPrimary || "#2563eb",
     aiProvider: tenant?.aiProvider || "claude",
     aiModel: tenant?.aiModel || "claude-sonnet-4-6",
+    plan: tenant?.plan || "basic",
+    mensajeLimite: tenant?.mensajeLimite || 100,
   });
 
   const [error, setError] = useState(null);
@@ -214,6 +217,87 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
             ));
           })()}
         </select>
+      </div>
+
+      <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">
+          💳 Plan de Mensajes
+        </h3>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Plan
+          </label>
+          <select
+            value={form.plan}
+            onChange={(e) => {
+              const plan = e.target.value;
+              handleChange("plan", plan);
+              // Auto-actualizar límite según el plan seleccionado
+              const planInfo = PLANS[plan];
+              if (planInfo) {
+                handleChange("mensajeLimite", planInfo.mensajesLimite);
+              }
+            }}
+            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+          >
+            {Object.entries(PLANS).map(([key, plan]) => (
+              <option key={key} value={key}>
+                {plan.nombre} - {plan.mensajesLimite === -1 ? "∞ Ilimitado" : `${plan.mensajesLimite} mensajes`}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            Plan actual: <span className="font-semibold" style={{ color: PLANS[form.plan]?.color }}>
+              {PLANS[form.plan]?.nombre}
+            </span> · {PLANS[form.plan]?.precio}
+          </p>
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Límite de Mensajes (Editable)
+          </label>
+          <input
+            type="number"
+            value={form.mensajeLimite}
+            onChange={(e) => handleChange("mensajeLimite", parseInt(e.target.value) || 0)}
+            min="-1"
+            placeholder="0 = sin límite"
+            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+          />
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            {form.mensajeLimite === -1 ? "∞ Ilimitado" : `${form.mensajeLimite} mensajes por mes`}
+          </p>
+        </div>
+
+        {isEditing && (
+          <>
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Mensajes Usados Este Mes
+              </label>
+              <input
+                type="number"
+                value={tenant?.mensajesUsados || 0}
+                disabled
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white disabled:opacity-50"
+              />
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Fecha de Reset
+              </label>
+              <input
+                type="text"
+                value={tenant?.planResetDate ? new Date(tenant.planResetDate).toLocaleDateString("es-ES") : "N/A"}
+                disabled
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white disabled:opacity-50"
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex gap-2 pt-4">

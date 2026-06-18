@@ -72,11 +72,13 @@ export default function AdminPanel() {
       const apiData = {
         client_id: formData.client_id,
         nombre: formData.nombre,
-        system_prompt: formData.systemPrompt,
-        welcome_message: formData.welcomeMessage,
-        color_primary: formData.colorPrimary,
-        ai_provider: formData.aiProvider || "claude",
-        ai_model: formData.aiModel || "claude-sonnet-4-6",
+        systemPrompt: formData.systemPrompt,
+        welcomeMessage: formData.welcomeMessage,
+        colorPrimary: formData.colorPrimary,
+        aiProvider: formData.aiProvider || "claude",
+        aiModel: formData.aiModel || "claude-sonnet-4-6",
+        plan: formData.plan || "basic",
+        mensajeLimite: formData.mensajeLimite || 100,
       };
 
       console.log("[handleSave] apiData enviada:", apiData);
@@ -284,6 +286,52 @@ export default function AdminPanel() {
                     </code>
                   </div>
                 </div>
+              </div>
+
+              {/* Uso de mensajes */}
+              <div className="mb-6 pb-6 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    💳 {tenant.plan ? tenant.plan.charAt(0).toUpperCase() + tenant.plan.slice(1) : "Basic"}
+                  </span>
+                  {tenant.mensajeLimite === -1 ? (
+                    <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                      ∞ Unlimited
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                      {tenant.mensajesUsados || 0}/{tenant.mensajeLimite || 100}
+                    </span>
+                  )}
+                </div>
+                {tenant.mensajeLimite === -1 ? (
+                  <div className="h-2 bg-green-100 dark:bg-green-900/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500"
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full transition-all"
+                        style={{
+                          width: `${Math.min(((tenant.mensajesUsados || 0) / (tenant.mensajeLimite || 100)) * 100, 100)}%`,
+                          backgroundColor:
+                            ((tenant.mensajesUsados || 0) / (tenant.mensajeLimite || 100)) > 0.9
+                              ? "#ef4444"
+                              : ((tenant.mensajesUsados || 0) / (tenant.mensajeLimite || 100)) > 0.7
+                              ? "#eab308"
+                              : "#22c55e",
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                      {((((tenant.mensajesUsados || 0) / (tenant.mensajeLimite || 100)) * 100).toFixed(0))}% usado
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Botones de acción */}

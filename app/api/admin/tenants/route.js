@@ -12,6 +12,8 @@ function mapToDbFields(tenant) {
     color_primary: tenant.colorPrimary,
     ai_provider: tenant.aiProvider || "claude",
     ai_model: tenant.aiModel || "claude-sonnet-4-6",
+    plan: tenant.plan || "basic",
+    mensaje_limite: tenant.mensajeLimite || 100,
   };
 }
 
@@ -26,6 +28,10 @@ function mapFromDbFields(dbRecord) {
     colorPrimary: dbRecord.color_primary,
     aiProvider: dbRecord.ai_provider || "claude",
     aiModel: dbRecord.ai_model || "claude-sonnet-4-6",
+    plan: dbRecord.plan || "basic",
+    mensajeLimite: dbRecord.mensaje_limite || 100,
+    mensajesUsados: dbRecord.mensajes_usados || 0,
+    planResetDate: dbRecord.plan_reset_date,
   };
 }
 
@@ -99,6 +105,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
+    console.log("[POST /api/admin/tenants] body:", JSON.stringify(body, null, 2));
     console.log("[POST /api/admin/tenants] Creando nuevo tenant:", body.client_id);
 
     if (!supabase) {
@@ -131,6 +138,20 @@ export async function POST(request) {
     if (!body.client_id || !body.nombre) {
       return Response.json(
         { error: "client_id y nombre son requeridos" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.systemPrompt || !body.systemPrompt.trim()) {
+      return Response.json(
+        { error: "systemPrompt es requerido" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.welcomeMessage || !body.welcomeMessage.trim()) {
+      return Response.json(
+        { error: "welcomeMessage es requerido" },
         { status: 400 }
       );
     }

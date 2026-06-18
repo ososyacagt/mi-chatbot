@@ -2,6 +2,7 @@ import { getTenant } from "@/lib/tenants-db";
 import { getDocumentsContext } from "@/lib/documents-db";
 import { sendMessage } from "@/lib/ai-provider";
 import { saveMessage, updateMetrics, getConversationHistory } from "@/lib/conversations-db";
+import { checkMessageLimit, incrementMessageCount } from "@/lib/usage";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -17,6 +18,24 @@ export async function POST(request) {
 
     const tenant = await getTenant(clientId);
     const sessionId = providedSessionId || randomUUID();
+
+    // Verificar límite de mensajes
+    console.log('[chat] Verificando límite de mensajes para:', clientId);
+    const limitCheck = await checkMessageLimit(clientId);
+    if (!limitCheck.allowed) {
+      console.log('[chat] Límite alcanzado:', limitCheck);
+      return Response.json(
+        {
+          error: "Límite de mensajes alcanzado",
+          limitReached: true,
+          limit: limitCheck.limit,
+          used: limitCheck.used,
+          resetDate: limitCheck.resetDate,
+          plan: limitCheck.plan,
+        },
+        { status: 429 }
+      );
+    }
 
     // Verificar si es una nueva sesión
     const existingMessages = await getConversationHistory(tenant.id, sessionId);
@@ -55,6 +74,10 @@ export async function POST(request) {
     // Actualizar métricas
     console.log('[chat] actualizando metrics para:', tenant.id, 'isNewSession:', isNewSession);
     await updateMetrics(tenant.id, isNewSession);
+
+    // Incrementar contador de mensajes
+    console.log('[chat] incrementando contador de mensajes para:', clientId);
+    await incrementMessageCount(clientId);
 
     return Response.json({
       reply: response.reply,

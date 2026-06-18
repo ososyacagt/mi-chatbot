@@ -94,6 +94,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
 
@@ -190,6 +191,17 @@ export default function ChatPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        // Manejar límite de mensajes
+        if (res.status === 429 && data.limitReached) {
+          const resetDate = new Date(data.resetDate).toLocaleDateString("es-ES", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          throw new Error(
+            `Has alcanzado el límite de ${data.limit} mensajes de tu plan. Tu contador se reinicia el ${resetDate}. Contacta al administrador para actualizar tu plan.`
+          );
+        }
         throw new Error(data.error || "Error al obtener respuesta.");
       }
 
@@ -207,6 +219,9 @@ export default function ChatPage() {
       ]);
     } catch (err) {
       setError(err.message);
+      if (err.message.includes("límite de")) {
+        setLimitReached(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -395,21 +410,21 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escribe tu mensaje…"
+              placeholder={limitReached ? "Límite de mensajes alcanzado" : "Escribe tu mensaje…"}
               rows={1}
-              disabled={loading || tenantLoading || !tenant}
+              disabled={loading || tenantLoading || !tenant || limitReached}
               className="w-full resize-none rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 outline-none transition-colors disabled:opacity-50"
               style={{
-                borderColor: input && !loading ? (tenant?.colorPrimary || "#2563eb") : undefined
+                borderColor: input && !loading && !limitReached ? (tenant?.colorPrimary || "#2563eb") : undefined
               }}
             />
           </div>
           <button
             onClick={sendMessage}
-            disabled={loading || !input.trim() || tenantLoading || !tenant}
+            disabled={loading || !input.trim() || tenantLoading || !tenant || limitReached}
             className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
             style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
-            title="Enviar (Enter)"
+            title={limitReached ? "Límite de mensajes alcanzado" : "Enviar (Enter)"}
           >
             {loading ? "⟳" : "→"}
           </button>
