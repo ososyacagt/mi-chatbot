@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import TenantForm from "./components/TenantForm";
+import DocumentsSection from "./components/DocumentsSection";
 
 export default function AdminPanel() {
   const [tenants, setTenants] = useState([]);
@@ -177,6 +178,9 @@ export default function AdminPanel() {
                 onCancel={handleCancel}
                 loading={saving}
               />
+              {editingTenant && (
+                <DocumentsSection clientId={editingTenant.client_id} />
+              )}
             </div>
           </div>
         </div>

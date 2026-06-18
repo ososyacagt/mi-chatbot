@@ -1,4 +1,5 @@
 import { getTenant } from "@/lib/tenants-db";
+import { getDocumentsContext } from "@/lib/documents-db";
 import { sendMessage } from "@/lib/ai-provider";
 
 export async function POST(request) {
@@ -18,11 +19,19 @@ export async function POST(request) {
     const provider = tenant.aiProvider || "claude";
     const model = tenant.aiModel || "claude-sonnet-4-6";
 
+    // Obtiene contexto de documentos base
+    let systemPrompt = tenant.systemPrompt;
+    const { texto: docsText, imagenes: docImages } = await getDocumentsContext(clientId);
+    if (docsText) {
+      systemPrompt += "\n\nCONOCIMIENTO BASE:\n" + docsText;
+    }
+
     const response = await sendMessage({
       provider,
       model,
-      systemPrompt: tenant.systemPrompt,
+      systemPrompt,
       messages,
+      images: docImages,
     });
 
     return Response.json({ reply: response.reply });
