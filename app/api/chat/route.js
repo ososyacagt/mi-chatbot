@@ -1,10 +1,12 @@
 import { getTenant } from "@/lib/tenants-db";
 import { getDocumentsContext } from "@/lib/documents-db";
 import { sendMessage } from "@/lib/ai-provider";
+import { saveMessage } from "@/lib/conversations-db";
+import { randomUUID } from "crypto";
 
 export async function POST(request) {
   try {
-    const { messages, clientId } = await request.json();
+    const { messages, clientId, sessionId: providedSessionId } = await request.json();
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return Response.json(
@@ -14,6 +16,7 @@ export async function POST(request) {
     }
 
     const tenant = await getTenant(clientId);
+    const sessionId = providedSessionId || randomUUID();
 
     // Usa el proveedor y modelo del tenant, o Claude por defecto
     const provider = tenant.aiProvider || "claude";
@@ -34,7 +37,19 @@ export async function POST(request) {
       images: docImages,
     });
 
-    return Response.json({ reply: response.reply });
+    // Guardar mensaje del usuario
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role === "user") {
+      await saveMessage(tenant.id, sessionId, "user", lastMessage.content);
+    }
+
+    // Guardar respuesta del bot
+    await saveMessage(tenant.id, sessionId, "assistant", response.reply);
+
+    return Response.json({
+      reply: response.reply,
+      sessionId
+    });
   } catch (error) {
     console.error("Error en /api/chat:", error);
     return Response.json(

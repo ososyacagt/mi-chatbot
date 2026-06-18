@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { randomUUID } from "crypto";
 
 function welcomeMessageFor(tenant) {
   return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
@@ -34,7 +35,29 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Inicializar sessionId desde localStorage o generar uno nuevo
+  useEffect(() => {
+    if (!clientId) return;
+
+    const storageKey = `chat_session_${clientId}`;
+    let stored = null;
+
+    if (typeof window !== "undefined") {
+      stored = localStorage.getItem(storageKey);
+    }
+
+    if (!stored) {
+      stored = crypto.randomUUID();
+      if (typeof window !== "undefined") {
+        localStorage.setItem(storageKey, stored);
+      }
+    }
+
+    setSessionId(stored);
+  }, [clientId]);
 
   // Carga los datos del tenant
   useEffect(() => {
@@ -64,13 +87,29 @@ export default function ChatPage() {
     }
   }, [clientId]);
 
+  function handleNewConversation() {
+    if (!clientId) return;
+
+    const storageKey = `chat_session_${clientId}`;
+    const newSessionId = crypto.randomUUID();
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(storageKey, newSessionId);
+    }
+
+    setSessionId(newSessionId);
+    setMessages([welcomeMessageFor(tenant)]);
+    setInput("");
+    setError(null);
+  }
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   async function sendMessage() {
     const text = input.trim();
-    if (!text || loading || !tenant) return;
+    if (!text || loading || !tenant || !sessionId) return;
 
     const nextMessages = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
@@ -86,13 +125,21 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, clientId }),
+        body: JSON.stringify({ messages: apiMessages, clientId, sessionId }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || "Error al obtener respuesta.");
+      }
+
+      if (data.sessionId && data.sessionId !== sessionId) {
+        setSessionId(data.sessionId);
+        const storageKey = `chat_session_${clientId}`;
+        if (typeof window !== "undefined") {
+          localStorage.setItem(storageKey, data.sessionId);
+        }
       }
 
       setMessages((prev) => [
@@ -161,13 +208,22 @@ export default function ChatPage() {
             )}
             {tenantLoading && <div className="text-white">Cargando...</div>}
           </div>
-          <Link
-            href="/"
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            title="Todos los chats"
-          >
-            ⚙️
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleNewConversation}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
+              title="Nueva conversación"
+            >
+              ➕
+            </button>
+            <Link
+              href="/"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Todos los chats"
+            >
+              ⚙️
+            </Link>
+          </div>
         </div>
       </header>
 

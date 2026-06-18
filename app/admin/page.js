@@ -145,7 +145,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-8">
+    <main className="max-w-6xl mx-auto px-6 py-8 pb-12">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -165,12 +165,6 @@ export default function AdminPanel() {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <Link
-              href={tenants.length > 0 ? `/chat/${tenants[0].id}` : "/admin/login"}
-              className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-medium transition-colors shadow-sm hover:shadow-md"
-            >
-              💬 Ir al chat
-            </Link>
             {user?.role === "superadmin" && (
               <Link
                 href="/admin/usuarios"
@@ -241,11 +235,11 @@ export default function AdminPanel() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-auto">
           {tenants.map((tenant) => (
             <div
               key={tenant.client_id}
-              className="bg-white dark:bg-zinc-900 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 p-6"
+              className="bg-white dark:bg-zinc-900 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 p-6 flex flex-col"
               style={{ borderLeftColor: tenant.colorPrimary }}
             >
               {/* Header de la card */}
@@ -285,21 +279,43 @@ export default function AdminPanel() {
               </div>
 
               {/* Botones de acción */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(tenant)}
-                  className={`flex-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors`}
-                >
-                  ✏️ Editar
-                </button>
-                {user?.role === "superadmin" && (
-                  <button
-                    onClick={() => handleDelete(tenant.client_id)}
-                    className="flex-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+              <div className="mt-auto space-y-1.5 pt-6">
+                {/* Fila 1: Abrir chat + Historial */}
+                <div className="flex gap-1.5">
+                  <Link
+                    href={`/chat/${tenant.id}`}
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-white whitespace-nowrap text-center"
+                    style={{ backgroundColor: tenant.colorPrimary }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                   >
-                    🗑️ Eliminar
+                    💬 Abrir chat
+                  </Link>
+                  <Link
+                    href={`/admin/conversaciones?clientId=${tenant.id}`}
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 whitespace-nowrap"
+                  >
+                    📋 Historial
+                  </Link>
+                </div>
+
+                {/* Fila 2: Editar + Eliminar */}
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => handleEdit(tenant)}
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 whitespace-nowrap"
+                  >
+                    ✏️ Editar
                   </button>
-                )}
+                  {user?.role === "superadmin" && (
+                    <button
+                      onClick={() => handleDelete(tenant.client_id)}
+                      className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

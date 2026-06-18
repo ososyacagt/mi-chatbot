@@ -73,8 +73,8 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
+    <div className="flex flex-col min-h-screen bg-zinc-50 dark:bg-black">
+      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -85,12 +85,6 @@ export default function AdminLayout({ children }) {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              ← Volver al chat
-            </Link>
             <button
               onClick={handleLogout}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
@@ -101,7 +95,9 @@ export default function AdminLayout({ children }) {
         </div>
       </header>
 
-      {children}
+      <div className="flex-1 overflow-y-auto">
+        {children}
+      </div>
     </div>
   );
 }
