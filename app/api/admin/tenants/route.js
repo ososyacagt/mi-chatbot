@@ -59,12 +59,12 @@ export async function GET(request) {
       );
     }
 
-    console.log("[GET /api/admin/tenants] Role:", adminUser.role, "Tenant:", adminUser.tenant_id);
+    console.log("[GET /api/admin/tenants] Role:", adminUser.role, "Tenants:", adminUser.tenant_ids);
 
     let query = supabase.from("tenants").select("*");
 
-    if (adminUser.role === "admin" && adminUser.tenant_id) {
-      query = query.eq("client_id", adminUser.tenant_id);
+    if (adminUser.role === "admin" && adminUser.tenant_ids && adminUser.tenant_ids.length > 0) {
+      query = query.in("client_id", adminUser.tenant_ids);
     } else if (adminUser.role !== "superadmin") {
       return Response.json(
         { error: "Rol no reconocido" },

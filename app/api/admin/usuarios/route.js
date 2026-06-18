@@ -57,7 +57,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { email, password, role, tenant_id } = body;
+    const { email, password, role, tenant_ids } = body;
 
     if (!email || !password || !role) {
       return Response.json(
@@ -92,7 +92,8 @@ export async function POST(request) {
         id: authData.user.id,
         email,
         role,
-        tenant_id: role === "superadmin" ? null : tenant_id,
+        tenant_id: null,
+        tenant_ids: role === "superadmin" ? [] : (tenant_ids || []),
       })
       .select()
       .single();

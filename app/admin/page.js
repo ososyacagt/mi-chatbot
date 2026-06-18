@@ -146,40 +146,42 @@ export default function AdminPanel() {
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-8">
-      {/* Header con título e ícono */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
-            📊 Gestión de Clientes
-          </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-            {user?.role === "superadmin"
-              ? "Crea y personaliza los chatbots para tus clientes"
-              : `Gestionando cliente: ${tenants[0]?.nombre || ""}`}
-          </p>
-        </div>
-        <div className="flex gap-3 items-center">
-          {user && (
-            <div className="text-sm text-zinc-600 dark:text-zinc-400">
-              {user.email} <span className="font-medium">({user.role})</span>
-            </div>
-          )}
-          {user?.role === "superadmin" && (
-            <>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white">
+              📊 Gestión de Clientes
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-2">
+              {user?.role === "superadmin"
+                ? "Crea y personaliza los chatbots para tus clientes"
+                : `Gestionando cliente: ${tenants[0]?.nombre || ""}`}
+            </p>
+            {user && (
+              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-2">
+                {user.email} • <span className="font-medium">{user.role}</span>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            {user?.role === "superadmin" && (
               <Link
                 href="/admin/usuarios"
-                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 font-medium transition-colors"
               >
                 👥 Usuarios
               </Link>
+            )}
+            {user?.role === "superadmin" && (
               <button
                 onClick={handleNew}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium transition-colors shadow-md hover:shadow-lg"
               >
                 ✨ Nuevo Cliente
               </button>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
