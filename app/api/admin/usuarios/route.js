@@ -19,7 +19,7 @@ export async function GET(request) {
 
     const { data, error } = await supabase
       .from("admin_users")
-      .select("id, email, role, tenant_id, created_at")
+      .select("id, email, role, tenant_id, tenant_ids, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
