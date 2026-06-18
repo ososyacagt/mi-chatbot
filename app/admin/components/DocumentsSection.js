@@ -6,6 +6,7 @@ function getFileIcon(type) {
   if (type.includes("pdf")) return "📄";
   if (type.includes("word") || type.includes("document")) return "📝";
   if (type.includes("sheet") || type.includes("excel")) return "📊";
+  if (type.includes("html")) return "🌐";
   if (type.includes("image")) return "🖼️";
   return "📎";
 }
@@ -43,6 +44,8 @@ export default function DocumentsSection({ clientId }) {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/html",
+    "application/xhtml+xml",
     "image/jpeg",
     "image/png",
     "image/gif",
@@ -198,7 +201,7 @@ export default function DocumentsSection({ clientId }) {
           {uploading ? "Subiendo..." : "Arrastra archivos aquí o haz clic"}
         </p>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          PDF, Word, Excel, imágenes • Máximo 10MB
+          PDF, Word, Excel, HTML, imágenes • Máximo 10MB
         </p>
 
         {uploading && (
