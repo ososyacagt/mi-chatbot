@@ -1,4 +1,5 @@
 import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
+import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -23,6 +24,20 @@ export async function POST(request) {
       // Verificar si el rate limit permite el intento
       const result = checkRateLimit(identifier, 5, 15 * 60 * 1000);
       console.log(`[LOGIN] Rate limit check for ${identifier}:`, result);
+
+      // Si está bloqueado, registrar en auditoría
+      if (!result.allowed) {
+        await logAudit({
+          userId: null,
+          userEmail: email,
+          action: AUDIT_ACTIONS.LOGIN_BLOCKED,
+          entity: AUDIT_ENTITIES.SESSION,
+          entityId: email,
+          changes: { attempts_exceeded: true },
+          ip,
+        });
+      }
+
       return NextResponse.json(result);
     }
 
@@ -31,6 +46,18 @@ export async function POST(request) {
       checkRateLimit(identifier, 5, 15 * 60 * 1000);
       const result = checkRateLimit(identifier, 5, 15 * 60 * 1000);
       console.log(`[LOGIN] Failed attempt for ${identifier}:`, result);
+
+      // Registrar intento fallido en auditoría
+      await logAudit({
+        userId: null,
+        userEmail: email,
+        action: AUDIT_ACTIONS.LOGIN_FAILED,
+        entity: AUDIT_ENTITIES.SESSION,
+        entityId: email,
+        changes: { remaining_attempts: result.remaining },
+        ip,
+      });
+
       return NextResponse.json(result);
     }
 
@@ -38,6 +65,18 @@ export async function POST(request) {
       // Limpiar contador cuando es exitoso
       clearRateLimit(identifier);
       console.log(`[LOGIN] ✓ Successful login for ${identifier}`);
+
+      // Registrar login exitoso en auditoría
+      await logAudit({
+        userId: null, // Se puede actualizar cuando se obtiene el userId de la sesión
+        userEmail: email,
+        action: AUDIT_ACTIONS.LOGIN,
+        entity: AUDIT_ENTITIES.SESSION,
+        entityId: email,
+        changes: { success: true },
+        ip,
+      });
+
       return NextResponse.json({ cleared: true });
     }
 

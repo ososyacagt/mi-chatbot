@@ -174,6 +174,14 @@ export default function AdminPanel() {
               </Link>
             )}
             {user?.role === "superadmin" && (
+              <Link
+                href="/admin/auditoria"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/30 font-medium transition-colors"
+              >
+                🔍 Auditoría
+              </Link>
+            )}
+            {user?.role === "superadmin" && (
               <button
                 onClick={handleNew}
                 className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium transition-colors shadow-md hover:shadow-lg"

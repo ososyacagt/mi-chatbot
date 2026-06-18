@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getSession, getAdminUser } from "@/lib/auth";
+import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 
 // Mapea campos snake_case de Supabase a camelCase
 function mapFromDbFields(dbRecord) {
@@ -97,6 +98,20 @@ export async function PUT(request, { params }) {
     const mappedData = mapFromDbFields(data[0]);
     console.log("[PUT /api/admin/tenants/[id]] ✓ Tenant actualizado:", mappedData.id);
 
+    // Registrar en auditoría
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+               request.headers.get("x-real-ip") ||
+               "unknown";
+    await logAudit({
+      userId: user.id,
+      userEmail: user.email,
+      action: AUDIT_ACTIONS.UPDATE,
+      entity: AUDIT_ENTITIES.TENANT,
+      entityId: id,
+      changes: body,
+      ip,
+    });
+
     return Response.json({ tenant: mappedData });
   } catch (error) {
     console.error("[PUT /api/admin/tenants/[id]] Error inesperado:", error);
@@ -163,6 +178,20 @@ export async function DELETE(request, { params }) {
     }
 
     console.log("[DELETE /api/admin/tenants/[id]] ✓ Tenant eliminado:", id);
+
+    // Registrar en auditoría
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+               request.headers.get("x-real-ip") ||
+               "unknown";
+    await logAudit({
+      userId: user.id,
+      userEmail: user.email,
+      action: AUDIT_ACTIONS.DELETE,
+      entity: AUDIT_ENTITIES.TENANT,
+      entityId: id,
+      changes: { deleted: true },
+      ip,
+    });
 
     return Response.json({ success: true });
   } catch (error) {

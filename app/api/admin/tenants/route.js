@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getSession, getAdminUser } from "@/lib/auth";
+import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 
 // Mapea campos camelCase a snake_case para Supabase
 function mapToDbFields(tenant) {
@@ -152,6 +153,24 @@ export async function POST(request) {
 
     const mappedData = mapFromDbFields(data);
     console.log("[POST /api/admin/tenants] ✓ Tenant creado:", mappedData.id);
+
+    // Registrar en auditoría
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+               request.headers.get("x-real-ip") ||
+               "unknown";
+    await logAudit({
+      userId: user.id,
+      userEmail: user.email,
+      action: AUDIT_ACTIONS.CREATE,
+      entity: AUDIT_ENTITIES.TENANT,
+      entityId: mappedData.client_id,
+      changes: {
+        nombre: mappedData.nombre,
+        ai_provider: mappedData.aiProvider,
+        color_primary: mappedData.colorPrimary,
+      },
+      ip,
+    });
 
     return Response.json({ tenant: mappedData }, { status: 201 });
   } catch (error) {
