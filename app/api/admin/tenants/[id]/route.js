@@ -29,6 +29,16 @@ export async function PUT(request, { params }) {
       );
     }
 
+    const adminRole = request.headers.get("x-admin-role");
+    const adminTenant = request.headers.get("x-admin-tenant");
+
+    if (adminRole === "admin" && adminTenant !== id) {
+      return Response.json(
+        { error: "No tienes permiso para editar este tenant" },
+        { status: 403 }
+      );
+    }
+
     if (!body.nombre) {
       return Response.json(
         { error: "nombre es requerido" },
@@ -92,6 +102,23 @@ export async function DELETE(request, { params }) {
       return Response.json(
         { error: "Supabase no está configurado" },
         { status: 500 }
+      );
+    }
+
+    const adminRole = request.headers.get("x-admin-role");
+    const adminTenant = request.headers.get("x-admin-tenant");
+
+    if (adminRole === "admin" && adminTenant !== id) {
+      return Response.json(
+        { error: "No tienes permiso para eliminar este tenant" },
+        { status: 403 }
+      );
+    }
+
+    if (adminRole !== "superadmin" && adminRole !== "admin") {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 403 }
       );
     }
 

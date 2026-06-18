@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import TenantForm from "./components/TenantForm";
 import DocumentsSection from "./components/DocumentsSection";
 
@@ -11,11 +12,25 @@ export default function AdminPanel() {
   const [showForm, setShowForm] = useState(false);
   const [editingTenant, setEditingTenant] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
 
-  // Carga lista de tenants
+  // Carga usuario y lista de tenants
   useEffect(() => {
+    loadUser();
     loadTenants();
   }, []);
+
+  async function loadUser() {
+    try {
+      const res = await fetch("/api/admin/me");
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data);
+      }
+    } catch (err) {
+      console.error("Error cargando usuario:", err);
+    }
+  }
 
   async function loadTenants() {
     try {
@@ -138,15 +153,34 @@ export default function AdminPanel() {
             📊 Gestión de Clientes
           </h2>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-            Crea y personaliza los chatbots para tus clientes
+            {user?.role === "superadmin"
+              ? "Crea y personaliza los chatbots para tus clientes"
+              : `Gestionando cliente: ${tenants[0]?.nombre || ""}`}
           </p>
         </div>
-        <button
-          onClick={handleNew}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
-        >
-          ✨ Nuevo Cliente
-        </button>
+        <div className="flex gap-3 items-center">
+          {user && (
+            <div className="text-sm text-zinc-600 dark:text-zinc-400">
+              {user.email} <span className="font-medium">({user.role})</span>
+            </div>
+          )}
+          {user?.role === "superadmin" && (
+            <>
+              <Link
+                href="/admin/usuarios"
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+              >
+                👥 Usuarios
+              </Link>
+              <button
+                onClick={handleNew}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
+              >
+                ✨ Nuevo Cliente
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Error mensaje */}
@@ -246,16 +280,18 @@ export default function AdminPanel() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(tenant)}
-                  className="flex-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                  className={`flex-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors`}
                 >
                   ✏️ Editar
                 </button>
-                <button
-                  onClick={() => handleDelete(tenant.client_id)}
-                  className="flex-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-                >
-                  🗑️ Eliminar
-                </button>
+                {user?.role === "superadmin" && (
+                  <button
+                    onClick={() => handleDelete(tenant.client_id)}
+                    className="flex-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                  >
+                    🗑️ Eliminar
+                  </button>
+                )}
               </div>
             </div>
           ))}

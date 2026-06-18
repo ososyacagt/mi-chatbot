@@ -38,10 +38,23 @@ export async function GET(request) {
       );
     }
 
-    const { data, error } = await supabase
-      .from("tenants")
-      .select("*")
-      .order("created_at", { ascending: true });
+    const adminRole = request.headers.get("x-admin-role");
+    const adminTenant = request.headers.get("x-admin-tenant");
+
+    console.log("[GET /api/admin/tenants] Role:", adminRole, "Tenant:", adminTenant);
+
+    let query = supabase.from("tenants").select("*");
+
+    if (adminRole === "admin" && adminTenant) {
+      query = query.eq("client_id", adminTenant);
+    } else if (adminRole !== "superadmin") {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 403 }
+      );
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: true });
 
     if (error) {
       console.error("[GET /api/admin/tenants] Error:", error);
@@ -73,6 +86,15 @@ export async function POST(request) {
       return Response.json(
         { error: "Supabase no está configurado" },
         { status: 500 }
+      );
+    }
+
+    const adminRole = request.headers.get("x-admin-role");
+
+    if (adminRole !== "superadmin") {
+      return Response.json(
+        { error: "Solo superadmin puede crear tenants" },
+        { status: 403 }
       );
     }
 

@@ -21,3 +21,18 @@ CREATE INDEX IF NOT EXISTS idx_documents_created_at ON documents(created_at DESC
 -- 2. Crea un nuevo bucket llamado "documents"
 -- 3. Haz el bucket público para lectura (aunque no es necesario para el backend)
 -- 4. Configura las políticas según necesites
+
+-- Tabla para almacenar usuarios administradores
+CREATE TABLE IF NOT EXISTS admin_users (
+  id UUID PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  role TEXT NOT NULL DEFAULT 'admin', -- 'admin' o 'superadmin'
+  tenant_id TEXT REFERENCES tenants(client_id) ON DELETE SET NULL, -- NULL para superadmin
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para queries comunes
+CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
+CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role);
+CREATE INDEX IF NOT EXISTS idx_admin_users_tenant_id ON admin_users(tenant_id);

@@ -54,6 +54,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (isAdminRoute && !isLoginPage && user) {
+    try {
+      const { data: adminUser } = await supabase
+        .from("admin_users")
+        .select("id, email, role, tenant_id")
+        .eq("id", user.id)
+        .single();
+
+      if (adminUser) {
+        response.headers.set("x-admin-role", adminUser.role || "");
+        response.headers.set("x-admin-tenant", adminUser.tenant_id || "");
+        console.log("[Middleware] Admin role:", adminUser.role);
+      }
+    } catch (error) {
+      console.error("[Middleware] Error obteniendo adminUser:", error);
+    }
+  }
+
   return response;
 }
 
