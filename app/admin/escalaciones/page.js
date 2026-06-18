@@ -1,19 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function EscalacionesPage() {
+  const searchParams = useSearchParams();
+  const clientId = searchParams.get("clientId");
+
   const [escalations, setEscalations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("pending");
   const [tenantMap, setTenantMap] = useState({});
+  const [clientName, setClientName] = useState(null);
 
   useEffect(() => {
     loadEscalations();
     loadTenants();
-  }, [activeTab]);
+  }, [activeTab, clientId]);
 
   async function loadTenants() {
     try {
@@ -23,6 +28,9 @@ export default function EscalacionesPage() {
         const map = {};
         (data.tenants || []).forEach((t) => {
           map[t.client_id] = t.nombre;
+          if (clientId && t.client_id === clientId) {
+            setClientName(t.nombre);
+          }
         });
         setTenantMap(map);
       }
@@ -36,9 +44,12 @@ export default function EscalacionesPage() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(
-        `/api/admin/escalations?status=${activeTab === "pending" ? "pending" : "resolved"}`
-      );
+      let url = `/api/admin/escalations?status=${activeTab === "pending" ? "pending" : "resolved"}`;
+      if (clientId) {
+        url += `&clientId=${clientId}`;
+      }
+
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Error al obtener escalaciones");
 
       const data = await res.json();
@@ -82,11 +93,18 @@ export default function EscalacionesPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Link href="/admin" className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Volver
-          </Link>
+          {clientId && (
+            <Link href="/admin" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Volver
+            </Link>
+          )}
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
             🆘 Escalaciones
+            {clientName && (
+              <span className="text-lg font-normal text-zinc-600 dark:text-zinc-400 ml-2">
+                • {clientName}
+              </span>
+            )}
           </h1>
         </div>
       </div>

@@ -13,13 +13,12 @@ export default function AdminPanel() {
   const [editingTenant, setEditingTenant] = useState(null);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
-  const [pendingEscalations, setPendingEscalations] = useState(0);
+  const [escalationCounts, setEscalationCounts] = useState({});
 
   // Carga usuario y lista de tenants
   useEffect(() => {
     loadUser();
     loadTenants();
-    loadEscalations();
   }, []);
 
   async function loadUser() {
@@ -34,15 +33,18 @@ export default function AdminPanel() {
     }
   }
 
-  async function loadEscalations() {
+  async function loadEscalationsForTenant(clientId) {
     try {
-      const res = await fetch("/api/admin/escalations?status=pending");
+      const res = await fetch(`/api/admin/escalations?clientId=${clientId}&status=pending`);
       if (res.ok) {
         const data = await res.json();
-        setPendingEscalations(data.escalations?.length || 0);
+        setEscalationCounts((prev) => ({
+          ...prev,
+          [clientId]: data.escalations?.length || 0,
+        }));
       }
     } catch (err) {
-      console.error("Error cargando escalaciones:", err);
+      console.error(`Error cargando escalaciones para ${clientId}:`, err);
     }
   }
 
@@ -57,7 +59,13 @@ export default function AdminPanel() {
         throw new Error(data.error || "Error al cargar clientes");
       }
 
-      setTenants(data.tenants || []);
+      const loadedTenants = data.tenants || [];
+      setTenants(loadedTenants);
+
+      // Cargar escalaciones pendientes por cada cliente
+      for (const tenant of loadedTenants) {
+        await loadEscalationsForTenant(tenant.client_id);
+      }
     } catch (err) {
       console.error("Error:", err);
       setError(err.message);
@@ -198,19 +206,6 @@ export default function AdminPanel() {
                 className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/30 font-medium transition-colors"
               >
                 🔍 Auditoría
-              </Link>
-            )}
-            {user?.role === "superadmin" && (
-              <Link
-                href="/admin/escalaciones"
-                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-red-600 text-red-600 dark:text-red-400 dark:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-medium transition-colors relative"
-              >
-                🆘 Escalaciones
-                {pendingEscalations > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {pendingEscalations}
-                  </span>
-                )}
               </Link>
             )}
             {user?.role === "superadmin" && (
@@ -401,23 +396,36 @@ export default function AdminPanel() {
                   </Link>
                 </div>
 
-                {/* Fila 3: Editar + Eliminar (superadmin) */}
+                {/* Fila 3: Escalaciones + Editar */}
                 <div className="flex gap-1.5">
+                  <Link
+                    href={`/admin/escalaciones?clientId=${tenant.client_id}`}
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap relative"
+                  >
+                    🆘 Escalaciones
+                    {escalationCounts[tenant.client_id] > 0 && (
+                      <span className="ml-1 inline-block bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                        {escalationCounts[tenant.client_id]}
+                      </span>
+                    )}
+                  </Link>
                   <button
                     onClick={() => handleEdit(tenant)}
                     className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 whitespace-nowrap"
                   >
                     ✏️ Editar
                   </button>
-                  {user?.role === "superadmin" && (
-                    <button
-                      onClick={() => handleDelete(tenant.client_id)}
-                      className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  )}
                 </div>
+
+                {/* Fila 4: Eliminar (full width si superadmin) */}
+                {user?.role === "superadmin" && (
+                  <button
+                    onClick={() => handleDelete(tenant.client_id)}
+                    className="w-full h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap"
+                  >
+                    🗑️ Eliminar
+                  </button>
+                )}
               </div>
             </div>
           ))}

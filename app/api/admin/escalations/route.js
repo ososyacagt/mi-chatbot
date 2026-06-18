@@ -6,7 +6,7 @@ import { getEscalations, resolveEscalation } from "@/lib/escalation";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get("tenantId");
+    const tenantId = searchParams.get("clientId") || searchParams.get("tenantId");
     const status = searchParams.get("status") || null;
 
     // Verificar sesión
