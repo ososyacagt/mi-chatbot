@@ -165,6 +165,12 @@ export default function AdminPanel() {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Link
+              href={tenants.length > 0 ? `/chat/${tenants[0].id}` : "/admin/login"}
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-medium transition-colors shadow-sm hover:shadow-md"
+            >
+              💬 Ir al chat
+            </Link>
             {user?.role === "superadmin" && (
               <Link
                 href="/admin/usuarios"

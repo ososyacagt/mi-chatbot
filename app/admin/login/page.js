@@ -34,7 +34,7 @@ export default function AdminLogin() {
 
       if (data?.user) {
         console.log("[Login] ✓ Sesión iniciada:", data.user.email);
-        router.push("/admin");
+        window.location.href = "/admin";
       }
     } catch (err) {
       console.error("[Login] Error:", err);

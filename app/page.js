@@ -1,293 +1,41 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseClient } from "@/lib/supabase-client";
 
-function welcomeMessageFor(tenant) {
-  return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
-}
+export default function RootPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-function TypingIndicator() {
-  return (
-    <div className="flex items-end gap-1">
-      <div className="flex gap-1.5">
-        <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-        <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-        <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-      </div>
-    </div>
-  );
-}
-
-function getInitial(name) {
-  return name?.charAt(0).toUpperCase() || "?";
-}
-
-export default function Home() {
-  const [tenants, setTenants] = useState([]);
-  const [tenantsLoading, setTenantsLoading] = useState(true);
-  const [clientId, setClientId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const messagesEndRef = useRef(null);
-
-  // Carga la lista de tenants al montar el componente
   useEffect(() => {
-    async function loadTenants() {
+    async function checkAuth() {
       try {
-        const res = await fetch("/api/tenants");
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || "Error al cargar clientes");
-        }
-        const loadedTenants = data.tenants || [];
-        setTenants(loadedTenants);
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
 
-        // Establece el primer tenant por defecto con su mensaje de bienvenida
-        if (loadedTenants.length > 0) {
-          const firstTenant = loadedTenants[0];
-          setClientId(firstTenant.id);
-          setMessages([welcomeMessageFor(firstTenant)]);
+        if (session) {
+          router.push("/admin");
+        } else {
+          router.push("/admin/login");
         }
-      } catch (err) {
-        console.error("Error cargando tenants:", err);
-        setError(err.message);
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        router.push("/admin/login");
       } finally {
-        setTenantsLoading(false);
+        setLoading(false);
       }
     }
-    loadTenants();
-  }, []);
 
-  // Asegura que si tenants se cargan pero messages sigue vacío,
-  // inicializa con el welcomeMessage
-  useEffect(() => {
-    if (!tenantsLoading && tenants.length > 0 && messages.length === 0 && clientId) {
-      const currentTenant = tenants.find((t) => t.id === clientId);
-      if (currentTenant) {
-        setMessages([welcomeMessageFor(currentTenant)]);
-      }
-    }
-  }, [tenantsLoading, tenants, messages.length, clientId]);
-
-  const currentTenant =
-    tenants.find((t) => t.id === clientId) || tenants[0];
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  function handleClientChange(e) {
-    const newId = e.target.value;
-    const tenant = tenants.find((t) => t.id === newId) || tenants[0];
-    setClientId(newId);
-    setMessages([welcomeMessageFor(tenant)]);
-    setError(null);
-  }
-
-  async function sendMessage() {
-    const text = input.trim();
-    if (!text || loading) return;
-
-    const nextMessages = [...messages, { role: "user", content: text }];
-    setMessages(nextMessages);
-    setInput("");
-    setLoading(true);
-    setError(null);
-
-    try {
-      // El mensaje de bienvenida es local (no fue generado por Claude), así
-      // que se excluye del historial real enviado a la API.
-      const apiMessages = nextMessages
-        .filter((m) => !m.synthetic)
-        .map(({ role, content }) => ({ role, content }));
-
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, clientId }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error al obtener respuesta.");
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply },
-      ]);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  }
+    checkAuth();
+  }, [router]);
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-white dark:bg-zinc-950">
-      {/* Header elegante con selector */}
-      <header
-        className="px-6 py-4 text-white shadow-md transition-colors"
-        style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
-      >
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            {!tenantsLoading && currentTenant && (
-              <>
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold flex-shrink-0">
-                  {getInitial(currentTenant.nombre)}
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-xl font-bold">{currentTenant.nombre}</h1>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
-                    En línea
-                  </div>
-                </div>
-              </>
-            )}
-            {tenantsLoading && <div className="text-white">Cargando...</div>}
-          </div>
-
-          <select
-            value={clientId || ""}
-            onChange={handleClientChange}
-            disabled={tenantsLoading || tenants.length === 0}
-            className="rounded-lg border-2 border-white/30 bg-white/10 hover:bg-white/20 px-3 py-2 text-sm font-medium text-white outline-none [&>option]:text-zinc-900 [&>option]:font-normal transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            {tenants.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.nombre}
-              </option>
-            ))}
-          </select>
-
-          <Link
-            href="/admin"
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
-            title="Panel de administración"
-          >
-            ⚙️
-          </Link>
-        </div>
-      </header>
-
-      {/* Área de mensajes con patrón de fondo */}
-      <div
-        className="flex-1 overflow-y-auto px-4 py-8 relative"
-        style={{
-          backgroundImage: `radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)`,
-          backgroundSize: "24px 24px",
-          backgroundColor: "rgb(248, 248, 248)"
-        }}
-      >
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-          {tenantsLoading && (
-            <div className="flex justify-center items-center h-64">
-              <div className="text-zinc-500 dark:text-zinc-400">Cargando clientes...</div>
-            </div>
-          )}
-          {!tenantsLoading && messages.length === 0 && (
-            <div className="flex justify-center items-start pt-8">
-              <div className="text-zinc-400 dark:text-zinc-500">No hay mensajes</div>
-            </div>
-          )}
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              {msg.role === "assistant" && (
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
-                >
-                  {getInitial(currentTenant?.nombre)}
-                </div>
-              )}
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                  msg.role === "user"
-                    ? "text-white rounded-[20px] rounded-br-[4px]"
-                    : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-[20px] rounded-bl-[4px]"
-                }`}
-                style={
-                  msg.role === "user"
-                    ? { backgroundColor: currentTenant?.colorPrimary || "#2563eb" }
-                    : undefined
-                }
-              >
-                {msg.content}
-              </div>
-            </div>
-          ))}
-
-          {loading && (
-            <div className="flex gap-2 justify-start animate-in fade-in">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
-              >
-                {getInitial(currentTenant?.nombre)}
-              </div>
-              <div className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 rounded-[20px] rounded-bl-[4px]">
-                <TypingIndicator />
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex justify-start">
-              <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-                {error}
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input mejorado */}
-      <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-4 shadow-lg">
-        <div className="mx-auto flex w-full max-w-3xl gap-3">
-          <div className="flex-1 relative">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe tu mensaje…"
-              rows={1}
-              disabled={loading || tenantsLoading}
-              className="w-full resize-none rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 outline-none transition-colors disabled:opacity-50"
-              style={{
-                borderColor: input && !loading ? (currentTenant?.colorPrimary || "#2563eb") : undefined
-              }}
-            />
-          </div>
-          <button
-            onClick={sendMessage}
-            disabled={loading || !input.trim() || tenantsLoading}
-            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
-            style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
-            title="Enviar (Enter)"
-          >
-            {loading ? "⟳" : "→"}
-          </button>
-        </div>
+    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-800 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-zinc-600 dark:text-zinc-400">Cargando...</p>
       </div>
     </div>
   );
