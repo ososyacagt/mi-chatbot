@@ -299,7 +299,7 @@ export default function AdminPanel() {
                   </Link>
                 </div>
 
-                {/* Fila 2: Widget + Editar */}
+                {/* Fila 2: Widget + Métricas */}
                 <div className="flex gap-1.5">
                   <Link
                     href={`/admin/widget?client=${tenant.id}`}
@@ -307,23 +307,31 @@ export default function AdminPanel() {
                   >
                     🔗 Widget
                   </Link>
+                  <Link
+                    href={`/admin/metricas?clientId=${tenant.client_id}`}
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 whitespace-nowrap"
+                  >
+                    📊 Métricas
+                  </Link>
+                </div>
+
+                {/* Fila 3: Editar + Eliminar (superadmin) */}
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => handleEdit(tenant)}
                     className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 whitespace-nowrap"
                   >
                     ✏️ Editar
                   </button>
+                  {user?.role === "superadmin" && (
+                    <button
+                      onClick={() => handleDelete(tenant.client_id)}
+                      className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  )}
                 </div>
-
-                {/* Fila 3: Eliminar (solo superadmin) */}
-                {user?.role === "superadmin" && (
-                  <button
-                    onClick={() => handleDelete(tenant.client_id)}
-                    className="w-full h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap"
-                  >
-                    🗑️ Eliminar
-                  </button>
-                )}
               </div>
             </div>
           ))}

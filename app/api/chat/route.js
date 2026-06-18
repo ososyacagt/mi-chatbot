@@ -1,7 +1,7 @@
 import { getTenant } from "@/lib/tenants-db";
 import { getDocumentsContext } from "@/lib/documents-db";
 import { sendMessage } from "@/lib/ai-provider";
-import { saveMessage } from "@/lib/conversations-db";
+import { saveMessage, updateMetrics, getConversationHistory } from "@/lib/conversations-db";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -17,6 +17,10 @@ export async function POST(request) {
 
     const tenant = await getTenant(clientId);
     const sessionId = providedSessionId || randomUUID();
+
+    // Verificar si es una nueva sesión
+    const existingMessages = await getConversationHistory(tenant.id, sessionId);
+    const isNewSession = existingMessages.length === 0;
 
     // Usa el proveedor y modelo del tenant, o Claude por defecto
     const provider = tenant.aiProvider || "claude";
@@ -40,11 +44,17 @@ export async function POST(request) {
     // Guardar mensaje del usuario
     const lastMessage = messages[messages.length - 1];
     if (lastMessage.role === "user") {
+      console.log('[chat] guardando mensaje usuario, sessionId:', sessionId, 'tenantId:', tenant.id);
       await saveMessage(tenant.id, sessionId, "user", lastMessage.content);
     }
 
     // Guardar respuesta del bot
+    console.log('[chat] guardando mensaje assistant, sessionId:', sessionId);
     await saveMessage(tenant.id, sessionId, "assistant", response.reply);
+
+    // Actualizar métricas
+    console.log('[chat] actualizando metrics para:', tenant.id, 'isNewSession:', isNewSession);
+    await updateMetrics(tenant.id, isNewSession);
 
     return Response.json({
       reply: response.reply,
