@@ -59,6 +59,8 @@ export default function AdminPanel() {
         system_prompt: formData.systemPrompt,
         welcome_message: formData.welcomeMessage,
         color_primary: formData.colorPrimary,
+        ai_provider: formData.aiProvider || "claude",
+        ai_model: formData.aiModel || "claude-sonnet-4-6",
       };
 
       console.log("[handleSave] apiData enviada:", apiData);
@@ -128,88 +130,133 @@ export default function AdminPanel() {
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-8">
-        {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
+      {/* Header con título e ícono */}
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
+            📊 Gestión de Clientes
+          </h2>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+            Crea y personaliza los chatbots para tus clientes
+          </p>
+        </div>
+        <button
+          onClick={handleNew}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
+        >
+          ✨ Nuevo Cliente
+        </button>
+      </div>
 
-        {showForm ? (
-          <div className="max-w-2xl">
-            <TenantForm
-              tenant={editingTenant}
-              onSave={handleSave}
-              onCancel={handleCancel}
-              loading={saving}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="mb-6">
+      {/* Error mensaje */}
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-950 border-2 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 px-6 py-4 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {/* Modal de formulario */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
+                {editingTenant ? "Editar Cliente" : "Nuevo Cliente"}
+              </h3>
               <button
-                onClick={handleNew}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+                onClick={handleCancel}
+                className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 text-2xl font-semibold"
               >
-                + Nuevo Cliente
+                ×
               </button>
             </div>
+            <div className="p-6">
+              <TenantForm
+                tenant={editingTenant}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                loading={saving}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="text-zinc-500 dark:text-zinc-400">
-                  Cargando clientes...
+      {/* Contenido principal */}
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="text-zinc-500 dark:text-zinc-400">Cargando clientes...</div>
+        </div>
+      ) : tenants.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-6xl mb-4">📋</div>
+          <div className="text-zinc-500 dark:text-zinc-400">
+            No hay clientes creados. ¡Crea uno para empezar!
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {tenants.map((tenant) => (
+            <div
+              key={tenant.client_id}
+              className="bg-white dark:bg-zinc-900 rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 p-6"
+              style={{ borderLeftColor: tenant.colorPrimary }}
+            >
+              {/* Header de la card */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                    {tenant.nombre}
+                  </h3>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                    {tenant.client_id}
+                  </p>
                 </div>
+                <div
+                  className="w-10 h-10 rounded-lg flex-shrink-0"
+                  style={{ backgroundColor: tenant.colorPrimary }}
+                />
               </div>
-            ) : tenants.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-zinc-500 dark:text-zinc-400">
-                  No hay clientes creados. Crea uno para empezar.
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {tenants.map((tenant) => (
-                  <div
-                    key={tenant.client_id}
-                    className="bg-white dark:bg-zinc-900 rounded-lg shadow border border-zinc-200 dark:border-zinc-800 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div
-                          className="w-12 h-12 rounded-lg border-2 border-zinc-200 dark:border-zinc-700"
-                          style={{ backgroundColor: tenant.colorPrimary }}
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-zinc-900 dark:text-white">
-                            {tenant.nombre}
-                          </h3>
-                          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                            {tenant.client_id}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(tenant)}
-                          className="bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 px-4 py-2 rounded font-medium text-sm"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(tenant.client_id)}
-                          className="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-300 px-4 py-2 rounded font-medium text-sm"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
+              {/* Información de la card */}
+              <div className="space-y-2 mb-6 pb-6 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <span>🤖</span>
+                  <span>Claude (IA)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span>🎨</span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: tenant.colorPrimary }}
+                    />
+                    <code className="text-xs font-mono text-zinc-600 dark:text-zinc-400">
+                      {tenant.colorPrimary}
+                    </code>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
-          </>
-        )}
-      </main>
+
+              {/* Botones de acción */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(tenant)}
+                  className="flex-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                >
+                  ✏️ Editar
+                </button>
+                <button
+                  onClick={() => handleDelete(tenant.client_id)}
+                  className="flex-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                >
+                  🗑️ Eliminar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
   );
 }

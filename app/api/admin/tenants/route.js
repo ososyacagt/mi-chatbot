@@ -5,9 +5,11 @@ function mapToDbFields(tenant) {
   return {
     client_id: tenant.client_id,
     nombre: tenant.nombre,
-    system_prompt: tenant.system_prompt,
-    welcome_message: tenant.welcome_message,
-    color_primary: tenant.color_primary,
+    system_prompt: tenant.systemPrompt,
+    welcome_message: tenant.welcomeMessage,
+    color_primary: tenant.colorPrimary,
+    ai_provider: tenant.aiProvider || "claude",
+    ai_model: tenant.aiModel || "claude-sonnet-4-6",
   };
 }
 
@@ -20,6 +22,8 @@ function mapFromDbFields(dbRecord) {
     systemPrompt: dbRecord.system_prompt,
     welcomeMessage: dbRecord.welcome_message,
     colorPrimary: dbRecord.color_primary,
+    aiProvider: dbRecord.ai_provider || "claude",
+    aiModel: dbRecord.ai_model || "claude-sonnet-4-6",
   };
 }
 

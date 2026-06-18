@@ -1,21 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import { AI_PROVIDERS } from "@/lib/ai-provider";
+
+function getEnvVarName(provider) {
+  const map = {
+    claude: "ANTHROPIC_API_KEY",
+    openai: "OPENAI_API_KEY",
+    groq: "GROQ_API_KEY",
+    gemini: "GEMINI_API_KEY",
+    mistral: "MISTRAL_API_KEY",
+  };
+  return map[provider] || "API_KEY";
+}
 
 export default function TenantForm({ tenant, onSave, onCancel, loading }) {
   const isEditing = !!tenant;
 
-  const [form, setForm] = useState(
-    tenant || {
-      client_id: "",
-      nombre: "",
-      systemPrompt: "",
-      welcomeMessage: "",
-      colorPrimary: "#2563eb",
-    }
-  );
+  const [form, setForm] = useState({
+    client_id: tenant?.client_id || "",
+    nombre: tenant?.nombre || "",
+    systemPrompt: tenant?.systemPrompt || "",
+    welcomeMessage: tenant?.welcomeMessage || "",
+    colorPrimary: tenant?.colorPrimary || "#2563eb",
+    aiProvider: tenant?.aiProvider || "claude",
+    aiModel: tenant?.aiModel || "claude-sonnet-4-6",
+  });
 
   const [error, setError] = useState(null);
+
+  const currentProvider = AI_PROVIDERS.find((p) => p.id === form.aiProvider);
+  const availableModels = currentProvider?.modelos || [];
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -147,6 +162,58 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
             style={{ backgroundColor: form.colorPrimary }}
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          Proveedor de IA 🤖
+        </label>
+        <select
+          value={form.aiProvider}
+          onChange={(e) => {
+            const provider = AI_PROVIDERS.find((p) => p.id === e.target.value);
+            handleChange("aiProvider", e.target.value);
+            handleChange("aiModel", provider?.defaultModel || "");
+          }}
+          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+        >
+          {AI_PROVIDERS.map((provider) => (
+            <option key={provider.id} value={provider.id}>
+              {provider.nombre}
+              {provider.requiresKey ? " (requiere API key)" : " (local)"}
+            </option>
+          ))}
+        </select>
+        {currentProvider?.requiresKey && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+            ⚠️ Este proveedor requiere la variable de entorno:
+            <code className="ml-1 font-mono">{getEnvVarName(form.aiProvider)}</code>
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          Modelo de IA
+        </label>
+        <select
+          value={form.aiModel}
+          onChange={(e) => handleChange("aiModel", e.target.value)}
+          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+        >
+          {(() => {
+            const modelSet = new Set(availableModels);
+            const modelsToShow = [...modelSet];
+            if (!modelSet.has(form.aiModel) && form.aiModel) {
+              modelsToShow.unshift(form.aiModel);
+            }
+            return modelsToShow.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ));
+          })()}
+        </select>
       </div>
 
       <div className="flex gap-2 pt-4">

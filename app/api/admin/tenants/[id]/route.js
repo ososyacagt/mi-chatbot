@@ -9,6 +9,8 @@ function mapFromDbFields(dbRecord) {
     systemPrompt: dbRecord.system_prompt,
     welcomeMessage: dbRecord.welcome_message,
     colorPrimary: dbRecord.color_primary,
+    aiProvider: dbRecord.ai_provider || "claude",
+    aiModel: dbRecord.ai_model || "claude-sonnet-4-6",
   };
 }
 
@@ -43,6 +45,8 @@ export async function PUT(request, { params }) {
         system_prompt: body.system_prompt,
         welcome_message: body.welcome_message,
         color_primary: body.color_primary,
+        ai_provider: body.ai_provider || "claude",
+        ai_model: body.ai_model || "claude-sonnet-4-6",
       })
       .eq("client_id", id)
       .select();

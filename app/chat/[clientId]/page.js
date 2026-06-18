@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 
 function welcomeMessageFor(tenant) {
   return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
@@ -23,73 +24,53 @@ function getInitial(name) {
   return name?.charAt(0).toUpperCase() || "?";
 }
 
-export default function Home() {
-  const [tenants, setTenants] = useState([]);
-  const [tenantsLoading, setTenantsLoading] = useState(true);
-  const [clientId, setClientId] = useState(null);
+export default function ChatPage() {
+  const params = useParams();
+  const clientId = params.clientId;
+
+  const [tenant, setTenant] = useState(null);
+  const [tenantLoading, setTenantLoading] = useState(true);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Carga la lista de tenants al montar el componente
+  // Carga los datos del tenant
   useEffect(() => {
-    async function loadTenants() {
+    async function loadTenant() {
       try {
-        const res = await fetch("/api/tenants");
+        setTenantLoading(true);
+        const res = await fetch(`/api/tenants/${clientId}`);
         const data = await res.json();
+
         if (!res.ok) {
-          throw new Error(data.error || "Error al cargar clientes");
+          throw new Error(data.error || "Chat no encontrado");
         }
-        const loadedTenants = data.tenants || [];
-        setTenants(loadedTenants);
 
-        // Establece el primer tenant por defecto con su mensaje de bienvenida
-        if (loadedTenants.length > 0) {
-          const firstTenant = loadedTenants[0];
-          setClientId(firstTenant.id);
-          setMessages([welcomeMessageFor(firstTenant)]);
-        }
+        setTenant(data.tenant);
+        setMessages([welcomeMessageFor(data.tenant)]);
       } catch (err) {
-        console.error("Error cargando tenants:", err);
+        console.error("Error cargando tenant:", err);
         setError(err.message);
+        setTenant(null);
       } finally {
-        setTenantsLoading(false);
+        setTenantLoading(false);
       }
     }
-    loadTenants();
-  }, []);
 
-  // Asegura que si tenants se cargan pero messages sigue vacío,
-  // inicializa con el welcomeMessage
-  useEffect(() => {
-    if (!tenantsLoading && tenants.length > 0 && messages.length === 0 && clientId) {
-      const currentTenant = tenants.find((t) => t.id === clientId);
-      if (currentTenant) {
-        setMessages([welcomeMessageFor(currentTenant)]);
-      }
+    if (clientId) {
+      loadTenant();
     }
-  }, [tenantsLoading, tenants, messages.length, clientId]);
-
-  const currentTenant =
-    tenants.find((t) => t.id === clientId) || tenants[0];
+  }, [clientId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  function handleClientChange(e) {
-    const newId = e.target.value;
-    const tenant = tenants.find((t) => t.id === newId) || tenants[0];
-    setClientId(newId);
-    setMessages([welcomeMessageFor(tenant)]);
-    setError(null);
-  }
-
   async function sendMessage() {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || !tenant) return;
 
     const nextMessages = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
@@ -98,8 +79,6 @@ export default function Home() {
     setError(null);
 
     try {
-      // El mensaje de bienvenida es local (no fue generado por Claude), así
-      // que se excluye del historial real enviado a la API.
       const apiMessages = nextMessages
         .filter((m) => !m.synthetic)
         .map(({ role, content }) => ({ role, content }));
@@ -134,22 +113,45 @@ export default function Home() {
     }
   }
 
+  // Si no hay tenant, mostrar error
+  if (!tenantLoading && !tenant) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-black dark:to-zinc-900 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😔</div>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+            Chat no encontrado
+          </h1>
+          <p className="text-zinc-600 dark:text-zinc-400 mb-8">
+            {error || "El cliente solicitado no existe."}
+          </p>
+          <Link
+            href="/"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
+          >
+            ← Volver a la página principal
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col h-full bg-white dark:bg-zinc-950">
-      {/* Header elegante con selector */}
+      {/* Header elegante */}
       <header
         className="px-6 py-4 text-white shadow-md transition-colors"
-        style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
+        style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
       >
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            {!tenantsLoading && currentTenant && (
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {!tenantLoading && tenant && (
               <>
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold flex-shrink-0">
-                  {getInitial(currentTenant.nombre)}
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
+                  {getInitial(tenant.nombre)}
                 </div>
-                <div className="flex-1">
-                  <h1 className="text-xl font-bold">{currentTenant.nombre}</h1>
+                <div>
+                  <h1 className="text-xl font-bold">{tenant.nombre}</h1>
                   <div className="flex items-center gap-2 text-sm text-white/80">
                     <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
                     En línea
@@ -157,26 +159,12 @@ export default function Home() {
                 </div>
               </>
             )}
-            {tenantsLoading && <div className="text-white">Cargando...</div>}
+            {tenantLoading && <div className="text-white">Cargando...</div>}
           </div>
-
-          <select
-            value={clientId || ""}
-            onChange={handleClientChange}
-            disabled={tenantsLoading || tenants.length === 0}
-            className="rounded-lg border-2 border-white/30 bg-white/10 hover:bg-white/20 px-3 py-2 text-sm font-medium text-white outline-none [&>option]:text-zinc-900 [&>option]:font-normal transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            {tenants.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.nombre}
-              </option>
-            ))}
-          </select>
-
           <Link
-            href="/admin"
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
-            title="Panel de administración"
+            href="/"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            title="Todos los chats"
           >
             ⚙️
           </Link>
@@ -193,55 +181,51 @@ export default function Home() {
         }}
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-          {tenantsLoading && (
+          {tenantLoading && (
             <div className="flex justify-center items-center h-64">
-              <div className="text-zinc-500 dark:text-zinc-400">Cargando clientes...</div>
+              <div className="text-zinc-500 dark:text-zinc-400">Cargando chat...</div>
             </div>
           )}
-          {!tenantsLoading && messages.length === 0 && (
-            <div className="flex justify-center items-start pt-8">
-              <div className="text-zinc-400 dark:text-zinc-500">No hay mensajes</div>
-            </div>
-          )}
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              {msg.role === "assistant" && (
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
-                >
-                  {getInitial(currentTenant?.nombre)}
-                </div>
-              )}
+          {!tenantLoading &&
+            messages.map((msg, i) => (
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                  msg.role === "user"
-                    ? "text-white rounded-[20px] rounded-br-[4px]"
-                    : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-[20px] rounded-bl-[4px]"
+                key={i}
+                className={`flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
-                style={
-                  msg.role === "user"
-                    ? { backgroundColor: currentTenant?.colorPrimary || "#2563eb" }
-                    : undefined
-                }
               >
-                {msg.content}
+                {msg.role === "assistant" && (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
+                  >
+                    {getInitial(tenant?.nombre)}
+                  </div>
+                )}
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                    msg.role === "user"
+                      ? "text-white rounded-[20px] rounded-br-[4px]"
+                      : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-[20px] rounded-bl-[4px]"
+                  }`}
+                  style={
+                    msg.role === "user"
+                      ? { backgroundColor: tenant?.colorPrimary || "#2563eb" }
+                      : undefined
+                  }
+                >
+                  {msg.content}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
           {loading && (
             <div className="flex gap-2 justify-start animate-in fade-in">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
+                style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
               >
-                {getInitial(currentTenant?.nombre)}
+                {getInitial(tenant?.nombre)}
               </div>
               <div className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 rounded-[20px] rounded-bl-[4px]">
                 <TypingIndicator />
@@ -271,18 +255,18 @@ export default function Home() {
               onKeyDown={handleKeyDown}
               placeholder="Escribe tu mensaje…"
               rows={1}
-              disabled={loading || tenantsLoading}
+              disabled={loading || tenantLoading || !tenant}
               className="w-full resize-none rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 outline-none transition-colors disabled:opacity-50"
               style={{
-                borderColor: input && !loading ? (currentTenant?.colorPrimary || "#2563eb") : undefined
+                borderColor: input && !loading ? (tenant?.colorPrimary || "#2563eb") : undefined
               }}
             />
           </div>
           <button
             onClick={sendMessage}
-            disabled={loading || !input.trim() || tenantsLoading}
+            disabled={loading || !input.trim() || tenantLoading || !tenant}
             className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
-            style={{ backgroundColor: currentTenant?.colorPrimary || "#2563eb" }}
+            style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
             title="Enviar (Enter)"
           >
             {loading ? "⟳" : "→"}
