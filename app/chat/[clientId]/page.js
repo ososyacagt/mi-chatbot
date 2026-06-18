@@ -4,9 +4,68 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { randomUUID } from "crypto";
+import ReactMarkdown from "react-markdown";
 
 function welcomeMessageFor(tenant) {
   return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
+}
+
+function MessageRating({ messageIndex, sessionId, tenantColorPrimary }) {
+  const [rating, setRating] = useState(null);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const key = `rating_${sessionId}_${messageIndex}`;
+    const stored = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+    if (stored) {
+      setRating(stored);
+    }
+  }, [sessionId, messageIndex]);
+
+  const handleRate = (value) => {
+    if (!sessionId) return;
+    const key = `rating_${sessionId}_${messageIndex}`;
+    const newValue = rating === value ? null : value;
+
+    if (newValue) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(key, newValue);
+      }
+      setRating(newValue);
+    } else {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(key);
+      }
+      setRating(null);
+    }
+  };
+
+  return (
+    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button
+        onClick={() => handleRate("up")}
+        className={`text-sm px-2 py-1 rounded transition-colors ${
+          rating === "up"
+            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+            : "hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
+        }`}
+        title="Útil"
+      >
+        👍
+      </button>
+      <button
+        onClick={() => handleRate("down")}
+        className={`text-sm px-2 py-1 rounded transition-colors ${
+          rating === "down"
+            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+            : "hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
+        }`}
+        title="No útil"
+      >
+        👎
+      </button>
+    </div>
+  );
 }
 
 function TypingIndicator() {
@@ -258,19 +317,46 @@ export default function ChatPage() {
                     {getInitial(tenant?.nombre)}
                   </div>
                 )}
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                    msg.role === "user"
-                      ? "text-white rounded-[20px] rounded-br-[4px]"
-                      : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-[20px] rounded-bl-[4px]"
-                  }`}
-                  style={
-                    msg.role === "user"
-                      ? { backgroundColor: tenant?.colorPrimary || "#2563eb" }
-                      : undefined
-                  }
-                >
-                  {msg.content}
+                <div className="flex flex-col gap-1">
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-3 text-sm leading-relaxed shadow-sm group ${
+                      msg.role === "user"
+                        ? "text-white rounded-[20px] rounded-br-[4px]"
+                        : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-[20px] rounded-bl-[4px]"
+                    }`}
+                    style={
+                      msg.role === "user"
+                        ? { backgroundColor: tenant?.colorPrimary || "#2563eb" }
+                        : undefined
+                    }
+                  >
+                    {msg.role === "user" ? (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    ) : (
+                      <ReactMarkdown
+                        components={{
+                          p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                          strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                          ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                          ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                          li: ({children}) => <li className="text-sm">{children}</li>,
+                          code: ({inline, children}) => inline
+                            ? <code className="bg-black/10 dark:bg-white/10 rounded px-1 py-0.5 font-mono text-xs">{children}</code>
+                            : <pre className="bg-black/10 dark:bg-white/10 rounded p-3 font-mono text-xs overflow-x-auto mb-2"><code>{children}</code></pre>,
+                          a: ({href, children}) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">{children}</a>,
+                          h1: ({children}) => <h1 className="font-bold text-base mb-2">{children}</h1>,
+                          h2: ({children}) => <h2 className="font-semibold text-sm mb-2">{children}</h2>,
+                          h3: ({children}) => <h3 className="font-semibold text-sm mb-1">{children}</h3>,
+                          blockquote: ({children}) => <blockquote className="border-l-2 border-current pl-3 opacity-80 mb-2">{children}</blockquote>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
+                  </div>
+                  {msg.role === "assistant" && !msg.synthetic && (
+                    <MessageRating messageIndex={i} sessionId={sessionId} tenantColorPrimary={tenant?.colorPrimary} />
+                  )}
                 </div>
               </div>
             ))}

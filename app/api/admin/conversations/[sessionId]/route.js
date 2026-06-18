@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
       return Response.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const sessionId = params.sessionId;
+    const { sessionId } = await params;
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get("clientId");
 
@@ -41,9 +41,12 @@ export async function GET(request, { params }) {
       );
     }
 
+    console.log("[GET /api/admin/conversations/[sessionId]] Buscando mensajes para tenant.id:", tenant.id, "sessionId:", sessionId);
+
     const messages = await getConversationHistory(tenant.id, sessionId);
 
-    console.log("[GET /api/admin/conversations/[sessionId]] ✓", messages.length, "mensajes");
+    console.log("[GET /api/admin/conversations/[sessionId]] ✓", messages.length, "mensajes encontrados");
+    console.log("[GET /api/admin/conversations/[sessionId]] Mensajes:", messages);
     return Response.json({ messages });
   } catch (error) {
     console.error("[GET /api/admin/conversations/[sessionId]] Error:", error);
@@ -66,7 +69,7 @@ export async function DELETE(request, { params }) {
       return Response.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const sessionId = params.sessionId;
+    const { sessionId } = await params;
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get("clientId");
 

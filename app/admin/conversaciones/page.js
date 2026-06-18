@@ -92,12 +92,17 @@ export default function ConversacionesPage() {
   // Cargar mensajes de una conversación
   async function loadConversation(sessionId) {
     try {
+      console.log('[loadConversation] sessionId:', sessionId);
+      console.log('[loadConversation] clientId:', selectedTenant?.id);
+
       const res = await fetch(
         `/api/admin/conversations/${sessionId}?clientId=${selectedTenant.id}`
       );
       if (!res.ok) throw new Error("Error al cargar conversación");
 
       const data = await res.json();
+      console.log('[loadConversation] response:', data);
+
       setMessages(data.messages || []);
       setSelectedSessionId(sessionId);
     } catch (err) {
