@@ -1,37 +1,35 @@
+import { NextResponse } from "next/server";
 import { getSession, getAdminUser } from "@/lib/auth";
 
-export async function GET(request) {
+export async function GET() {
   try {
     const user = await getSession();
+    console.log("[/api/admin/me] user:", user?.id, user?.email);
 
     if (!user) {
-      return Response.json(
-        { error: "No autorizado" },
+      return NextResponse.json(
+        { error: "No autenticado" },
         { status: 401 }
       );
     }
 
     const adminUser = await getAdminUser(user.id);
+    console.log("[/api/admin/me] adminUser:", adminUser);
 
     if (!adminUser) {
-      return Response.json(
-        { error: "Usuario no es admin" },
+      return NextResponse.json(
+        { error: "Usuario no tiene permisos de admin" },
         { status: 403 }
       );
     }
 
-    console.log("[GET /api/admin/me] ✓ Sesión:", user.email, "Role:", adminUser.role);
-
-    return Response.json({
-      email: adminUser.email,
+    return NextResponse.json({
+      email: user.email,
       role: adminUser.role,
       tenant_id: adminUser.tenant_id,
     });
   } catch (error) {
-    console.error("[GET /api/admin/me] Error:", error);
-    return Response.json(
-      { error: "Error interno del servidor" },
-      { status: 500 }
-    );
+    console.error("[/api/admin/me] error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

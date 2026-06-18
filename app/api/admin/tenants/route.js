@@ -40,6 +40,8 @@ export async function GET(request) {
     }
 
     const user = await getSession();
+    console.log("[GET /api/admin/tenants] user:", user?.id, user?.email);
+
     if (!user) {
       return Response.json(
         { error: "No autorizado" },
@@ -48,6 +50,8 @@ export async function GET(request) {
     }
 
     const adminUser = await getAdminUser(user.id);
+    console.log("[GET /api/admin/tenants] adminUser:", adminUser);
+
     if (!adminUser) {
       return Response.json(
         { error: "Usuario no tiene permisos de admin" },
@@ -104,6 +108,8 @@ export async function POST(request) {
     }
 
     const user = await getSession();
+    console.log("[POST /api/admin/tenants] user:", user?.id, user?.email);
+
     if (!user) {
       return Response.json(
         { error: "No autorizado" },
@@ -112,6 +118,8 @@ export async function POST(request) {
     }
 
     const adminUser = await getAdminUser(user.id);
+    console.log("[POST /api/admin/tenants] adminUser:", adminUser);
+
     if (!adminUser || adminUser.role !== "superadmin") {
       return Response.json(
         { error: "Solo superadmin puede crear tenants" },
