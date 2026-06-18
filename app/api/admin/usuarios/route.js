@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
 
 export async function GET(request) {
@@ -67,24 +68,28 @@ export async function POST(request) {
 
     console.log("[POST /api/admin/usuarios] Creando usuario:", email);
 
-    const authUser = await supabase.auth.admin.createUser({
+    const supabaseAdmin = createSupabaseAdmin();
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     });
 
-    if (authUser.error) {
-      console.error("[POST /api/admin/usuarios] Auth error:", authUser.error);
+    if (authError) {
+      console.error("[POST /api/admin/usuarios] Auth error:", authError);
       return Response.json(
-        { error: "Error al crear usuario: " + authUser.error.message },
+        { error: "Error al crear usuario: " + authError.message },
         { status: 500 }
       );
     }
 
+    console.log("[POST /api/admin/usuarios] Usuario creado en auth:", authData.user.id);
+
     const { data, error: dbError } = await supabase
       .from("admin_users")
       .insert({
-        id: authUser.data.user.id,
+        id: authData.user.id,
         email,
         role,
         tenant_id: role === "superadmin" ? null : tenant_id,
@@ -94,7 +99,7 @@ export async function POST(request) {
 
     if (dbError) {
       console.error("[POST /api/admin/usuarios] DB error:", dbError);
-      await supabase.auth.admin.deleteUser(authUser.data.user.id);
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       return Response.json(
         { error: "Error al guardar usuario en BD" },
         { status: 500 }
