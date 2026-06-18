@@ -7,13 +7,17 @@
     return;
   }
 
-  const clientId = new URL(scriptTag.src).searchParams.get('client');
+  const scriptSrc = document.currentScript.src;
+  const clientId = new URL(scriptSrc).searchParams.get('client');
   if (!clientId) {
     console.error('[ChatWidget] No se especificó el parámetro client');
     return;
   }
 
-  const APP_URL = 'https://mi-chatbot-three.vercel.app';
+  // Detectar URL base automáticamente
+  const APP_URL = scriptSrc.startsWith('http://localhost')
+    ? 'http://localhost:3000'
+    : new URL(scriptSrc).origin;
   let tenant = null;
   let messages = [];
   let sessionId = null;
@@ -191,7 +195,7 @@
         border-bottom-right-radius: 4px;
       }
 
-      .wchat-message.bot .wchat-message-content {
+      .wchat-message.assistant .wchat-message-content {
         background-color: #f3f4f6;
         color: #1f2937;
         border-bottom-left-radius: 4px;
@@ -385,7 +389,7 @@
 
     // Agregar mensaje de bienvenida si es la primera vez
     if (messages.length === 0) {
-      addMessage('bot', tenant?.welcomeMessage || 'Hola, ¿cómo puedo ayudarte?');
+      addMessage('assistant', tenant?.welcomeMessage || 'Hola, ¿cómo puedo ayudarte?');
     }
 
     // Scroll al último mensaje
@@ -418,7 +422,7 @@
 
   function showTyping() {
     const typingEl = document.createElement('div');
-    typingEl.className = 'wchat-message bot';
+    typingEl.className = 'wchat-message assistant';
     typingEl.innerHTML = '<div class="wchat-typing"><span></span><span></span><span></span></div>';
     typingEl.id = 'wchat-typing';
     ui.messagesContainer.appendChild(typingEl);
@@ -455,7 +459,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: messages.filter(m => m.role !== 'bot' || m.content).map(({ role, content }) => ({ role, content })),
+          messages: messages.filter(m => m.role === 'user' || m.role === 'assistant').map(({ role, content }) => ({ role, content })),
           clientId,
           sessionId
         })
@@ -465,7 +469,7 @@
       const data = await response.json();
 
       removeTyping();
-      addMessage('bot', data.reply);
+      addMessage('assistant', data.reply);
     } catch (err) {
       removeTyping();
       showError('Error al enviar mensaje. Intenta nuevamente.');
