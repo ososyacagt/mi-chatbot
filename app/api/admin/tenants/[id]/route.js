@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getSession, getAdminUser } from "@/lib/auth";
 
 // Mapea campos snake_case de Supabase a camelCase
 function mapFromDbFields(dbRecord) {
@@ -29,10 +30,23 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const adminRole = request.headers.get("x-admin-role");
-    const adminTenant = request.headers.get("x-admin-tenant");
+    const user = await getSession();
+    if (!user) {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 401 }
+      );
+    }
 
-    if (adminRole === "admin" && adminTenant !== id) {
+    const adminUser = await getAdminUser(user.id);
+    if (!adminUser) {
+      return Response.json(
+        { error: "Usuario no tiene permisos de admin" },
+        { status: 403 }
+      );
+    }
+
+    if (adminUser.role === "admin" && adminUser.tenant_id !== id) {
       return Response.json(
         { error: "No tienes permiso para editar este tenant" },
         { status: 403 }
@@ -105,17 +119,30 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const adminRole = request.headers.get("x-admin-role");
-    const adminTenant = request.headers.get("x-admin-tenant");
+    const user = await getSession();
+    if (!user) {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 401 }
+      );
+    }
 
-    if (adminRole === "admin" && adminTenant !== id) {
+    const adminUser = await getAdminUser(user.id);
+    if (!adminUser) {
+      return Response.json(
+        { error: "Usuario no tiene permisos de admin" },
+        { status: 403 }
+      );
+    }
+
+    if (adminUser.role === "admin" && adminUser.tenant_id !== id) {
       return Response.json(
         { error: "No tienes permiso para eliminar este tenant" },
         { status: 403 }
       );
     }
 
-    if (adminRole !== "superadmin" && adminRole !== "admin") {
+    if (adminUser.role !== "superadmin" && adminUser.role !== "admin") {
       return Response.json(
         { error: "No autorizado" },
         { status: 403 }

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getSession, getAdminUser } from "@/lib/auth";
 
 // Mapea campos camelCase a snake_case para Supabase
 function mapToDbFields(tenant) {
@@ -38,18 +39,31 @@ export async function GET(request) {
       );
     }
 
-    const adminRole = request.headers.get("x-admin-role");
-    const adminTenant = request.headers.get("x-admin-tenant");
+    const user = await getSession();
+    if (!user) {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 401 }
+      );
+    }
 
-    console.log("[GET /api/admin/tenants] Role:", adminRole, "Tenant:", adminTenant);
+    const adminUser = await getAdminUser(user.id);
+    if (!adminUser) {
+      return Response.json(
+        { error: "Usuario no tiene permisos de admin" },
+        { status: 403 }
+      );
+    }
+
+    console.log("[GET /api/admin/tenants] Role:", adminUser.role, "Tenant:", adminUser.tenant_id);
 
     let query = supabase.from("tenants").select("*");
 
-    if (adminRole === "admin" && adminTenant) {
-      query = query.eq("client_id", adminTenant);
-    } else if (adminRole !== "superadmin") {
+    if (adminUser.role === "admin" && adminUser.tenant_id) {
+      query = query.eq("client_id", adminUser.tenant_id);
+    } else if (adminUser.role !== "superadmin") {
       return Response.json(
-        { error: "No autorizado" },
+        { error: "Rol no reconocido" },
         { status: 403 }
       );
     }
@@ -89,9 +103,16 @@ export async function POST(request) {
       );
     }
 
-    const adminRole = request.headers.get("x-admin-role");
+    const user = await getSession();
+    if (!user) {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 401 }
+      );
+    }
 
-    if (adminRole !== "superadmin") {
+    const adminUser = await getAdminUser(user.id);
+    if (!adminUser || adminUser.role !== "superadmin") {
       return Response.json(
         { error: "Solo superadmin puede crear tenants" },
         { status: 403 }
