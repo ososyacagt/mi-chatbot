@@ -14,6 +14,9 @@ function mapToDbFields(tenant) {
     ai_model: tenant.aiModel || "claude-sonnet-4-6",
     plan: tenant.plan || "basic",
     mensaje_limite: tenant.mensajeLimite || 100,
+    admin_email: tenant.adminEmail || null,
+    escalation_enabled: tenant.escalationEnabled !== false,
+    escalation_message: tenant.escalationMessage || null,
   };
 }
 
@@ -32,6 +35,11 @@ function mapFromDbFields(dbRecord) {
     mensajeLimite: dbRecord.mensaje_limite || 100,
     mensajesUsados: dbRecord.mensajes_usados || 0,
     planResetDate: dbRecord.plan_reset_date,
+    adminEmail: dbRecord.admin_email || null,
+    escalationEnabled: dbRecord.escalation_enabled !== false,
+    escalationMessage:
+      dbRecord.escalation_message ||
+      "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
   };
 }
 

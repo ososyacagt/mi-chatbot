@@ -28,6 +28,11 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
     aiModel: tenant?.aiModel || "claude-sonnet-4-6",
     plan: tenant?.plan || "basic",
     mensajeLimite: tenant?.mensajeLimite || 100,
+    escalationEnabled: tenant?.escalationEnabled !== false,
+    adminEmail: tenant?.adminEmail || "",
+    escalationMessage:
+      tenant?.escalationMessage ||
+      "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
   });
 
   const [error, setError] = useState(null);
@@ -297,6 +302,61 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
               />
             </div>
           </>
+        )}
+      </div>
+
+      <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">
+          🆘 Escalación a Humano
+        </h3>
+
+        <div className="flex items-center gap-3 mb-4">
+          <input
+            type="checkbox"
+            id="escalationEnabled"
+            checked={form.escalationEnabled}
+            onChange={(e) => handleChange("escalationEnabled", e.target.checked)}
+            className="w-4 h-4 rounded cursor-pointer"
+          />
+          <label htmlFor="escalationEnabled" className="text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer">
+            Habilitar escalación a humano
+          </label>
+        </div>
+
+        {form.escalationEnabled && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Email del administrador para notificaciones
+              </label>
+              <input
+                type="email"
+                value={form.adminEmail}
+                onChange={(e) => handleChange("adminEmail", e.target.value)}
+                placeholder="admin@ejemplo.com"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Este email recibirá notificaciones cuando un usuario solicite hablar con un humano
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Mensaje de respuesta al usuario
+              </label>
+              <textarea
+                value={form.escalationMessage}
+                onChange={(e) => handleChange("escalationMessage", e.target.value)}
+                placeholder="¡Entendido! He notificado a un agente humano..."
+                rows="4"
+                className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Este mensaje se mostrará al usuario cuando solicite hablar con un humano
+              </p>
+            </div>
+          </div>
         )}
       </div>
 

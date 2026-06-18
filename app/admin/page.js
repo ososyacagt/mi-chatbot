@@ -13,11 +13,13 @@ export default function AdminPanel() {
   const [editingTenant, setEditingTenant] = useState(null);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
+  const [pendingEscalations, setPendingEscalations] = useState(0);
 
   // Carga usuario y lista de tenants
   useEffect(() => {
     loadUser();
     loadTenants();
+    loadEscalations();
   }, []);
 
   async function loadUser() {
@@ -29,6 +31,18 @@ export default function AdminPanel() {
       }
     } catch (err) {
       console.error("Error cargando usuario:", err);
+    }
+  }
+
+  async function loadEscalations() {
+    try {
+      const res = await fetch("/api/admin/escalations?status=pending");
+      if (res.ok) {
+        const data = await res.json();
+        setPendingEscalations(data.escalations?.length || 0);
+      }
+    } catch (err) {
+      console.error("Error cargando escalaciones:", err);
     }
   }
 
@@ -79,6 +93,9 @@ export default function AdminPanel() {
         aiModel: formData.aiModel || "claude-sonnet-4-6",
         plan: formData.plan || "basic",
         mensajeLimite: formData.mensajeLimite || 100,
+        escalationEnabled: formData.escalationEnabled !== false,
+        adminEmail: formData.adminEmail || null,
+        escalationMessage: formData.escalationMessage || null,
       };
 
       console.log("[handleSave] apiData enviada:", apiData);
@@ -181,6 +198,19 @@ export default function AdminPanel() {
                 className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/30 font-medium transition-colors"
               >
                 🔍 Auditoría
+              </Link>
+            )}
+            {user?.role === "superadmin" && (
+              <Link
+                href="/admin/escalaciones"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-red-600 text-red-600 dark:text-red-400 dark:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 font-medium transition-colors relative"
+              >
+                🆘 Escalaciones
+                {pendingEscalations > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {pendingEscalations}
+                  </span>
+                )}
               </Link>
             )}
             {user?.role === "superadmin" && (

@@ -3,6 +3,7 @@ import { getDocumentsContext } from "@/lib/documents-db";
 import { sendMessage } from "@/lib/ai-provider";
 import { saveMessage, updateMetrics, getConversationHistory } from "@/lib/conversations-db";
 import { checkMessageLimit, incrementMessageCount } from "@/lib/usage";
+import { detectEscalation, createEscalation, sendEscalationEmail } from "@/lib/escalation";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -40,6 +41,42 @@ export async function POST(request) {
     // Verificar si es una nueva sesión
     const existingMessages = await getConversationHistory(tenant.id, sessionId);
     const isNewSession = existingMessages.length === 0;
+
+    // Verificar escalación a humano
+    const userMessage = messages[messages.length - 1]?.content || "";
+    const isEscalation = detectEscalation(userMessage);
+
+    if (isEscalation && tenant.escalationEnabled) {
+      console.log("[chat] Escalación detectada para:", clientId);
+
+      // Crear registro de escalación
+      await createEscalation({
+        tenantId: clientId,
+        sessionId,
+        mensajeTrigger: userMessage,
+        adminEmail: tenant.adminEmail,
+      });
+
+      // Enviar email si hay adminEmail configurado
+      if (tenant.adminEmail) {
+        await sendEscalationEmail({
+          adminEmail: tenant.adminEmail,
+          tenantNombre: tenant.nombre,
+          mensajeTrigger: userMessage,
+          sessionId,
+        });
+      }
+
+      // Guardar mensaje del usuario
+      await saveMessage(tenant.id, sessionId, "user", userMessage);
+
+      // Retornar respuesta especial de escalación
+      return Response.json({
+        reply: tenant.escalationMessage,
+        escalated: true,
+        sessionId,
+      });
+    }
 
     // Usa el proveedor y modelo del tenant, o Claude por defecto
     const provider = tenant.aiProvider || "claude";

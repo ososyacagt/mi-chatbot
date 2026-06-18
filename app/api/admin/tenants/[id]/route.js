@@ -17,6 +17,11 @@ function mapFromDbFields(dbRecord) {
     mensajeLimite: dbRecord.mensaje_limite || 100,
     mensajesUsados: dbRecord.mensajes_usados || 0,
     planResetDate: dbRecord.plan_reset_date,
+    adminEmail: dbRecord.admin_email || null,
+    escalationEnabled: dbRecord.escalation_enabled !== false,
+    escalationMessage:
+      dbRecord.escalation_message ||
+      "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
   };
 }
 
@@ -78,6 +83,9 @@ export async function PUT(request, { params }) {
         ai_model: body.aiModel || "claude-sonnet-4-6",
         plan: body.plan || "basic",
         mensaje_limite: body.mensajeLimite || 100,
+        admin_email: body.adminEmail || null,
+        escalation_enabled: body.escalationEnabled !== false,
+        escalation_message: body.escalationMessage || null,
       })
       .eq("client_id", id)
       .select();
