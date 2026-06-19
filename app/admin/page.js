@@ -209,6 +209,14 @@ export default function AdminPanel() {
               </Link>
             )}
             {user?.role === "superadmin" && (
+              <Link
+                href="/admin/invitaciones"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-orange-600 text-orange-600 dark:text-orange-400 dark:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 font-medium transition-colors"
+              >
+                ✉️ Invitaciones
+              </Link>
+            )}
+            {user?.role === "superadmin" && (
               <button
                 onClick={handleNew}
                 className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium transition-colors shadow-md hover:shadow-lg"
