@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AI_PROVIDERS } from "@/lib/ai-provider";
 
 const STEPS = 4;
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -398,7 +398,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-zinc-950 dark:to-indigo-950 py-8 px-4">
-      <div className="max-w-2xl mx-auto pb-12">
+      <div className="max-w-2xl mx-auto pb-12" key={token}>
         {/* Barra de progreso */}
         <div className="mb-8">
           <div className="flex justify-between mb-4">
@@ -769,5 +769,20 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-zinc-950 dark:to-indigo-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-zinc-600 dark:text-zinc-400">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   );
 }

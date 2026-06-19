@@ -10,6 +10,7 @@ function mapToDbFields(tenant) {
     system_prompt: tenant.systemPrompt,
     welcome_message: tenant.welcomeMessage,
     color_primary: tenant.colorPrimary,
+    theme: tenant.theme || "auto",
     ai_provider: tenant.aiProvider || "claude",
     ai_model: tenant.aiModel || "claude-sonnet-4-6",
     plan: tenant.plan || "basic",
@@ -29,6 +30,7 @@ function mapFromDbFields(dbRecord) {
     systemPrompt: dbRecord.system_prompt,
     welcomeMessage: dbRecord.welcome_message,
     colorPrimary: dbRecord.color_primary,
+    theme: dbRecord.theme || "auto",
     aiProvider: dbRecord.ai_provider || "claude",
     aiModel: dbRecord.ai_model || "claude-sonnet-4-6",
     plan: dbRecord.plan || "basic",
@@ -89,6 +91,9 @@ export async function GET(request) {
 
     const { data, error } = await query.order("created_at", { ascending: true });
 
+    console.log("[GET /api/admin/tenants] Query error:", error);
+    console.log("[GET /api/admin/tenants] Columns in first record:", data?.[0] ? Object.keys(data[0]) : "no data");
+
     if (error) {
       console.error("[GET /api/admin/tenants] Error:", error);
       return Response.json(
@@ -99,6 +104,8 @@ export async function GET(request) {
 
     const mappedData = (data || []).map(mapFromDbFields);
     console.log(`[GET /api/admin/tenants] ✓ ${mappedData.length} tenants`);
+    console.log("[GET /api/admin/tenants] Raw data from Supabase:", JSON.stringify(data?.[0], null, 2));
+    console.log("[GET /api/admin/tenants] Mapped data sample:", JSON.stringify(mappedData?.[0], null, 2));
 
     return Response.json({ tenants: mappedData });
   } catch (error) {

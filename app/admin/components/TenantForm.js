@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AI_PROVIDERS } from "@/lib/ai-provider";
 import { PLANS } from "@/lib/plans";
 
@@ -24,6 +24,7 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
     systemPrompt: tenant?.systemPrompt || "",
     welcomeMessage: tenant?.welcomeMessage || "",
     colorPrimary: tenant?.colorPrimary || "#2563eb",
+    theme: tenant?.theme || "auto",
     aiProvider: tenant?.aiProvider || "claude",
     aiModel: tenant?.aiModel || "claude-sonnet-4-6",
     plan: tenant?.plan || "basic",
@@ -36,6 +37,32 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
   });
 
   const [error, setError] = useState(null);
+
+  // Actualizar formulario cuando tenant cambia (al editar diferente cliente)
+  useEffect(() => {
+    if (tenant) {
+      console.log("[TenantForm] Tenant recibido:", tenant);
+      console.log("[TenantForm] Theme del tenant:", tenant.theme);
+
+      setForm({
+        client_id: tenant.client_id || "",
+        nombre: tenant.nombre || "",
+        systemPrompt: tenant.systemPrompt || "",
+        welcomeMessage: tenant.welcomeMessage || "",
+        colorPrimary: tenant.colorPrimary || "#2563eb",
+        theme: tenant.theme || "auto",
+        aiProvider: tenant.aiProvider || "claude",
+        aiModel: tenant.aiModel || "claude-sonnet-4-6",
+        plan: tenant.plan || "basic",
+        mensajeLimite: tenant.mensajeLimite || 100,
+        escalationEnabled: tenant.escalationEnabled !== false,
+        adminEmail: tenant.adminEmail || "",
+        escalationMessage:
+          tenant.escalationMessage ||
+          "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
+      });
+    }
+  }, [tenant?.client_id]);
 
   const currentProvider = AI_PROVIDERS.find((p) => p.id === form.aiProvider);
   const availableModels = currentProvider?.modelos || [];
@@ -169,6 +196,33 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
             className="h-10 rounded-lg border-2 border-zinc-300 dark:border-zinc-700"
             style={{ backgroundColor: form.colorPrimary }}
           />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+          🎨 Tema del chat
+        </label>
+        <div className="flex gap-2">
+          {[
+            { value: "light", icon: "☀️", label: "Claro" },
+            { value: "dark", icon: "🌙", label: "Oscuro" },
+            { value: "auto", icon: "🖥️", label: "Automático" },
+          ].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleChange("theme", option.value)}
+              className={`flex-1 py-2 px-3 rounded-lg border-2 font-medium text-sm transition-all ${
+                form.theme === option.value
+                  ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                  : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300"
+              }`}
+            >
+              <span className="mr-1">{option.icon}</span>
+              {option.label}
+            </button>
+          ))}
         </div>
       </div>
 

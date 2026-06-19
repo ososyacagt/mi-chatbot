@@ -131,6 +131,9 @@ export default function ChatPage() {
           throw new Error(data.error || "Chat no encontrado");
         }
 
+        console.log("[Chat] Tenant cargado:", data.tenant);
+        console.log("[Chat] Tema del tenant:", data.tenant?.theme);
+
         setTenant(data.tenant);
         setMessages([welcomeMessageFor(data.tenant)]);
       } catch (err) {
@@ -146,6 +149,86 @@ export default function ChatPage() {
       loadTenant();
     }
   }, [clientId]);
+
+  // Aplicar override de media queries SOLO si el tema es light
+  useEffect(() => {
+    if (!tenant?.theme) return;
+
+    const styleId = "theme-mode-override";
+    const existingStyle = document.getElementById(styleId);
+
+    if (tenant.theme === "light") {
+      // Forzar modo claro anulando las media queries
+      if (!existingStyle) {
+        const style = document.createElement("style");
+        style.id = styleId;
+        style.innerHTML = `
+          @media (prefers-color-scheme: dark) {
+            /* Override ALL Tailwind dark variants to use light colors */
+            :where(.bg-zinc-50) { background-color: rgb(250, 250, 250); }
+            :where(.bg-zinc-100) { background-color: rgb(244, 244, 245); }
+            :where(.bg-white) { background-color: rgb(255, 255, 255); }
+            :where(.text-zinc-900) { color: rgb(23, 23, 23); }
+            :where(.text-white) { color: rgb(23, 23, 23); }
+            :where(.text-zinc-700) { color: rgb(63, 63, 70); }
+            :where(.text-zinc-600) { color: rgb(82, 82, 91); }
+            :where(.border-zinc-200) { border-color: rgb(228, 228, 231); }
+            :where(.border-zinc-300) { border-color: rgb(212, 212, 216); }
+            :where(.bg-gradient-to-br) { background: linear-gradient(to bottom right, rgb(240, 249, 255), rgb(238, 242, 255)); }
+          }
+        `;
+        document.head.appendChild(style);
+        console.log("[Chat] Override inyectado - forzando tema claro");
+      }
+    } else {
+      // Remover el override para permitir que funcionen los temas oscuro y auto
+      if (existingStyle) {
+        existingStyle.remove();
+        console.log("[Chat] Override removido");
+      }
+    }
+  }, [tenant?.theme]);
+
+  // Aplicar tema visual según configuración del tenant
+  useEffect(() => {
+    if (!tenant || !tenant.theme) return;
+
+    const root = document.documentElement;
+    const theme = tenant.theme || "auto";
+
+    console.log("[Chat] Aplicando tema:", theme);
+
+    // Limpiar clases anteriores - ser explícito
+    root.classList.remove("dark");
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.style.colorScheme = "dark";
+      console.log("[Chat] Tema oscuro aplicado");
+    } else if (theme === "light") {
+      root.classList.remove("dark");
+      root.style.colorScheme = "light";
+      console.log("[Chat] Tema claro aplicado - color-scheme: light");
+    } else {
+      // auto: usar preferencia del sistema
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDark) {
+        root.classList.add("dark");
+        root.style.colorScheme = "dark";
+        console.log("[Chat] Tema auto (oscuro del sistema) aplicado");
+      } else {
+        root.classList.remove("dark");
+        root.style.colorScheme = "light";
+        console.log("[Chat] Tema auto (claro del sistema) aplicado");
+      }
+    }
+
+    // Cleanup al desmontar
+    return () => {
+      root.classList.remove("dark");
+      root.style.colorScheme = "";
+    };
+  }, [tenant?.theme]);
 
   function handleNewConversation() {
     if (!clientId) return;
@@ -303,11 +386,10 @@ export default function ChatPage() {
 
       {/* Área de mensajes con patrón de fondo */}
       <div
-        className="flex-1 overflow-y-auto px-4 py-8 relative"
+        className="flex-1 overflow-y-auto px-4 py-8 relative bg-zinc-50 dark:bg-zinc-950"
         style={{
           backgroundImage: `radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)`,
           backgroundSize: "24px 24px",
-          backgroundColor: "rgb(248, 248, 248)"
         }}
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">

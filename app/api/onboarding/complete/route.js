@@ -8,6 +8,7 @@ function mapToDbFields(tenant) {
     system_prompt: tenant.systemPrompt,
     welcome_message: tenant.welcomeMessage,
     color_primary: tenant.colorPrimary,
+    theme: "auto",
     ai_provider: tenant.aiProvider || "claude",
     ai_model: tenant.aiModel || "claude-sonnet-4-6",
     plan: "basic",

@@ -48,6 +48,29 @@
     }
   }
 
+  // Aplicar tema visual del widget
+  function applyTheme() {
+    const theme = tenant?.theme || 'auto';
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    let shouldBeDark = false;
+
+    if (theme === 'dark') {
+      shouldBeDark = true;
+    } else if (theme === 'light') {
+      shouldBeDark = false;
+    } else if (theme === 'auto') {
+      shouldBeDark = isDarkMode;
+    }
+
+    // Agregar o remover clase al body para aplicar estilos oscuros
+    if (shouldBeDark) {
+      document.documentElement.classList.add('wchat-dark');
+    } else {
+      document.documentElement.classList.remove('wchat-dark');
+    }
+  }
+
   // Inyectar CSS en el head
   function injectStyles() {
     const style = document.createElement('style');
@@ -199,6 +222,49 @@
         background-color: #f3f4f6;
         color: #1f2937;
         border-bottom-left-radius: 4px;
+      }
+
+      /* Tema oscuro */
+      .wchat-dark .wchat-panel {
+        background-color: #1f2937;
+        color: #f3f4f6;
+      }
+
+      .wchat-dark .wchat-panel-header {
+        background-color: var(--wchat-color);
+      }
+
+      .wchat-dark .wchat-messages {
+        background-color: #1f2937;
+      }
+
+      .wchat-dark .wchat-message.assistant .wchat-message-content {
+        background-color: #374151;
+        color: #f3f4f6;
+      }
+
+      .wchat-dark .wchat-typing {
+        background-color: #374151;
+      }
+
+      .wchat-dark .wchat-input-area {
+        background-color: #1f2937;
+        border-top-color: #374151;
+      }
+
+      .wchat-dark .wchat-textarea {
+        background-color: #374151;
+        color: #f3f4f6;
+        border-color: #4b5563;
+      }
+
+      .wchat-dark .wchat-textarea:focus {
+        border-color: var(--wchat-color);
+      }
+
+      .wchat-dark .wchat-error {
+        background-color: #7f1d1d;
+        color: #fecaca;
       }
 
       .wchat-typing {
@@ -498,6 +564,9 @@
 
     // Establecer color CSS variable
     document.documentElement.style.setProperty('--wchat-color', tenant.colorPrimary);
+
+    // Aplicar tema visual
+    applyTheme();
   }
 
   init();

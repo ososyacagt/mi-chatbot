@@ -97,6 +97,7 @@ export default function AdminPanel() {
         systemPrompt: formData.systemPrompt,
         welcomeMessage: formData.welcomeMessage,
         colorPrimary: formData.colorPrimary,
+        theme: formData.theme || "auto",
         aiProvider: formData.aiProvider || "claude",
         aiModel: formData.aiModel || "claude-sonnet-4-6",
         plan: formData.plan || "basic",

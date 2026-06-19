@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { getTenant } from "@/lib/tenants-db";
 
 export async function GET(request, { params }) {
@@ -6,7 +7,7 @@ export async function GET(request, { params }) {
     console.log("[GET /api/tenants/[clientId]] Obteniendo tenant:", clientId);
 
     if (!clientId) {
-      return Response.json(
+      return NextResponse.json(
         { error: "clientId es requerido" },
         { status: 400 }
       );
@@ -16,7 +17,7 @@ export async function GET(request, { params }) {
 
     if (!tenant) {
       console.log("[GET /api/tenants/[clientId]] Tenant no encontrado:", clientId);
-      return Response.json(
+      return NextResponse.json(
         { error: "Tenant no encontrado" },
         { status: 404 }
       );
@@ -24,10 +25,19 @@ export async function GET(request, { params }) {
 
     console.log("[GET /api/tenants/[clientId]] ✓ Tenant encontrado:", tenant.id);
 
-    return Response.json({ tenant });
+    return NextResponse.json(
+      { tenant },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      }
+    );
   } catch (error) {
     console.error("[GET /api/tenants/[clientId]] Error:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "Error al obtener el tenant" },
       { status: 500 }
     );
