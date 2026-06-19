@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { randomUUID } from "crypto";
 import ReactMarkdown from "react-markdown";
+import { LANGUAGES } from "@/lib/languages";
 
 function welcomeMessageFor(tenant) {
   return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
@@ -356,9 +357,17 @@ export default function ChatPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">{tenant.nombre}</h1>
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
-                    En línea
+                  <div className="flex items-center gap-3 text-sm text-white/80">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
+                      En línea
+                    </div>
+                    {tenant.defaultLanguage && (
+                      <div title={tenant.autoDetectLanguage ? "Detección automática de idioma" : `Idioma: ${LANGUAGES.find(l => l.code === tenant.defaultLanguage)?.nombre}`}>
+                        {LANGUAGES.find(l => l.code === tenant.defaultLanguage)?.flag || '🌐'}
+                        {tenant.autoDetectLanguage && <span className="text-xs ml-1">auto</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>

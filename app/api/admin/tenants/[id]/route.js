@@ -23,6 +23,8 @@ function mapFromDbFields(dbRecord) {
     escalationMessage:
       dbRecord.escalation_message ||
       "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
+    defaultLanguage: dbRecord.default_language || "es",
+    autoDetectLanguage: dbRecord.auto_detect_language !== false,
   };
 }
 
@@ -88,6 +90,8 @@ export async function PUT(request, { params }) {
         admin_email: body.adminEmail || null,
         escalation_enabled: body.escalationEnabled !== false,
         escalation_message: body.escalationMessage || null,
+        default_language: body.defaultLanguage || "es",
+        auto_detect_language: body.autoDetectLanguage !== false,
       })
       .eq("client_id", id)
       .select();

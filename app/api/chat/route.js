@@ -4,6 +4,7 @@ import { sendMessage } from "@/lib/ai-provider";
 import { saveMessage, updateMetrics, getConversationHistory } from "@/lib/conversations-db";
 import { checkMessageLimit, incrementMessageCount } from "@/lib/usage";
 import { detectEscalation, createEscalation, sendEscalationEmail } from "@/lib/escalation";
+import { getLanguageInstruction } from "@/lib/languages";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -84,6 +85,14 @@ export async function POST(request) {
 
     // Obtiene contexto de documentos base
     let systemPrompt = tenant.systemPrompt;
+
+    // Agregar instrucción de idioma
+    const languageInstruction = getLanguageInstruction(
+      tenant.defaultLanguage || "es",
+      tenant.autoDetectLanguage !== false
+    );
+    systemPrompt += "\n\n" + languageInstruction;
+
     const { texto: docsText, imagenes: docImages } = await getDocumentsContext(clientId);
     if (docsText) {
       systemPrompt += "\n\nCONOCIMIENTO BASE:\n" + docsText;

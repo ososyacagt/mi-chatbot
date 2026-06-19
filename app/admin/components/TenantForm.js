@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AI_PROVIDERS } from "@/lib/ai-provider";
 import { PLANS } from "@/lib/plans";
+import { LANGUAGES } from "@/lib/languages";
 
 function getEnvVarName(provider) {
   const map = {
@@ -34,6 +35,8 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
     escalationMessage:
       tenant?.escalationMessage ||
       "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
+    defaultLanguage: tenant?.defaultLanguage || "es",
+    autoDetectLanguage: tenant?.autoDetectLanguage !== false,
   });
 
   const [error, setError] = useState(null);
@@ -60,6 +63,8 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
         escalationMessage:
           tenant.escalationMessage ||
           "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
+        defaultLanguage: tenant.defaultLanguage || "es",
+        autoDetectLanguage: tenant.autoDetectLanguage !== false,
       });
     }
   }, [tenant?.client_id]);
@@ -276,6 +281,53 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
             ));
           })()}
         </select>
+      </div>
+
+      <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">
+          🌐 Idioma
+        </h3>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+            Idioma por defecto
+          </label>
+          <select
+            value={form.defaultLanguage}
+            onChange={(e) => handleChange("defaultLanguage", e.target.value)}
+            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+          >
+            {LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.flag} {lang.nombre}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            El bot responderá en este idioma por defecto
+          </p>
+        </div>
+
+        <div className="mt-4 flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="autoDetectLanguage"
+            checked={form.autoDetectLanguage}
+            onChange={(e) => handleChange("autoDetectLanguage", e.target.checked)}
+            className="w-4 h-4 rounded cursor-pointer"
+          />
+          <label htmlFor="autoDetectLanguage" className="text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer flex-1">
+            Detectar idioma del usuario automáticamente
+          </label>
+        </div>
+
+        {form.autoDetectLanguage && (
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              ℹ️ El bot se adaptará al idioma de cada usuario. Si no puede detectarlo, usará el idioma por defecto.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">

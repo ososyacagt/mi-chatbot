@@ -34,6 +34,19 @@
     }
   }
 
+  // Placeholders por idioma
+  const WIDGET_PLACEHOLDERS = {
+    es: 'Escribe tu mensaje...',
+    en: 'Type your message...',
+    pt: 'Digite sua mensagem...',
+    fr: 'Écrivez votre message...',
+    de: 'Schreiben Sie Ihre Nachricht...',
+    it: 'Scrivi il tuo messaggio...',
+    zh: '输入您的消息...',
+    ja: 'メッセージを入力...',
+    ar: 'اكتب رسالتك...',
+  };
+
   // Cargar configuración del cliente
   async function loadTenant() {
     try {
@@ -46,6 +59,12 @@
       console.error('[ChatWidget] Error cargando cliente:', err);
       return false;
     }
+  }
+
+  // Obtener placeholder en el idioma correcto
+  function getPlaceholder() {
+    const lang = tenant?.defaultLanguage || 'es';
+    return WIDGET_PLACEHOLDERS[lang] || WIDGET_PLACEHOLDERS.es;
   }
 
   // Aplicar tema visual del widget
@@ -403,7 +422,7 @@
     inputArea.className = 'wchat-input-area';
     const textarea = document.createElement('textarea');
     textarea.className = 'wchat-textarea';
-    textarea.placeholder = 'Escribe tu mensaje...';
+    textarea.placeholder = getPlaceholder();
     textarea.rows = 1;
 
     const sendBtn = document.createElement('button');
