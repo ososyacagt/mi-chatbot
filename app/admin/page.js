@@ -105,6 +105,8 @@ export default function AdminPanel() {
         escalationEnabled: formData.escalationEnabled !== false,
         adminEmail: formData.adminEmail || null,
         escalationMessage: formData.escalationMessage || null,
+        defaultLanguage: formData.defaultLanguage || "es",
+        autoDetectLanguage: formData.autoDetectLanguage !== false,
       };
 
       console.log("[handleSave] apiData enviada:", apiData);
