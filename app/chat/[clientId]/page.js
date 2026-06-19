@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { randomUUID } from "crypto";
 import ReactMarkdown from "react-markdown";
-import { LANGUAGES } from "@/lib/languages";
+import { LANGUAGES, WIDGET_PLACEHOLDERS } from "@/lib/languages";
 
 function welcomeMessageFor(tenant) {
   return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
@@ -42,13 +42,13 @@ function MessageRating({ messageIndex, sessionId, tenantColorPrimary }) {
   };
 
   return (
-    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex gap-2 mt-2 md:gap-3">
       <button
         onClick={() => handleRate("up")}
-        className={`text-sm px-2 py-1 rounded transition-colors ${
+        className={`text-sm px-2 py-1 rounded transition-all duration-200 flex items-center gap-1 ${
           rating === "up"
-            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-            : "hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
+            ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 scale-105"
+            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
         }`}
         title="Útil"
       >
@@ -56,10 +56,10 @@ function MessageRating({ messageIndex, sessionId, tenantColorPrimary }) {
       </button>
       <button
         onClick={() => handleRate("down")}
-        className={`text-sm px-2 py-1 rounded transition-colors ${
+        className={`text-sm px-2 py-1 rounded transition-all duration-200 flex items-center gap-1 ${
           rating === "down"
-            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-            : "hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
+            ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 scale-105"
+            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
         }`}
         title="No útil"
       >
@@ -69,13 +69,19 @@ function MessageRating({ messageIndex, sessionId, tenantColorPrimary }) {
   );
 }
 
-function TypingIndicator() {
+function TypingIndicator({ tenantName, tenantColor }) {
   return (
-    <div className="flex items-end gap-1">
-      <div className="flex gap-1.5">
-        <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-        <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-        <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+    <div className="flex items-end gap-2">
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+        style={{ backgroundColor: tenantColor || "#2563eb" }}
+      >
+        {tenantName?.charAt(0).toUpperCase() || "?"}
+      </div>
+      <div className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm flex items-end gap-1">
+        <div className="w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+        <div className="w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+        <div className="w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
       </div>
     </div>
   );
@@ -83,6 +89,12 @@ function TypingIndicator() {
 
 function getInitial(name) {
   return name?.charAt(0).toUpperCase() || "?";
+}
+
+function formatTime(date) {
+  if (!date) return "";
+  const d = new Date(date);
+  return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function ChatPage() {
@@ -98,6 +110,7 @@ export default function ChatPage() {
   const [limitReached, setLimitReached] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Inicializar sessionId desde localStorage o generar uno nuevo
   useEffect(() => {
@@ -136,7 +149,7 @@ export default function ChatPage() {
         console.log("[Chat] Tema del tenant:", data.tenant?.theme);
 
         setTenant(data.tenant);
-        setMessages([welcomeMessageFor(data.tenant)]);
+        setMessages([{ ...welcomeMessageFor(data.tenant), timestamp: new Date() }]);
       } catch (err) {
         console.error("Error cargando tenant:", err);
         setError(err.message);
@@ -159,13 +172,11 @@ export default function ChatPage() {
     const existingStyle = document.getElementById(styleId);
 
     if (tenant.theme === "light") {
-      // Forzar modo claro anulando las media queries
       if (!existingStyle) {
         const style = document.createElement("style");
         style.id = styleId;
         style.innerHTML = `
           @media (prefers-color-scheme: dark) {
-            /* Override ALL Tailwind dark variants to use light colors */
             :where(.bg-zinc-50) { background-color: rgb(250, 250, 250); }
             :where(.bg-zinc-100) { background-color: rgb(244, 244, 245); }
             :where(.bg-white) { background-color: rgb(255, 255, 255); }
@@ -182,7 +193,6 @@ export default function ChatPage() {
         console.log("[Chat] Override inyectado - forzando tema claro");
       }
     } else {
-      // Remover el override para permitir que funcionen los temas oscuro y auto
       if (existingStyle) {
         existingStyle.remove();
         console.log("[Chat] Override removido");
@@ -199,7 +209,6 @@ export default function ChatPage() {
 
     console.log("[Chat] Aplicando tema:", theme);
 
-    // Limpiar clases anteriores - ser explícito
     root.classList.remove("dark");
 
     if (theme === "dark") {
@@ -211,7 +220,6 @@ export default function ChatPage() {
       root.style.colorScheme = "light";
       console.log("[Chat] Tema claro aplicado - color-scheme: light");
     } else {
-      // auto: usar preferencia del sistema
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       if (prefersDark) {
         root.classList.add("dark");
@@ -224,7 +232,6 @@ export default function ChatPage() {
       }
     }
 
-    // Cleanup al desmontar
     return () => {
       root.classList.remove("dark");
       root.style.colorScheme = "";
@@ -242,64 +249,72 @@ export default function ChatPage() {
     }
 
     setSessionId(newSessionId);
-    setMessages([welcomeMessageFor(tenant)]);
+    setMessages([{ ...welcomeMessageFor(tenant), timestamp: new Date() }]);
     setInput("");
     setError(null);
   }
 
+  // Auto-scroll al último mensaje
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 0);
   }, [messages, loading]);
 
-  async function sendMessage() {
-    const text = input.trim();
-    if (!text || loading || !tenant || !sessionId) return;
+  // Auto-resize textarea
+  useEffect(() => {
+    if (!textareaRef.current) return;
 
-    const nextMessages = [...messages, { role: "user", content: text }];
-    setMessages(nextMessages);
-    setInput("");
-    setLoading(true);
+    textareaRef.current.style.height = "auto";
+    const scrollHeight = Math.min(textareaRef.current.scrollHeight, 120);
+    textareaRef.current.style.height = `${scrollHeight}px`;
+  }, [input]);
+
+  async function sendMessage() {
+    if (!input.trim() || loading || !tenant || !clientId || limitReached) {
+      return;
+    }
+
     setError(null);
 
-    try {
-      const apiMessages = nextMessages
-        .filter((m) => !m.synthetic)
-        .map(({ role, content }) => ({ role, content }));
+    const userMessage = input.trim();
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userMessage, timestamp: new Date() },
+    ]);
+    setInput("");
 
+    setLoading(true);
+
+    try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, clientId, sessionId }),
+        body: JSON.stringify({
+          clientId,
+          sessionId,
+          messages: [
+            ...messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            { role: "user", content: userMessage },
+          ],
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        // Manejar límite de mensajes
-        if (res.status === 429 && data.limitReached) {
-          const resetDate = new Date(data.resetDate).toLocaleDateString("es-ES", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          });
-          throw new Error(
-            `Has alcanzado el límite de ${data.limit} mensajes de tu plan. Tu contador se reinicia el ${resetDate}. Contacta al administrador para actualizar tu plan.`
-          );
+        if (data.limitReached) {
+          setLimitReached(true);
         }
-        throw new Error(data.error || "Error al obtener respuesta.");
-      }
-
-      if (data.sessionId && data.sessionId !== sessionId) {
-        setSessionId(data.sessionId);
-        const storageKey = `chat_session_${clientId}`;
-        if (typeof window !== "undefined") {
-          localStorage.setItem(storageKey, data.sessionId);
-        }
+        throw new Error(data.error || "Error al enviar mensaje");
       }
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.reply },
+        { role: "assistant", content: data.reply, timestamp: new Date() },
       ]);
     } catch (err) {
       setError(err.message);
@@ -341,51 +356,57 @@ export default function ChatPage() {
     );
   }
 
+  const isEmpty = !tenantLoading && messages.length === 1 && messages[0]?.synthetic;
+
   return (
     <div className="flex flex-1 flex-col h-full bg-white dark:bg-zinc-950">
-      {/* Header elegante */}
+      {/* Header mejorado */}
       <header
-        className="px-6 py-4 text-white shadow-md transition-colors"
+        className="px-4 md:px-6 py-3 md:py-4 text-white shadow-md transition-colors border-b border-white/10"
         style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4 flex-1">
             {!tenantLoading && tenant && (
               <>
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/20 flex items-center justify-center text-sm md:text-lg font-bold ring-2 ring-white/30">
                   {getInitial(tenant.nombre)}
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold">{tenant.nombre}</h1>
-                  <div className="flex items-center gap-3 text-sm text-white/80">
-                    <div className="flex items-center gap-2">
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-xl font-bold truncate">{tenant.nombre}</h1>
+                  <div className="flex items-center gap-2 md:gap-3 text-xs md:text-sm text-white/80">
+                    <div className="flex items-center gap-1">
                       <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
-                      En línea
+                      <span className="hidden sm:inline">En línea</span>
                     </div>
-                    {tenant.defaultLanguage && (
-                      <div title={tenant.autoDetectLanguage ? "Detección automática de idioma" : `Idioma: ${LANGUAGES.find(l => l.code === tenant.defaultLanguage)?.nombre}`}>
-                        {LANGUAGES.find(l => l.code === tenant.defaultLanguage)?.flag || '🌐'}
-                        {tenant.autoDetectLanguage && <span className="text-xs ml-1">auto</span>}
-                      </div>
-                    )}
+                    <span className="text-white/60">Asistente virtual</span>
                   </div>
                 </div>
               </>
             )}
-            {tenantLoading && <div className="text-white">Cargando...</div>}
+            {tenantLoading && <div className="text-white text-sm">Cargando...</div>}
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {tenant?.defaultLanguage && (
+              <div
+                className="text-lg md:text-xl"
+                title={tenant.autoDetectLanguage ? "Detección automática de idioma" : `Idioma: ${LANGUAGES.find(l => l.code === tenant.defaultLanguage)?.nombre}`}
+              >
+                {LANGUAGES.find(l => l.code === tenant.defaultLanguage)?.flag || '🌐'}
+              </div>
+            )}
             <button
               onClick={handleNewConversation}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
+              className="p-2 hover:bg-white/10 rounded-lg transition-all hover:scale-110 text-white"
               title="Nueva conversación"
             >
-              ➕
+              🔄
             </button>
             <Link
               href="/"
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              title="Todos los chats"
+              className="p-2 hover:bg-white/10 rounded-lg transition-all hover:scale-110 text-white"
+              title="Página principal"
             >
               ⚙️
             </Link>
@@ -393,51 +414,78 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* Área de mensajes con patrón de fondo */}
+      {/* Área de mensajes */}
       <div
-        className="flex-1 overflow-y-auto px-4 py-8 relative bg-zinc-50 dark:bg-zinc-950"
+        className="flex-1 overflow-y-auto px-4 md:px-6 py-6 md:py-8 relative bg-white dark:bg-zinc-950"
         style={{
-          backgroundImage: `radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)`,
-          backgroundSize: "24px 24px",
+          backgroundImage: `radial-gradient(circle, rgba(0,0,0,0.02) 1px, transparent 1px),
+                            linear-gradient(135deg, rgba(0,0,0,0.01) 0%, transparent 100%)`,
+          backgroundSize: "30px 30px, 100% 100%",
+          backgroundAttachment: "fixed",
         }}
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
           {tenantLoading && (
             <div className="flex justify-center items-center h-64">
-              <div className="text-zinc-500 dark:text-zinc-400">Cargando chat...</div>
+              <div className="text-center">
+                <div className="inline-block animate-spin mb-4">⏳</div>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm">Iniciando chat...</p>
+              </div>
             </div>
           )}
+
+          {!tenantLoading && isEmpty && (
+            <div className="flex justify-center items-center min-h-[50vh]">
+              <div className="text-center">
+                <div className="text-6xl mb-4">💬</div>
+                <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+                  ¡Hola! Soy tu asistente virtual
+                </h2>
+                <p className="text-zinc-600 dark:text-zinc-400 text-sm md:text-base max-w-md">
+                  {tenant?.welcomeMessage || "¿En qué puedo ayudarte hoy?"}
+                </p>
+                <div className="mt-6 text-zinc-500 dark:text-zinc-400 text-xs">
+                  Escribe tu primera pregunta abajo
+                </div>
+              </div>
+            </div>
+          )}
+
           {!tenantLoading &&
             messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                className={`flex gap-2 md:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 {msg.role === "assistant" && (
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    className="w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ring-2 ring-white/20"
                     style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
                   >
                     {getInitial(tenant?.nombre)}
                   </div>
                 )}
-                <div className="flex flex-col gap-1">
+
+                <div className="flex flex-col gap-1 max-w-[85%] md:max-w-md lg:max-w-lg">
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-3 text-sm leading-relaxed shadow-sm group ${
+                    className={`px-4 py-3 text-sm leading-relaxed shadow-sm rounded-2xl transition-all ${
                       msg.role === "user"
-                        ? "text-white rounded-[20px] rounded-br-[4px]"
-                        : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-[20px] rounded-bl-[4px]"
+                        ? "text-white rounded-br-sm font-medium"
+                        : "bg-white dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700/50 rounded-bl-sm"
                     }`}
                     style={
                       msg.role === "user"
-                        ? { backgroundColor: tenant?.colorPrimary || "#2563eb" }
+                        ? {
+                            backgroundColor: tenant?.colorPrimary || "#2563eb",
+                            backgroundImage: `linear-gradient(135deg, ${tenant?.colorPrimary || "#2563eb"}dd 0%, ${tenant?.colorPrimary || "#2563eb"}99 100%)`
+                          }
                         : undefined
                     }
                   >
                     {msg.role === "user" ? (
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                     ) : (
                       <ReactMarkdown
                         components={{
@@ -460,6 +508,18 @@ export default function ChatPage() {
                       </ReactMarkdown>
                     )}
                   </div>
+
+                  <div className={`flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 px-2 ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}>
+                    {msg.timestamp && <span>{formatTime(msg.timestamp)}</span>}
+                    {input.length > 200 && msg.role === "user" && (
+                      <span className="ml-auto text-zinc-400">
+                        {msg.content.length} caracteres
+                      </span>
+                    )}
+                  </div>
+
                   {msg.role === "assistant" && !msg.synthetic && (
                     <MessageRating messageIndex={i} sessionId={sessionId} tenantColorPrimary={tenant?.colorPrimary} />
                   )}
@@ -468,23 +528,22 @@ export default function ChatPage() {
             ))}
 
           {loading && (
-            <div className="flex gap-2 justify-start animate-in fade-in">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
-              >
-                {getInitial(tenant?.nombre)}
-              </div>
-              <div className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-4 py-3 rounded-[20px] rounded-bl-[4px]">
-                <TypingIndicator />
-              </div>
-            </div>
+            <TypingIndicator tenantName={tenant?.nombre} tenantColor={tenant?.colorPrimary} />
           )}
 
           {error && (
             <div className="flex justify-start">
-              <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-                {error}
+              <div className="max-w-md rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300 animate-in fade-in">
+                ⚠️ {error}
+              </div>
+            </div>
+          )}
+
+          {limitReached && (
+            <div className="flex justify-center">
+              <div className="rounded-2xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-6 py-4 text-center text-sm text-amber-700 dark:text-amber-300">
+                <div className="font-semibold mb-1">Límite de mensajes alcanzado</div>
+                <p className="text-xs opacity-80">Has alcanzado el límite de mensajes para este mes</p>
               </div>
             </div>
           )}
@@ -494,32 +553,49 @@ export default function ChatPage() {
       </div>
 
       {/* Input mejorado */}
-      <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-4 shadow-lg">
+      <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 md:px-6 py-4 md:py-5 shadow-xl">
         <div className="mx-auto flex w-full max-w-3xl gap-3">
           <div className="flex-1 relative">
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={limitReached ? "Límite de mensajes alcanzado" : "Escribe tu mensaje…"}
+              placeholder={
+                limitReached
+                  ? "Límite alcanzado 📊"
+                  : WIDGET_PLACEHOLDERS[tenant?.defaultLanguage] || "Escribe tu mensaje…"
+              }
               rows={1}
               disabled={loading || tenantLoading || !tenant || limitReached}
-              className="w-full resize-none rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 outline-none transition-colors disabled:opacity-50"
+              className="w-full resize-none rounded-2xl border-2 bg-white dark:bg-zinc-900 px-4 py-3 text-sm md:text-base text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-y-auto"
               style={{
-                borderColor: input && !loading && !limitReached ? (tenant?.colorPrimary || "#2563eb") : undefined
+                borderColor:
+                  limitReached ? "#ef4444" :
+                  input && !loading
+                    ? (tenant?.colorPrimary || "#2563eb")
+                    : "rgb(229, 231, 235)"
               }}
             />
+            {input.length > 200 && (
+              <div className="absolute bottom-2 right-3 text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 px-2 py-1 rounded">
+                {input.length} caracteres
+              </div>
+            )}
           </div>
           <button
             onClick={sendMessage}
             disabled={loading || !input.trim() || tenantLoading || !tenant || limitReached}
-            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
+            className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105 active:scale-95"
             style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
             title={limitReached ? "Límite de mensajes alcanzado" : "Enviar (Enter)"}
           >
             {loading ? "⟳" : "→"}
           </button>
         </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 px-2">
+          Presiona <kbd className="px-1 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-xs font-mono">↵</kbd> para enviar, <kbd className="px-1 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-xs font-mono">Shift + ↵</kbd> para nueva línea
+        </p>
       </div>
     </div>
   );
