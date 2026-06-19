@@ -109,6 +109,8 @@ export default function ChatPage() {
   const [error, setError] = useState(null);
   const [limitReached, setLimitReached] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [lastAdminResponseTime, setLastAdminResponseTime] = useState(null);
+  const [agentActive, setAgentActive] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -238,6 +240,54 @@ export default function ChatPage() {
     };
   }, [tenant?.theme]);
 
+  // Polling de respuestas de admin cada 5 segundos
+  useEffect(() => {
+    if (!sessionId || !clientId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const url = new URL("/api/chat/admin-responses", window.location.origin);
+        url.searchParams.append("sessionId", sessionId);
+        url.searchParams.append("clientId", clientId);
+        if (lastAdminResponseTime) {
+          url.searchParams.append("lastTimestamp", lastAdminResponseTime);
+        }
+
+        console.log("[Chat] Polling admin responses, lastTimestamp:", lastAdminResponseTime);
+
+        const res = await fetch(url.toString());
+        if (!res.ok) {
+          console.error("[Chat] Poll failed:", res.status);
+          return;
+        }
+
+        const data = await res.json();
+        console.log("[Chat] Poll response:", data.newMessages?.length, "mensajes");
+
+        if (data.newMessages && data.newMessages.length > 0) {
+          console.log("[Chat] Agregando mensajes:", data.newMessages);
+          setMessages((prev) => [
+            ...prev,
+            ...data.newMessages.map((msg) => ({
+              ...msg,
+              timestamp: new Date(msg.created_at),
+            })),
+          ]);
+          // Actualizar el timestamp de la última respuesta
+          const lastMsg = data.newMessages[data.newMessages.length - 1];
+          if (lastMsg.created_at) {
+            console.log("[Chat] Actualizando lastAdminResponseTime a:", lastMsg.created_at);
+            setLastAdminResponseTime(lastMsg.created_at);
+          }
+        }
+      } catch (err) {
+        console.error("[Chat] Error polling admin responses:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [sessionId, clientId, lastAdminResponseTime]);
+
   function handleNewConversation() {
     if (!clientId) return;
 
@@ -312,6 +362,14 @@ export default function ChatPage() {
         throw new Error(data.error || "Error al enviar mensaje");
       }
 
+      // Si agentActive es true, el bot está desactivado
+      if (data.agentActive) {
+        setAgentActive(true);
+        console.log("[chat] Agente activo, bot desactivado");
+        return;
+      }
+
+      setAgentActive(false);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.reply, timestamp: new Date() },
@@ -452,38 +510,66 @@ export default function ChatPage() {
           )}
 
           {!tenantLoading &&
-            messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex gap-2 md:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {msg.role === "assistant" && (
-                  <div
-                    className="w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ring-2 ring-white/20"
-                    style={{ backgroundColor: tenant?.colorPrimary || "#2563eb" }}
-                  >
-                    {getInitial(tenant?.nombre)}
+            messages.map((msg, i) => {
+              const isAdminResponse = msg.isAdminResponse || msg.is_admin_response;
+              const isFirstAdminMessage = isAdminResponse && !messages.slice(0, i).some(m => m.isAdminResponse || m.is_admin_response);
+
+              return (
+              <div key={i}>
+                {isFirstAdminMessage && (
+                  <div className="flex justify-center my-4">
+                    <div className="text-center">
+                      <div className="inline-block px-4 py-2 bg-teal-100 dark:bg-teal-900/30 border border-teal-300 dark:border-teal-700 rounded-full">
+                        <p className="text-xs font-semibold text-teal-700 dark:text-teal-300">
+                          👤 Un agente se ha unido a la conversación
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex flex-col gap-1 max-w-[85%] md:max-w-md lg:max-w-lg">
-                  <div
-                    className={`px-4 py-3 text-sm leading-relaxed shadow-sm rounded-2xl transition-all ${
-                      msg.role === "user"
-                        ? "text-white rounded-br-sm font-medium"
-                        : "bg-white dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700/50 rounded-bl-sm"
-                    }`}
-                    style={
-                      msg.role === "user"
-                        ? {
-                            backgroundColor: tenant?.colorPrimary || "#2563eb",
-                            backgroundImage: `linear-gradient(135deg, ${tenant?.colorPrimary || "#2563eb"}dd 0%, ${tenant?.colorPrimary || "#2563eb"}99 100%)`
-                          }
-                        : undefined
-                    }
-                  >
+                <div
+                  className={`flex gap-2 md:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {msg.role === "assistant" && (
+                    <div
+                      className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ring-2 ${
+                        isAdminResponse
+                          ? "bg-teal-500 ring-teal-300"
+                          : "ring-white/20"
+                      }`}
+                      style={!isAdminResponse ? { backgroundColor: tenant?.colorPrimary || "#2563eb" } : undefined}
+                    >
+                      {isAdminResponse ? "👤" : getInitial(tenant?.nombre)}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1 max-w-[85%] md:max-w-md lg:max-w-lg">
+                    {isAdminResponse && (
+                      <div className="text-xs font-semibold text-teal-600 dark:text-teal-400 px-2">
+                        Agente
+                      </div>
+                    )}
+
+                    <div
+                      className={`px-4 py-3 text-sm leading-relaxed shadow-sm rounded-2xl transition-all ${
+                        msg.role === "user"
+                          ? "text-white rounded-br-sm font-medium"
+                          : isAdminResponse
+                          ? "bg-teal-100 dark:bg-teal-900/30 text-teal-900 dark:text-teal-100 border-2 border-teal-300 dark:border-teal-700 rounded-bl-sm"
+                          : "bg-white dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700/50 rounded-bl-sm"
+                      }`}
+                      style={
+                        msg.role === "user"
+                          ? {
+                              backgroundColor: tenant?.colorPrimary || "#2563eb",
+                              backgroundImage: `linear-gradient(135deg, ${tenant?.colorPrimary || "#2563eb"}dd 0%, ${tenant?.colorPrimary || "#2563eb"}99 100%)`
+                            }
+                          : undefined
+                      }
+                    >
                     {msg.role === "user" ? (
                       <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                     ) : (
@@ -525,7 +611,9 @@ export default function ChatPage() {
                   )}
                 </div>
               </div>
-            ))}
+              </div>
+            );
+            })}
 
           {loading && (
             <TypingIndicator tenantName={tenant?.nombre} tenantColor={tenant?.colorPrimary} />
@@ -596,6 +684,14 @@ export default function ChatPage() {
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 px-2">
           Presiona <kbd className="px-1 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-xs font-mono">↵</kbd> para enviar, <kbd className="px-1 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-xs font-mono">Shift + ↵</kbd> para nueva línea
         </p>
+
+        {agentActive && (
+          <div className="mt-3 px-2 py-2 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
+            <p className="text-xs text-teal-700 dark:text-teal-300">
+              👤 Un agente está atendiendo tu consulta...
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
