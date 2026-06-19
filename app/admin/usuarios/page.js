@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ConfirmModal from "../components/ConfirmModal";
 
 function getInitial(email) {
   return email?.charAt(0).toUpperCase() || "?";
@@ -34,6 +35,14 @@ export default function UsuariosPage() {
     tenant_ids: [],
   });
   const [saving, setSaving] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Eliminar",
+    onConfirm: null,
+    type: "danger",
+  });
 
   useEffect(() => {
     loadUsuarios();
@@ -140,22 +149,31 @@ export default function UsuariosPage() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm("¿Estás seguro de que deseas eliminar este usuario?")) return;
+  function handleDeleteClick(id, email) {
+    setConfirmModal({
+      isOpen: true,
+      title: `¿Eliminar usuario "${email}"?`,
+      message: "Esta acción no se puede deshacer. El usuario perderá acceso a todos los clientes.",
+      confirmText: "Eliminar",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/usuarios/${id}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const res = await fetch(`/api/admin/usuarios/${id}`, {
-        method: "DELETE",
-      });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Error al eliminar");
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al eliminar");
-
-      await loadUsuarios();
-    } catch (err) {
-      console.error("Error:", err);
-      setError(err.message);
-    }
+          await loadUsuarios();
+          setConfirmModal({ isOpen: false });
+        } catch (err) {
+          console.error("Error:", err);
+          setError(err.message);
+          setConfirmModal({ isOpen: false });
+        }
+      },
+    });
   }
 
   function getTenantNames(tenantIds) {
@@ -243,8 +261,8 @@ export default function UsuariosPage() {
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleDelete(usuario.id)}
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                    onClick={() => handleDeleteClick(usuario.id, usuario.email)}
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
                     title="Eliminar"
                   >
                     🗑️
@@ -463,6 +481,20 @@ export default function UsuariosPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+        onConfirm={() => {
+          if (confirmModal.onConfirm) {
+            confirmModal.onConfirm();
+          }
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false })}
+      />
     </main>
   );
 }

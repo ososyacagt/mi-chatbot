@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import TenantForm from "./components/TenantForm";
 import DocumentsSection from "./components/DocumentsSection";
+import ConfirmModal from "./components/ConfirmModal";
 
 export default function AdminPanel() {
   const [tenants, setTenants] = useState([]);
@@ -14,6 +15,14 @@ export default function AdminPanel() {
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
   const [escalationCounts, setEscalationCounts] = useState({});
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Eliminar",
+    onConfirm: null,
+    type: "danger",
+  });
 
   // Carga usuario y lista de tenants
   useEffect(() => {
@@ -135,28 +144,35 @@ export default function AdminPanel() {
     }
   }
 
-  async function handleDelete(clientId) {
-    if (!confirm("¿Estás seguro de que deseas eliminar este cliente?")) {
-      return;
-    }
+  function handleDeleteClick(clientId, clientName) {
+    setConfirmModal({
+      isOpen: true,
+      title: `¿Eliminar "${clientName}"?`,
+      message: "Esta acción no se puede deshacer. Se eliminarán todos los datos asociados a este cliente.",
+      confirmText: "Eliminar",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          setError(null);
+          const res = await fetch(`/api/admin/tenants/${clientId}`, {
+            method: "DELETE",
+          });
 
-    try {
-      setError(null);
-      const res = await fetch(`/api/admin/tenants/${clientId}`, {
-        method: "DELETE",
-      });
+          const data = await res.json();
 
-      const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || "Error al eliminar cliente");
+          }
 
-      if (!res.ok) {
-        throw new Error(data.error || "Error al eliminar cliente");
-      }
-
-      await loadTenants();
-    } catch (err) {
-      console.error("Error:", err);
-      setError(err.message);
-    }
+          await loadTenants();
+          setConfirmModal({ isOpen: false });
+        } catch (err) {
+          console.error("Error:", err);
+          setError(err.message);
+          setConfirmModal({ isOpen: false });
+        }
+      },
+    });
   }
 
   function handleEdit(tenant) {
@@ -376,16 +392,13 @@ export default function AdminPanel() {
                 <div className="flex gap-1.5">
                   <Link
                     href={`/chat/${tenant.id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors text-white whitespace-nowrap text-center"
-                    style={{ backgroundColor: tenant.colorPrimary }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap text-center"
                   >
                     💬 Abrir chat
                   </Link>
                   <Link
                     href={`/admin/conversaciones?clientId=${tenant.id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 whitespace-nowrap"
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-zinc-600 hover:bg-zinc-700 text-white whitespace-nowrap"
                   >
                     📋 Historial
                   </Link>
@@ -395,13 +408,13 @@ export default function AdminPanel() {
                 <div className="flex gap-1.5">
                   <Link
                     href={`/admin/widget?client=${tenant.id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 whitespace-nowrap"
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-violet-600 hover:bg-violet-700 text-white whitespace-nowrap"
                   >
                     🔗 Widget
                   </Link>
                   <Link
                     href={`/admin/metricas?clientId=${tenant.client_id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 whitespace-nowrap"
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
                   >
                     📊 Métricas
                   </Link>
@@ -411,18 +424,18 @@ export default function AdminPanel() {
                 <div className="flex gap-1.5">
                   <Link
                     href={`/admin/escalaciones?clientId=${tenant.client_id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap relative"
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-600 hover:bg-red-700 text-white whitespace-nowrap relative"
                   >
                     🆘 Escalaciones
                     {escalationCounts[tenant.client_id] > 0 && (
-                      <span className="ml-1 inline-block bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                      <span className="ml-1 inline-block bg-red-800 text-white text-xs font-bold rounded-full px-2 py-0.5">
                         {escalationCounts[tenant.client_id]}
                       </span>
                     )}
                   </Link>
                   <button
                     onClick={() => handleEdit(tenant)}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 whitespace-nowrap"
+                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-amber-500 hover:bg-amber-600 text-white whitespace-nowrap"
                   >
                     ✏️ Editar
                   </button>
@@ -431,8 +444,8 @@ export default function AdminPanel() {
                 {/* Fila 4: Eliminar (full width si superadmin) */}
                 {user?.role === "superadmin" && (
                   <button
-                    onClick={() => handleDelete(tenant.client_id)}
-                    className="w-full h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 whitespace-nowrap"
+                    onClick={() => handleDeleteClick(tenant.client_id, tenant.nombre)}
+                    className="w-full h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-700 hover:bg-red-800 text-white whitespace-nowrap"
                   >
                     🗑️ Eliminar
                   </button>
@@ -442,6 +455,20 @@ export default function AdminPanel() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+        onConfirm={() => {
+          if (confirmModal.onConfirm) {
+            confirmModal.onConfirm();
+          }
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false })}
+      />
     </main>
   );
 }
