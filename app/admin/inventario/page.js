@@ -65,6 +65,8 @@ function InventoryPageContent() {
     precioAdicional: "",
     stock: "",
   });
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Carga masiva
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -260,6 +262,36 @@ function InventoryPageContent() {
     }
 
     try {
+      let imageUrl = productForm.imagen;
+
+      // Si hay un archivo de imagen seleccionado, subirlo primero
+      if (selectedImageFile) {
+        setToast({ message: "⏳ Subiendo imagen...", type: "success" });
+
+        const formData = new FormData();
+        formData.append("file", selectedImageFile);
+        formData.append("tenantId", config?.id || "temp");
+        formData.append("productId", editingProduct?.id || "new");
+
+        const uploadRes = await fetch("/api/admin/inventory/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const uploadError = await uploadRes.json();
+          setToast({
+            message: `✗ Error al subir imagen: ${uploadError.error}`,
+            type: "error"
+          });
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
+        console.log("[handleSaveProduct] Imagen subida:", imageUrl);
+      }
+
       const method = editingProduct ? "PUT" : "POST";
       const url = editingProduct
         ? `/api/admin/inventory/products/${editingProduct.id}?clientId=${clientId}`
@@ -270,6 +302,7 @@ function InventoryPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...productForm,
+          imagen: imageUrl,
           variantes,
         }),
       });
@@ -297,6 +330,8 @@ function InventoryPageContent() {
           activo: true,
         });
         setVariantes([]);
+        setSelectedImageFile(null);
+        setImagePreview(null);
         await loadProducts();
       } else {
         setToast({ message: "✗ Error al guardar producto", type: "error" });
@@ -913,15 +948,53 @@ function ProductsTab({
                 rows="3"
               />
 
-              <input
-                type="text"
-                placeholder="URL de imagen"
-                value={productForm.imagen}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, imagen: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              />
+              <div className="space-y-2">
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700 mb-2 block">
+                    Imagen del producto
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setSelectedImageFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          setImagePreview(event.target?.result);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </label>
+                {imagePreview && (
+                  <div className="relative inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg border border-slate-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {productForm.imagen && !imagePreview && (
+                  <div className="text-sm text-slate-500">
+                    Imagen actual: {productForm.imagen}
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <input

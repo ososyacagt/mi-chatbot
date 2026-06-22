@@ -85,47 +85,93 @@ export async function POST(request) {
     const body = await request.json();
 
     console.log("[POST /api/admin/inventory/categories] Creando categoría para:", clientId);
+    console.log("[POST /api/admin/inventory/categories] body:", body);
+    console.log("[POST /api/admin/inventory/categories] Validando campos:", {
+      nombre: body.nombre,
+      orden: body.orden,
+      emoji: body.emoji,
+      descripcion: body.descripcion,
+    });
 
-    const { data: tenant } = await supabase
+    if (!clientId) {
+      console.error("[POST /api/admin/inventory/categories] clientId faltante");
+      return NextResponse.json(
+        { error: "clientId es requerido" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.nombre) {
+      console.error("[POST /api/admin/inventory/categories] nombre faltante");
+      return NextResponse.json(
+        { error: "nombre es requerido" },
+        { status: 400 }
+      );
+    }
+
+    const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
       .select("id")
       .eq("client_id", clientId)
       .single();
 
+    console.log("[POST /api/admin/inventory/categories] Búsqueda de tenant:", {
+      clientId,
+      tenantFound: !!tenant,
+      tenantError,
+    });
+
     if (!tenant) {
+      console.error("[POST /api/admin/inventory/categories] Tenant no encontrado para clientId:", clientId);
       return NextResponse.json(
         { error: "Cliente no encontrado" },
         { status: 404 }
       );
     }
 
+    const insertData = {
+      tenant_id: tenant.id,
+      nombre: body.nombre,
+      descripcion: body.descripcion || "",
+      emoji: body.emoji || "",
+      orden: parseInt(body.orden) || 0,
+      activo: body.activo !== false,
+    };
+
+    console.log("[POST /api/admin/inventory/categories] Datos a insertar:", insertData);
+
     const { data: category, error } = await supabase
       .from("product_categories")
-      .insert([
-        {
-          tenant_id: tenant.id,
-          nombre: body.nombre,
-          descripcion: body.descripcion,
-          emoji: body.emoji,
-          orden: body.orden,
-          activo: body.activo !== false,
-        },
-      ])
+      .insert([insertData])
       .select()
       .single();
 
-    if (error) throw error;
+    console.log("[POST /api/admin/inventory/categories] Supabase result:", {
+      data: category,
+      error,
+    });
 
-    console.log("[POST /api/admin/inventory/categories] ✓ Creada:", category.id);
+    if (error) {
+      console.error("[POST /api/admin/inventory/categories] Supabase error:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+      });
+      throw error;
+    }
+
+    console.log("[POST /api/admin/inventory/categories] ✓ Categoría creada:", category.id);
 
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/admin/inventory/categories] Error completo:", {
       message: error.message,
       code: error.code,
+      details: error.details,
+      stack: error.stack,
     });
     return NextResponse.json(
-      { error: "Error al crear categoría" },
+      { error: "Error al crear categoría: " + error.message },
       { status: 500 }
     );
   }
