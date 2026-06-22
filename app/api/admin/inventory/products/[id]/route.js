@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
 
+function cleanHTML(html) {
+  if (!html) return '';
+  return html
+    .replace(/class="[^"]*"/g, '')
+    .replace(/style="[^"]*"/g, '')
+    .replace(/<span>/g, '')
+    .replace(/<\/span>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function authCheck() {
   const user = await getSession();
   if (!user) {
@@ -38,17 +49,17 @@ export async function PUT(request, { params }) {
       .from("products")
       .update({
         nombre: body.nombre,
-        descripcion: body.descripcion,
-        imagen: body.imagen,
+        descripcion: cleanHTML(body.descripcion),
+        imagenes: body.imagen ? [body.imagen] : [],
         precio: body.precio,
-        precio_original: body.precioOriginal,
+        precio_original: body.precioOriginal ? parseFloat(body.precioOriginal) : null,
         category_id: body.category_id,
         stock: body.stock,
         stock_minimo: body.stockMinimo,
-        stock_maximo: body.stockMaximo,
+        stock_maximo: body.stockMaximo ? parseInt(body.stockMaximo) : null,
         sku: body.sku,
         es_servicio: body.esServicio,
-        fecha_expiracion: body.fechaExpiracion,
+        fecha_expiracion: body.fechaExpiracion || null,
         destacado: body.destacado,
         activo: body.activo !== false,
       })

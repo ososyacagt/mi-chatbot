@@ -1031,6 +1031,11 @@ function ProductsTab({
                       descripcion: e.currentTarget.innerHTML,
                     })
                   }
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                  }}
                   className="min-h-32 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
                 />
               </div>
