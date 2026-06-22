@@ -1417,65 +1417,89 @@ function CategoriesTab({
 }) {
   return (
     <>
-      <button
-        onClick={() => {
-          setEditingCategory(null);
-          setCategoryForm({
-            nombre: "",
-            descripcion: "",
-            emoji: "",
-            orden: "0",
-            activo: true,
-          });
-          setShowCategoryModal(true);
-        }}
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-      >
-        ➕ Nueva categoría
-      </button>
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => {
+            setEditingCategory(null);
+            setCategoryForm({
+              nombre: "",
+              descripcion: "",
+              emoji: "",
+              orden: "0",
+              activo: true,
+            });
+            setShowCategoryModal(true);
+          }}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors"
+        >
+          ➕ Nueva categoría
+        </button>
+      </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <div className="space-y-2">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50"
-            >
-              <div className="flex-1">
-                <div className="font-medium text-lg">
-                  {cat.emoji} {cat.nombre}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="space-y-0">
+          {categories.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-4xl mb-3">📂</div>
+              <div className="text-slate-600 mb-4">No hay categorías aún</div>
+              <button
+                onClick={() => {
+                  setEditingCategory(null);
+                  setCategoryForm({
+                    nombre: "",
+                    descripcion: "",
+                    emoji: "",
+                    orden: "0",
+                    activo: true,
+                  });
+                  setShowCategoryModal(true);
+                }}
+                className="text-xs px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+              >
+                ➕ Crear categoría
+              </button>
+            </div>
+          ) : (
+            categories.map((cat, idx) => (
+              <div
+                key={cat.id}
+                className={`flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-50 transition-colors ${idx === 0 ? 'border-t' : ''}`}
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-slate-900 flex items-center gap-2">
+                    <span className="text-2xl">{cat.emoji || '📁'}</span>
+                    {cat.nombre}
+                    {!cat.activo && (
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Inactivo</span>
+                    )}
+                  </div>
+                  {cat.descripcion && (
+                    <div className="text-sm text-slate-600 mt-1">{cat.descripcion}</div>
+                  )}
+                  <div className="text-xs text-slate-500 mt-2">
+                    Orden: {cat.orden}
+                  </div>
                 </div>
-                {cat.descripcion && (
-                  <div className="text-sm text-slate-500">{cat.descripcion}</div>
-                )}
-                <div className="text-xs text-slate-400 mt-1">
-                  Orden: {cat.orden}
+                <div className="flex gap-2 ml-4">
+                  <button
+                    onClick={() => {
+                      setCategoryForm(cat);
+                      setEditingCategory(cat);
+                      setShowCategoryModal(true);
+                    }}
+                    className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 font-medium transition-colors"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCategory(cat.id)}
+                    className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 font-medium transition-colors"
+                  >
+                    🗑️
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setCategoryForm(cat);
-                    setEditingCategory(cat);
-                    setShowCategoryModal(true);
-                  }}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(cat.id)}
-                  className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ))}
-          {categories.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              No hay categorías
-            </div>
+            ))
           )}
         </div>
       </div>
@@ -1591,79 +1615,103 @@ function RulesTab({
 }) {
   return (
     <>
-      <button
-        onClick={() => {
-          setEditingRule(null);
-          setRuleForm({
-            tipo: "cross_sell",
-            nombre: "",
-            fecha_inicio: "",
-            fecha_fin: "",
-            activo: true,
-            condiciones: {},
-            acciones: {},
-          });
-          setShowRuleModal(true);
-        }}
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-      >
-        ➕ Nueva regla
-      </button>
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => {
+            setEditingRule(null);
+            setRuleForm({
+              tipo: "cross_sell",
+              nombre: "",
+              fecha_inicio: "",
+              fecha_fin: "",
+              activo: true,
+              condiciones: {},
+              acciones: {},
+            });
+            setShowRuleModal(true);
+          }}
+          className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium text-sm transition-colors"
+        >
+          ➕ Nueva regla
+        </button>
+      </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <div className="space-y-2">
-          {rules.map((rule) => {
-            const typeLabel = Object.values(RULE_TYPES).find(
-              (t) => t.id === rule.tipo
-            )?.label;
-            return (
-              <div
-                key={rule.id}
-                className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50"
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="space-y-0">
+          {rules.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-4xl mb-3">⚙️</div>
+              <div className="text-slate-600 mb-4">No hay reglas aún</div>
+              <button
+                onClick={() => {
+                  setEditingRule(null);
+                  setRuleForm({
+                    tipo: "cross_sell",
+                    nombre: "",
+                    fecha_inicio: "",
+                    fecha_fin: "",
+                    activo: true,
+                    condiciones: {},
+                    acciones: {},
+                  });
+                  setShowRuleModal(true);
+                }}
+                className="text-xs px-3 py-1.5 bg-violet-600 text-white rounded hover:bg-violet-700"
               >
-                <div className="flex-1">
-                  <div className="font-medium">
-                    {typeLabel}: {rule.nombre}
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    {rule.fecha_inicio && `Desde: ${rule.fecha_inicio}`}
-                    {rule.fecha_fin && ` - Hasta: ${rule.fecha_fin}`}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      rule.activo
-                        ? "bg-green-100 text-green-700"
-                        : "bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    {rule.activo ? "Activa" : "Inactiva"}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setRuleForm(rule);
-                      setEditingRule(rule);
-                      setShowRuleModal(true);
-                    }}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteRule(rule.id)}
-                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {rules.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              No hay reglas
+                ➕ Crear regla
+              </button>
             </div>
+          ) : (
+            rules.map((rule, idx) => {
+              const typeLabel = Object.values(RULE_TYPES).find(
+                (t) => t.id === rule.tipo
+              )?.label;
+              return (
+                <div
+                  key={rule.id}
+                  className={`flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-50 transition-colors ${idx === 0 ? 'border-t' : ''}`}
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-slate-900">
+                      {typeLabel}: {rule.nombre}
+                    </div>
+                    {(rule.fecha_inicio || rule.fecha_fin) && (
+                      <div className="text-sm text-slate-600 mt-1">
+                        {rule.fecha_inicio && `Desde: ${rule.fecha_inicio}`}
+                        {rule.fecha_fin && ` · Hasta: ${rule.fecha_fin}`}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 ml-4">
+                    <span
+                      className={`text-xs font-medium px-2.5 py-1 rounded ${
+                        rule.activo
+                          ? "bg-green-100 text-green-700"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {rule.activo ? "✓ Activa" : "Inactiva"}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setRuleForm(rule);
+                        setEditingRule(rule);
+                        setShowRuleModal(true);
+                      }}
+                      className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 font-medium transition-colors"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRule(rule.id)}
+                      className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 font-medium transition-colors"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -1979,10 +2027,13 @@ function ConfigTab({
   handleSaveConfig,
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
-      <h2 className="text-2xl font-bold">Configuración de la tienda</h2>
+    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-50 to-amber-100 border-b border-amber-200 px-6 py-4">
+        <h2 className="text-xl font-bold text-slate-900">⚙️ Configuración de la tienda</h2>
+        <p className="text-sm text-slate-600 mt-1">Personaliza el comportamiento y apariencia de tu tienda</p>
+      </div>
 
-      <div className="border-t pt-4 space-y-4">
+      <div className="p-6 space-y-6 max-w-3xl">
         <label className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -2140,12 +2191,12 @@ function ConfigTab({
         )}
       </div>
 
-      <div className="flex gap-2 justify-end border-t pt-4">
+      <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 flex justify-end gap-3">
         <button
           onClick={handleSaveConfig}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
         >
-          💾 Guardar configuración
+          💾 Guardar cambios
         </button>
       </div>
     </div>
