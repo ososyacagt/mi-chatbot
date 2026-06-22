@@ -285,17 +285,6 @@ function InventoryPageContent() {
     }
   }, [showProductModal]);
 
-  const applyFormat = (command, value = null) => {
-    const editor = document.getElementById('description-editor');
-    if (!editor) return;
-    editor.focus();
-    document.execCommand(command, false, value);
-    setProductForm(prev => ({
-      ...prev,
-      descripcion: editor.innerHTML
-    }));
-  };
-
   const handleSaveProduct = async () => {
     if (!productForm.nombre || !productForm.precio) {
       setToast({ message: "✗ Nombre y precio son requeridos", type: "error" });
@@ -809,6 +798,17 @@ function ProductsTab({
   handleBulkImport,
   descriptionRef,
 }) {
+  const applyFormat = (command, value = null) => {
+    const editor = document.getElementById('description-editor');
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(command, false, value);
+    setProductForm(prev => ({
+      ...prev,
+      descripcion: editor.innerHTML
+    }));
+  };
+
   return (
     <>
       <div className="flex gap-2">
