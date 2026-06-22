@@ -262,6 +262,17 @@ function InventoryPageContent() {
     }
   }, [showProductModal]);
 
+  const applyFormat = (command, value = null) => {
+    const editor = document.getElementById('description-editor');
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(command, false, value);
+    setProductForm(prev => ({
+      ...prev,
+      descripcion: editor.innerHTML
+    }));
+  };
+
   const handleSaveProduct = async () => {
     if (!productForm.nombre || !productForm.precio) {
       setToast({ message: "✗ Nombre y precio son requeridos", type: "error" });
@@ -965,66 +976,85 @@ function ProductsTab({
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
               />
 
-              {/* Editor de texto rico */}
+              {/* Editor de texto rico mejorado */}
               <div className="border border-slate-300 rounded-lg overflow-hidden">
                 {/* Toolbar */}
-                <div className="flex gap-1 p-2 border-b border-slate-300 bg-slate-50">
+                <div className="flex gap-1 p-2 border-b border-slate-300 bg-slate-50 flex-wrap">
                   <button
                     type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      document.execCommand('bold');
-                    }}
-                    className="px-2 py-1 text-sm font-bold rounded hover:bg-slate-200"
+                    onClick={() => applyFormat('bold')}
+                    className="px-2 py-1 text-sm font-bold rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Negrita (Cmd+B)"
                   >
                     B
                   </button>
                   <button
                     type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      document.execCommand('italic');
-                    }}
-                    className="px-2 py-1 text-sm italic rounded hover:bg-slate-200"
+                    onClick={() => applyFormat('italic')}
+                    className="px-2 py-1 text-sm italic rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Cursiva (Cmd+I)"
                   >
                     I
                   </button>
                   <button
                     type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      document.execCommand('insertUnorderedList');
-                    }}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200"
+                    onClick={() => applyFormat('underline')}
+                    className="px-2 py-1 text-sm underline rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Subrayado (Cmd+U)"
+                  >
+                    U
+                  </button>
+                  <div className="border-l border-slate-300 mx-1" />
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('insertUnorderedList')}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Lista con viñetas"
                   >
                     • Lista
                   </button>
                   <button
                     type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      document.execCommand('insertOrderedList');
-                    }}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200"
+                    onClick={() => applyFormat('insertOrderedList')}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Lista numerada"
                   >
                     1. Lista
                   </button>
+                  <div className="border-l border-slate-300 mx-1" />
                   <button
                     type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      document.execCommand('formatBlock', false, 'h3');
-                    }}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200"
+                    onClick={() => applyFormat('formatBlock', 'h3')}
+                    className="px-2 py-1 text-sm font-semibold rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Título H3"
                   >
-                    Título
+                    H3
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('formatBlock', 'p')}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Párrafo"
+                  >
+                    P
+                  </button>
+                  <div className="border-l border-slate-300 mx-1" />
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('removeFormat')}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
+                    title="Limpiar formato"
+                  >
+                    ✕
                   </button>
                 </div>
                 {/* Editor */}
                 <div
+                  id="description-editor"
                   contentEditable="true"
                   suppressContentEditableWarning={true}
                   ref={descriptionRef}
+                  tabIndex={0}
                   onInput={(e) =>
                     setProductForm({
                       ...productForm,
@@ -1036,7 +1066,7 @@ function ProductsTab({
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
                   }}
-                  className="min-h-32 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                  className="min-h-32 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h3]:font-bold [&_h3]:text-base"
                 />
               </div>
 
