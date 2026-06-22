@@ -226,6 +226,12 @@ function InventoryPageContent() {
 
     console.log("[inventario] clientId está disponible, cargando tab:", activeTab);
 
+    // Load client name and config on first load
+    if (!clientName) {
+      console.log("[inventario] → Cargando configuración para obtener nombre");
+      loadConfig();
+    }
+
     if (activeTab === TABS.PRODUCTS) {
       console.log("[inventario] → Cargando productos");
       loadProducts();
