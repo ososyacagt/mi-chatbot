@@ -91,7 +91,7 @@ export async function POST(request) {
           sku: body.sku,
           es_servicio: body.esServicio,
           fecha_expiracion: body.fechaExpiracion,
-          featured: body.destacado,
+          destacado: body.destacado,
           activo: body.activo !== false,
         },
       ])

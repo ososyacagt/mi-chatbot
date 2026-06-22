@@ -71,7 +71,7 @@ export async function POST(request) {
             sku: p.sku || null,
             es_servicio: p.es_servicio === true || p.es_servicio === "true",
             fecha_expiracion: p.fecha_expiracion || null,
-            featured: p.destacado === true || p.destacado === "true",
+            destacado: p.destacado === true || p.destacado === "true",
             activo: p.activo !== false && p.activo !== "false",
           },
         ]);

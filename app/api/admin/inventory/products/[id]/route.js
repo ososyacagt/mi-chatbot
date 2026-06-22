@@ -49,7 +49,7 @@ export async function PUT(request, { params }) {
         sku: body.sku,
         es_servicio: body.esServicio,
         fecha_expiracion: body.fechaExpiracion,
-        featured: body.destacado,
+        destacado: body.destacado,
         activo: body.activo !== false,
       })
       .eq("id", id)
