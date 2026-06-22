@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
@@ -22,10 +22,12 @@ const RULE_TYPES = {
   LIMITED_EDITION: { id: "limited_edition", label: "Edición limitada" },
 };
 
-export default function InventoryPage() {
+function InventoryPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const clientId = searchParams.get("clientId");
+
+  console.log("[inventario] clientId from searchParams:", clientId);
 
   const [activeTab, setActiveTab] = useState(TABS.PRODUCTS);
   const [loading, setLoading] = useState(false);
@@ -213,10 +215,29 @@ export default function InventoryPage() {
   };
 
   useEffect(() => {
-    if (activeTab === TABS.PRODUCTS) loadProducts();
-    if (activeTab === TABS.CATEGORIES) loadCategories();
-    if (activeTab === TABS.RULES) loadRules();
-    if (activeTab === TABS.CONFIG) loadConfig();
+    if (!clientId) {
+      console.log("[inventario] Esperando clientId...");
+      return;
+    }
+
+    console.log("[inventario] clientId está disponible, cargando tab:", activeTab);
+
+    if (activeTab === TABS.PRODUCTS) {
+      console.log("[inventario] → Cargando productos");
+      loadProducts();
+    }
+    if (activeTab === TABS.CATEGORIES) {
+      console.log("[inventario] → Cargando categorías");
+      loadCategories();
+    }
+    if (activeTab === TABS.RULES) {
+      console.log("[inventario] → Cargando reglas");
+      loadRules();
+    }
+    if (activeTab === TABS.CONFIG) {
+      console.log("[inventario] → Cargando configuración");
+      loadConfig();
+    }
   }, [activeTab, clientId]);
 
   useEffect(() => {
@@ -655,6 +676,21 @@ export default function InventoryPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function InventoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Cargando inventario...</p>
+        </div>
+      }
+    >
+      <InventoryPageContent />
+    </Suspense>
   );
 }
 
