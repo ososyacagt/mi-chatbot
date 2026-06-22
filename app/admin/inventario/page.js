@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
@@ -67,6 +67,7 @@ function InventoryPageContent() {
   });
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const descriptionRef = useRef(null);
 
   // Carga masiva
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -254,6 +255,12 @@ function InventoryPageContent() {
     }
     setFilteredProducts(filtered);
   }, [searchProduct, filterCategory, products]);
+
+  useEffect(() => {
+    if (descriptionRef.current && productForm.descripcion) {
+      descriptionRef.current.innerHTML = productForm.descripcion;
+    }
+  }, [showProductModal]);
 
   const handleSaveProduct = async () => {
     if (!productForm.nombre || !productForm.precio) {
@@ -687,6 +694,7 @@ function InventoryPageContent() {
           downloadCSVTemplate={downloadCSVTemplate}
           handleCSVUpload={handleCSVUpload}
           handleBulkImport={handleBulkImport}
+          descriptionRef={descriptionRef}
         />
       )}
 
@@ -779,6 +787,7 @@ function ProductsTab({
   downloadCSVTemplate,
   handleCSVUpload,
   handleBulkImport,
+  descriptionRef,
 }) {
   return (
     <>
@@ -956,18 +965,75 @@ function ProductsTab({
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
               />
 
-              <textarea
-                placeholder="Descripción"
-                value={productForm.descripcion}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    descripcion: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                rows="3"
-              />
+              {/* Editor de texto rico */}
+              <div className="border border-slate-300 rounded-lg overflow-hidden">
+                {/* Toolbar */}
+                <div className="flex gap-1 p-2 border-b border-slate-300 bg-slate-50">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      document.execCommand('bold');
+                    }}
+                    className="px-2 py-1 text-sm font-bold rounded hover:bg-slate-200"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      document.execCommand('italic');
+                    }}
+                    className="px-2 py-1 text-sm italic rounded hover:bg-slate-200"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      document.execCommand('insertUnorderedList');
+                    }}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200"
+                  >
+                    • Lista
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      document.execCommand('insertOrderedList');
+                    }}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200"
+                  >
+                    1. Lista
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      document.execCommand('formatBlock', false, 'h3');
+                    }}
+                    className="px-2 py-1 text-sm rounded hover:bg-slate-200"
+                  >
+                    Título
+                  </button>
+                </div>
+                {/* Editor */}
+                <div
+                  contentEditable="true"
+                  suppressContentEditableWarning={true}
+                  ref={descriptionRef}
+                  onInput={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      descripcion: e.currentTarget.innerHTML,
+                    })
+                  }
+                  className="min-h-32 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                />
+              </div>
 
               <div className="space-y-2">
                 <label className="block">
