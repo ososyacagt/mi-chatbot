@@ -355,7 +355,7 @@ export default function UsuariosPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="usuario@ejemplo.com"
+                  placeholder="correo@ejemplo.com"
                   className="w-full px-3 py-2.5 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>

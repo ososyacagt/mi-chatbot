@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "ososyaca@gmail.com";
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "contacto@ejemplo.com";
 
 export async function POST(request) {
   try {
@@ -38,7 +38,7 @@ export async function POST(request) {
             ${plan ? `<p style="margin: 8px 0 0;"><strong>Plan interesado:</strong> ${plan}</p>` : ""}
           </div>
 
-          <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 16px 0;">
+          <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid ${process.env.NEXT_PUBLIC_BRAND_COLOR || '#3b82f6'}; margin: 16px 0;">
             <h3 style="margin: 0 0 8px 0; color: #1e293b;">Mensaje:</h3>
             <p style="margin: 0; white-space: pre-wrap; color: #475569;">${mensaje}</p>
           </div>

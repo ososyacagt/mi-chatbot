@@ -589,7 +589,7 @@ function CartSidebar({
                   type="tel"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="+502 7234 5678"
+                  placeholder="+1 234 567 8900"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

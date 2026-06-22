@@ -15,7 +15,7 @@ export default function WidgetPage() {
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mi-chatbot-three.vercel.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   useEffect(() => {
     loadData();

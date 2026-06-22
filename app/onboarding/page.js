@@ -461,7 +461,7 @@ function OnboardingContent() {
                   Letras minúsculas, números y guiones. Será parte de tu URL:
                   <br />
                   <code className="font-mono text-blue-600 dark:text-blue-400">
-                    tuchatbot.com/chat/{form.clientId || "mi-negocio"}
+                    {(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/^https?:\/\//, "")}/chat/{form.clientId || "mi-negocio"}
                   </code>
                 </p>
               </div>
@@ -536,7 +536,7 @@ function OnboardingContent() {
                       type="email"
                       value={form.adminEmail}
                       onChange={(e) => handleChange("adminEmail", e.target.value)}
-                      placeholder="admin@ejemplo.com"
+                      placeholder="correo@ejemplo.com"
                       className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
                     />
                     {!form.createUser && (
@@ -672,7 +672,7 @@ function OnboardingContent() {
                   type="email"
                   value={form.adminEmail}
                   onChange={(e) => handleChange("adminEmail", e.target.value)}
-                  placeholder="admin@ejemplo.com"
+                  placeholder="correo@ejemplo.com"
                   className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
                 />
                 {invitationEmail && (

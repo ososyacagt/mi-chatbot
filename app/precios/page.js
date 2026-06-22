@@ -246,7 +246,7 @@ export default function PricingPage() {
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             ¿Tienes preguntas?{" "}
             <a
-              href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || "ososyaca@gmail.com"}`}
+              href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || "contacto@ejemplo.com"}`}
               className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
             >
               Contáctanos

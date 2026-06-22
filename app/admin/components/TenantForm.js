@@ -461,7 +461,7 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
                 type="email"
                 value={form.adminEmail}
                 onChange={(e) => handleChange("adminEmail", e.target.value)}
-                placeholder="admin@ejemplo.com"
+                placeholder="correo@ejemplo.com"
                 className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
               />
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
