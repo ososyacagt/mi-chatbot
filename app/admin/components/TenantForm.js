@@ -31,6 +31,7 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
     mensajeLimite: tenant?.mensajeLimite || 100,
     escalationEnabled: tenant?.escalationEnabled !== false,
     adminEmail: tenant?.adminEmail || "",
+    topbarMessage: tenant?.topbar_message || "Bienvenido a nuestra tienda",
     escalationMessage:
       tenant?.escalationMessage ||
       "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
@@ -77,6 +78,7 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
         mensajeLimite: tenant.mensajeLimite || 100,
         escalationEnabled: tenant.escalationEnabled !== false,
         adminEmail: tenant.adminEmail || "",
+        topbarMessage: tenant.topbar_message || "Bienvenido a nuestra tienda",
         escalationMessage:
           tenant.escalationMessage ||
           "¡Entendido! He notificado a un agente humano para que te atienda. Por favor espera, alguien se pondrá en contacto contigo pronto. ¿Hay algo más en lo que pueda ayudarte mientras esperas?",
@@ -196,6 +198,22 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
           placeholder="Mensaje de bienvenida..."
           className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          📢 Mensaje del topbar (Catálogo)
+        </label>
+        <input
+          type="text"
+          value={form.topbarMessage}
+          onChange={(e) => handleChange("topbarMessage", e.target.value)}
+          placeholder="ej: Envío gratis en compras mayores a $50"
+          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+        />
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+          Mensaje que aparece en la barra superior del catálogo público
+        </p>
       </div>
 
       <div className="flex items-center gap-4">

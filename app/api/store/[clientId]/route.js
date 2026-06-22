@@ -54,6 +54,7 @@ export async function GET(request, { params }) {
         colorPrimary: storeConfig?.primary_color || "#3b82f6",
         logo: storeConfig?.logo_url,
         banner: storeConfig?.banner_url,
+        topbarMessage: tenant.topbar_message || 'Bienvenido a nuestra tienda',
       },
       categories,
       products,

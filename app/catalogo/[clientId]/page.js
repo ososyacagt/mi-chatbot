@@ -208,7 +208,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
     <div className="min-h-screen bg-white">
       {/* Topbar */}
       <div className="bg-slate-100 border-b border-slate-200 py-3 px-4 text-center text-sm text-slate-700">
-        📦 Envío gratis en compras mayores a $50 | Garantía de satisfacción
+        {storeData?.topbarMessage || '📦 Bienvenido a nuestra tienda'}
       </div>
 
       {/* Navbar */}
