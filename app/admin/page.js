@@ -394,72 +394,69 @@ export default function AdminPanel() {
                 )}
               </div>
 
-              {/* Botones de acción */}
-              <div className="mt-auto space-y-1.5 pt-6">
-                {/* Fila 1: Abrir chat + Historial */}
-                <div className="flex gap-1.5">
-                  <Link
-                    href={`/chat/${tenant.id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap text-center"
-                  >
-                    💬 Abrir chat
-                  </Link>
-                  <Link
-                    href={`/admin/conversaciones?clientId=${tenant.id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-zinc-600 hover:bg-zinc-700 text-white whitespace-nowrap"
-                  >
-                    📋 Historial
-                  </Link>
-                </div>
+              {/* Botones de acción - Grid 2 columnas */}
+              <div className="mt-auto pt-6 grid grid-cols-2 gap-2">
+                {/* Fila 1 */}
+                <Link
+                  href={`/chat/${tenant.id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+                >
+                  💬 Abrir chat
+                </Link>
+                <Link
+                  href={`/admin/conversaciones?clientId=${tenant.id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-slate-600 hover:bg-slate-700 text-white whitespace-nowrap"
+                >
+                  📋 Historial
+                </Link>
 
-                {/* Fila 2: Widget + Métricas */}
-                <div className="flex gap-1.5">
-                  <Link
-                    href={`/admin/widget?client=${tenant.id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-violet-600 hover:bg-violet-700 text-white whitespace-nowrap"
-                  >
-                    🔗 Widget
-                  </Link>
-                  <Link
-                    href={`/admin/metricas?clientId=${tenant.client_id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
-                  >
-                    📊 Métricas
-                  </Link>
-                </div>
+                {/* Fila 2 */}
+                <Link
+                  href={`/admin/widget?client=${tenant.id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-violet-600 hover:bg-violet-700 text-white whitespace-nowrap"
+                >
+                  🔗 Widget
+                </Link>
+                <Link
+                  href={`/admin/metricas?clientId=${tenant.client_id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
+                >
+                  📊 Métricas
+                </Link>
 
-                {/* Fila 3: Escalaciones + Tienda + Editar */}
-                <div className="flex gap-1.5">
-                  <Link
-                    href={`/admin/escalaciones?clientId=${tenant.client_id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-600 hover:bg-red-700 text-white whitespace-nowrap relative"
-                  >
-                    🆘 Escalaciones
-                    {escalationCounts[tenant.client_id] > 0 && (
-                      <span className="ml-1 inline-block bg-red-800 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                        {escalationCounts[tenant.client_id]}
-                      </span>
-                    )}
-                  </Link>
-                  <Link
-                    href={`/admin/inventario?clientId=${tenant.client_id}`}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap"
-                  >
-                    🛍️ Inventario
-                  </Link>
-                  <button
-                    onClick={() => handleEdit(tenant)}
-                    className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-amber-500 hover:bg-amber-600 text-white whitespace-nowrap"
-                  >
-                    ✏️ Editar
-                  </button>
-                </div>
+                {/* Fila 3 */}
+                <Link
+                  href={`/admin/escalaciones?clientId=${tenant.client_id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap relative"
+                >
+                  🆘 Escalaciones
+                  {escalationCounts[tenant.client_id] > 0 && (
+                    <span className="ml-1 inline-block bg-rose-800 text-white text-xs font-bold rounded-full px-1.5 py-0.5">
+                      {escalationCounts[tenant.client_id]}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href={`/admin/inventario?clientId=${tenant.client_id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-amber-600 hover:bg-amber-700 text-white whitespace-nowrap"
+                >
+                  🛍️ Inventario
+                </Link>
 
-                {/* Fila 4: Eliminar (full width si superadmin) */}
+                {/* Fila 4 */}
+                <button
+                  onClick={() => handleEdit(tenant)}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-sky-600 hover:bg-sky-700 text-white whitespace-nowrap"
+                >
+                  ✏️ Editar
+                </button>
+                <div></div>
+
+                {/* Fila 5: Eliminar (full width) */}
                 {user?.role === "superadmin" && (
                   <button
                     onClick={() => handleDeleteClick(tenant.client_id, tenant.nombre)}
-                    className="w-full h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-red-700 hover:bg-red-800 text-white whitespace-nowrap"
+                    className="col-span-2 h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-red-700 hover:bg-red-800 text-white whitespace-nowrap"
                   >
                     🗑️ Eliminar
                   </button>
