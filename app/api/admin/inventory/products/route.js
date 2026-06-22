@@ -90,11 +90,11 @@ export async function POST(request) {
       nombre: body.nombre,
       descripcion: cleanHTML(body.descripcion),
       imagenes: body.imagen ? [body.imagen] : [],
-      precio: body.precio,
+      precio: parseFloat(body.precio) || 0,
       precio_original: body.precioOriginal ? parseFloat(body.precioOriginal) : null,
       category_id: body.category_id,
-      stock: body.stock,
-      stock_minimo: body.stockMinimo,
+      stock: parseInt(body.stock) || 0,
+      stock_minimo: parseInt(body.stockMinimo) || 0,
       stock_maximo: body.stockMaximo ? parseInt(body.stockMaximo) : null,
       sku: body.sku,
       es_servicio: body.esServicio,
@@ -118,19 +118,27 @@ export async function POST(request) {
     }
 
     if (body.variantes && body.variantes.length > 0) {
-      const variantsError = await supabase.from("product_variants").insert(
-        body.variantes.map((v) => ({
+      const variantesData = body.variantes
+        .filter(v => v.nombre && v.nombre.trim())
+        .map(v => ({
           product_id: product.id,
-          nombre: v.nombre,
-          valor: v.valor,
-          precio_adicional: v.precioAdicional,
-          stock: v.stock,
-        }))
-      );
+          nombre: v.nombre?.trim() || '',
+          valor: v.valor?.trim() || '',
+          precio_adicional: v.precioAdicional !== '' && v.precioAdicional != null
+            ? parseFloat(v.precioAdicional) : 0,
+          stock: v.stock !== '' && v.stock != null
+            ? parseInt(v.stock) : 0,
+          sku: v.sku?.trim() || null,
+          activo: true
+        }));
 
-      if (variantsError.error) {
-        console.log('[POST products] variantes error:', JSON.stringify(variantsError.error, null, 2));
-        throw variantsError.error;
+      if (variantesData.length > 0) {
+        const variantsError = await supabase.from("product_variants").insert(variantesData);
+
+        if (variantsError.error) {
+          console.log('[POST products] variantes error:', JSON.stringify(variantsError.error, null, 2));
+          throw variantsError.error;
+        }
       }
     }
 
