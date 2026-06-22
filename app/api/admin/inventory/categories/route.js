@@ -72,6 +72,9 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const user = await getSession();
+    console.log('[POST categories] session:', !!user);
+
     const authError = await authCheck();
     if (authError) {
       return NextResponse.json(
@@ -84,8 +87,7 @@ export async function POST(request) {
     const clientId = searchParams.get("clientId");
     const body = await request.json();
 
-    console.log("[POST /api/admin/inventory/categories] Creando categoría para:", clientId);
-    console.log("[POST /api/admin/inventory/categories] body:", body);
+    console.log("[POST categories] body recibido:", body);
     console.log("[POST /api/admin/inventory/categories] Validando campos:", {
       nombre: body.nombre,
       orden: body.orden,
@@ -138,7 +140,7 @@ export async function POST(request) {
       activo: body.activo !== false,
     };
 
-    console.log("[POST /api/admin/inventory/categories] Datos a insertar:", insertData);
+    console.log('[POST categories] insert data:', insertData);
 
     const { data: category, error } = await supabase
       .from("product_categories")
@@ -146,17 +148,8 @@ export async function POST(request) {
       .select()
       .single();
 
-    console.log("[POST /api/admin/inventory/categories] Supabase result:", {
-      data: category,
-      error,
-    });
-
     if (error) {
-      console.error("[POST /api/admin/inventory/categories] Supabase error:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-      });
+      console.log('[POST categories] supabase error:', error);
       throw error;
     }
 

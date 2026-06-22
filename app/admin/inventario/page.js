@@ -342,6 +342,17 @@ function InventoryPageContent() {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDeleteProduct = (productId) => {
     setConfirmModal({
       isOpen: true,
@@ -660,6 +671,11 @@ function InventoryPageContent() {
           setVariantes={setVariantes}
           newVariante={newVariante}
           setNewVariante={setNewVariante}
+          imagePreview={imagePreview}
+          setImagePreview={setImagePreview}
+          selectedImageFile={selectedImageFile}
+          setSelectedImageFile={setSelectedImageFile}
+          handleImageChange={handleImageChange}
           handleSaveProduct={handleSaveProduct}
           handleDeleteProduct={handleDeleteProduct}
           showBulkModal={showBulkModal}
@@ -747,6 +763,11 @@ function ProductsTab({
   setVariantes,
   newVariante,
   setNewVariante,
+  imagePreview,
+  setImagePreview,
+  selectedImageFile,
+  setSelectedImageFile,
+  handleImageChange,
   handleSaveProduct,
   handleDeleteProduct,
   showBulkModal,
@@ -956,17 +977,7 @@ function ProductsTab({
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setSelectedImageFile(file);
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          setImagePreview(event.target?.result);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    onChange={handleImageChange}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </label>
@@ -1166,8 +1177,12 @@ function ProductsTab({
 
               <div className="flex gap-2 justify-end border-t pt-4">
                 <button
-                  onClick={() => setShowProductModal(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg"
+                  onClick={() => {
+                    setShowProductModal(false);
+                    setImagePreview(null);
+                    setSelectedImageFile(null);
+                  }}
+                  className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
                 >
                   Cancelar
                 </button>
