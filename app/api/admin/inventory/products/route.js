@@ -72,36 +72,42 @@ export async function POST(request) {
     const body = await request.json();
 
     console.log("[POST /api/admin/inventory/products] Creando producto para:", clientId);
+    console.log('[POST products] body recibido:', JSON.stringify(body, null, 2));
+
+    const insertData = {
+      tenant_id: clientId,
+      nombre: body.nombre,
+      descripcion: body.descripcion,
+      imagen: body.imagen,
+      precio: body.precio,
+      precio_original: body.precioOriginal,
+      category_id: body.category_id,
+      stock: body.stock,
+      stock_minimo: body.stockMinimo,
+      stock_maximo: body.stockMaximo,
+      sku: body.sku,
+      es_servicio: body.esServicio,
+      fecha_expiracion: body.fechaExpiracion,
+      destacado: body.destacado,
+      activo: body.activo !== false,
+    };
+
+    console.log('[POST products] insert data que se enviará:', JSON.stringify(insertData, null, 2));
 
     const supabase = createSupabaseAdmin();
     const { data: product, error } = await supabase
       .from("products")
-      .insert([
-        {
-          tenant_id: clientId,
-          nombre: body.nombre,
-          descripcion: body.descripcion,
-          imagen: body.imagen,
-          precio: body.precio,
-          precio_original: body.precioOriginal,
-          category_id: body.category_id,
-          stock: body.stock,
-          stock_minimo: body.stockMinimo,
-          stock_maximo: body.stockMaximo,
-          sku: body.sku,
-          es_servicio: body.esServicio,
-          fecha_expiracion: body.fechaExpiracion,
-          destacado: body.destacado,
-          activo: body.activo !== false,
-        },
-      ])
+      .insert([insertData])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.log('[POST products] supabase error completo:', JSON.stringify(error, null, 2));
+      throw error;
+    }
 
     if (body.variantes && body.variantes.length > 0) {
-      await supabase.from("product_variants").insert(
+      const variantsError = await supabase.from("product_variants").insert(
         body.variantes.map((v) => ({
           product_id: product.id,
           nombre: v.nombre,
@@ -110,6 +116,11 @@ export async function POST(request) {
           stock: v.stock,
         }))
       );
+
+      if (variantsError.error) {
+        console.log('[POST products] variantes error:', JSON.stringify(variantsError.error, null, 2));
+        throw variantsError.error;
+      }
     }
 
     console.log("[POST /api/admin/inventory/products] ✓ Producto creado:", product.id);
@@ -119,9 +130,11 @@ export async function POST(request) {
     console.error("[POST /api/admin/inventory/products] Error completo:", {
       message: error.message,
       code: error.code,
+      details: error.details,
+      hint: error.hint,
     });
     return NextResponse.json(
-      { error: "Error al crear producto" },
+      { error: "Error al crear producto: " + error.message },
       { status: 500 }
     );
   }
