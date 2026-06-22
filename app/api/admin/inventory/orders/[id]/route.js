@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
 
 async function authCheck() {
@@ -31,6 +31,7 @@ export async function PUT(request, { params }) {
 
     console.log("[PUT /api/admin/inventory/orders/[id]] Actualizando orden:", id);
 
+    const supabase = createSupabaseAdmin();
     const { data: order, error } = await supabase
       .from("orders")
       .update({

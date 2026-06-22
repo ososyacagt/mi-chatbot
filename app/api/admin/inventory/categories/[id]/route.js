@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
 
 async function authCheck() {
@@ -31,8 +31,9 @@ export async function PUT(request, { params }) {
 
     console.log("[PUT /api/admin/inventory/categories/[id]] Actualizando:", id);
 
+    const supabase = createSupabaseAdmin();
     const { data: category, error } = await supabase
-      .from("product_categories")
+      .from("categories")
       .update({
         nombre: body.nombre,
         descripcion: body.descripcion,
@@ -74,8 +75,9 @@ export async function DELETE(request, { params }) {
 
     console.log("[DELETE /api/admin/inventory/categories/[id]] Eliminando:", id);
 
+    const supabase = createSupabaseAdmin();
     const { error } = await supabase
-      .from("product_categories")
+      .from("categories")
       .delete()
       .eq("id", id);
 

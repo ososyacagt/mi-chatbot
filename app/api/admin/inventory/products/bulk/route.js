@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
 
 async function authCheck() {
@@ -39,6 +39,7 @@ export async function POST(request) {
 
     console.log("[POST /api/admin/inventory/products/bulk] Importando productos para:", clientId);
 
+    const supabase = createSupabaseAdmin();
     const { data: tenant } = await supabase
       .from("tenants")
       .select("id")
