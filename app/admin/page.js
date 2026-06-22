@@ -428,7 +428,7 @@ export default function AdminPanel() {
                   </Link>
                 </div>
 
-                {/* Fila 3: Escalaciones + Editar */}
+                {/* Fila 3: Escalaciones + Tienda + Editar */}
                 <div className="flex gap-1.5">
                   <Link
                     href={`/admin/escalaciones?clientId=${tenant.client_id}`}
@@ -441,6 +441,14 @@ export default function AdminPanel() {
                       </span>
                     )}
                   </Link>
+                  {tenant.ecommerce_mode && tenant.ecommerce_mode !== 'none' && (
+                    <Link
+                      href={`/admin/inventario?clientId=${tenant.client_id}`}
+                      className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap"
+                    >
+                      🛍️ Tienda
+                    </Link>
+                  )}
                   <button
                     onClick={() => handleEdit(tenant)}
                     className="flex-1 h-9 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-amber-500 hover:bg-amber-600 text-white whitespace-nowrap"
