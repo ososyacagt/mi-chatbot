@@ -236,6 +236,14 @@ export default function AdminPanel() {
               </Link>
             )}
             {user?.role === "superadmin" && (
+              <Link
+                href="/admin/planes"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border-2 border-green-600 text-green-600 dark:text-green-400 dark:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/30 font-medium transition-colors"
+              >
+                💰 Planes
+              </Link>
+            )}
+            {user?.role === "superadmin" && (
               <button
                 onClick={handleNew}
                 className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium transition-colors shadow-md hover:shadow-lg"

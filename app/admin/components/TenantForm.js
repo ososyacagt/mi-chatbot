@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { AI_PROVIDERS } from "@/lib/ai-provider";
-import { PLANS } from "@/lib/plans";
 import { LANGUAGES } from "@/lib/languages";
 
 function getEnvVarName(provider) {
@@ -28,7 +27,7 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
     theme: tenant?.theme || "auto",
     aiProvider: tenant?.aiProvider || "claude",
     aiModel: tenant?.aiModel || "claude-sonnet-4-6",
-    plan: tenant?.plan || "basic",
+    plan: tenant?.plan || "",
     mensajeLimite: tenant?.mensajeLimite || 100,
     escalationEnabled: tenant?.escalationEnabled !== false,
     adminEmail: tenant?.adminEmail || "",
@@ -40,6 +39,24 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
   });
 
   const [error, setError] = useState(null);
+  const [plans, setPlans] = useState([]);
+
+  // Cargar planes del servidor
+  useEffect(() => {
+    async function loadPlans() {
+      try {
+        const res = await fetch("/api/plans");
+        if (res.ok) {
+          const data = await res.json();
+          setPlans(data.plans || []);
+        }
+      } catch (err) {
+        console.error("Error cargando planes:", err);
+      }
+    }
+
+    loadPlans();
+  }, []);
 
   // Actualizar formulario cuando tenant cambia (al editar diferente cliente)
   useEffect(() => {
@@ -342,28 +359,33 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
           <select
             value={form.plan}
             onChange={(e) => {
-              const plan = e.target.value;
-              handleChange("plan", plan);
+              const planId = e.target.value;
+              const selectedPlan = plans.find((p) => p.id === planId);
+              handleChange("plan", planId);
               // Auto-actualizar límite según el plan seleccionado
-              const planInfo = PLANS[plan];
-              if (planInfo) {
-                handleChange("mensajeLimite", planInfo.mensajesLimite);
+              if (selectedPlan) {
+                handleChange("mensajeLimite", selectedPlan.mensaje_limite || 100);
               }
             }}
             className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
           >
-            {Object.entries(PLANS).map(([key, plan]) => (
-              <option key={key} value={key}>
-                {plan.nombre} - {plan.mensajesLimite === -1 ? "∞ Ilimitado" : `${plan.mensajesLimite} mensajes`}
+            <option value="">Selecciona un plan</option>
+            {plans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.nombre} - ${plan.precio} {plan.moneda}/{plan.periodo}
               </option>
             ))}
           </select>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Plan actual: <span className="font-semibold" style={{ color: PLANS[form.plan]?.color }}>
-              {PLANS[form.plan]?.nombre}
-            </span> · {PLANS[form.plan]?.precio}
-          </p>
         </div>
+
+        {/* Mostrar descripción del plan seleccionado */}
+        {form.plan && plans.find((p) => p.id === form.plan) && (
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              {plans.find((p) => p.id === form.plan)?.descripcion}
+            </p>
+          </div>
+        )}
 
         <div className="mt-3">
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
