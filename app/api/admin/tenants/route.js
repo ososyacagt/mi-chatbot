@@ -101,7 +101,7 @@ export async function GET(request) {
     if (error) {
       console.error("[GET /api/admin/tenants] Error:", error);
       return Response.json(
-        { error: "Error al obtener tenants: " + error.message },
+        { error: "Error al obtener tenants" },
         { status: 500 }
       );
     }
@@ -186,7 +186,7 @@ export async function POST(request) {
     if (error) {
       console.error("[POST /api/admin/tenants] Error:", error);
       return Response.json(
-        { error: "Error al crear tenant: " + error.message },
+        { error: "Error al crear tenant" },
         { status: 500 }
       );
     }

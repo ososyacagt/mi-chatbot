@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabase-client";
+import Toast from "../components/Toast";
 
 export default function EscalacionesPage() {
   const searchParams = useSearchParams();
@@ -29,7 +30,7 @@ export default function EscalacionesPage() {
   const [chatSending, setChatSending] = useState(false);
   const [autoBotEnabled, setAutoBotEnabled] = useState(false);
   const [togglingBot, setTogglingBot] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState({ message: "", type: "success" });
   const previousCountRef = useRef(0);
   const messagesEndRef = useRef(null);
 
@@ -143,9 +144,13 @@ export default function EscalacionesPage() {
       const data = await res.json();
       setAutoBotEnabled(data.escalation?.auto_bot_enabled || false);
       console.log("[Chat Panel] ✓ Bot toggled:", data.escalation?.auto_bot_enabled);
+      setToast({
+        message: data.escalation?.auto_bot_enabled ? "✓ Bot automático activado" : "✓ Bot automático desactivado",
+        type: "success"
+      });
     } catch (err) {
       console.error("[Chat Panel] Error toggling bot:", err);
-      alert("Error actualizando configuración del bot");
+      setToast({ message: "✗ Error actualizando configuración del bot", type: "error" });
     } finally {
       setTogglingBot(false);
     }
@@ -183,9 +188,10 @@ export default function EscalacionesPage() {
 
       setChatInput("");
       await loadChatHistory(selectedEscalation.id);
+      setToast({ message: "✓ Mensaje enviado", type: "success" });
     } catch (err) {
       console.error("[Chat Panel] Error enviando mensaje:", err);
-      alert("Error enviando mensaje");
+      setToast({ message: "✗ Error enviando mensaje", type: "error" });
     } finally {
       setChatSending(false);
     }
@@ -237,9 +243,10 @@ export default function EscalacionesPage() {
       });
       setResponseText("");
       loadEscalations();
+      setToast({ message: "✓ Respuesta enviada", type: "success" });
     } catch (err) {
       console.error("[Escalaciones] Error enviando respuesta:", err);
-      alert("Error al enviar respuesta");
+      setToast({ message: "✗ Error al enviar respuesta", type: "error" });
     } finally {
       setRespondingId(null);
     }
@@ -563,6 +570,12 @@ export default function EscalacionesPage() {
           </div>
         </div>
       )}
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: "success" })}
+      />
     </div>
   );
 }

@@ -102,7 +102,7 @@ export async function PUT(request, { params }) {
     if (error) {
       console.error("[PUT /api/admin/tenants/[id]] Error:", error);
       return Response.json(
-        { error: "Error al actualizar tenant: " + error.message },
+        { error: "Error al actualizar tenant" },
         { status: 500 }
       );
     }
@@ -192,7 +192,7 @@ export async function DELETE(request, { params }) {
     if (error) {
       console.error("[DELETE /api/admin/tenants/[id]] Error:", error);
       return Response.json(
-        { error: "Error al eliminar tenant: " + error.message },
+        { error: "Error al eliminar tenant" },
         { status: 500 }
       );
     }

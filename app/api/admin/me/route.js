@@ -29,7 +29,11 @@ export async function GET() {
       tenant_id: adminUser.tenant_id,
     });
   } catch (error) {
-    console.error("[/api/admin/me] error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[/api/admin/me] error completo:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    return NextResponse.json({ error: "Error al obtener información del usuario" }, { status: 500 });
   }
 }

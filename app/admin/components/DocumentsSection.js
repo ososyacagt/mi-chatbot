@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ConfirmModal from "./ConfirmModal";
+import Toast from "./Toast";
 
 function getFileIcon(type) {
   if (type.includes("pdf")) return "📄";
@@ -35,6 +37,15 @@ export default function DocumentsSection({ clientId }) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [toast, setToast] = useState({ message: "", type: "success" });
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "danger",
+  });
+  const [deletingId, setDeletingId] = useState(null);
   const fileInputRef = useRef(null);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -75,12 +86,18 @@ export default function DocumentsSection({ clientId }) {
 
   async function handleFileUpload(file) {
     if (file.size > MAX_FILE_SIZE) {
-      alert(`El archivo es muy grande. Máximo permitido: ${formatFileSize(MAX_FILE_SIZE)}`);
+      setToast({
+        message: `✗ El archivo es muy grande. Máximo: ${formatFileSize(MAX_FILE_SIZE)}`,
+        type: "error"
+      });
       return;
     }
 
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      alert("Tipo de archivo no soportado. Acepto: PDF, Word, Excel, imágenes");
+      setToast({
+        message: "✗ Tipo de archivo no soportado. Acepto: PDF, Word, Excel, imágenes",
+        type: "error"
+      });
       return;
     }
 
@@ -104,39 +121,55 @@ export default function DocumentsSection({ clientId }) {
         if (xhr.status === 201) {
           await loadDocuments();
           setUploadProgress(0);
+          setToast({ message: "✓ Documento subido correctamente", type: "success" });
         } else {
           const error = JSON.parse(xhr.responseText);
-          alert(`Error: ${error.error}`);
+          setToast({ message: `✗ Error: ${error.error}`, type: "error" });
         }
       });
 
       xhr.addEventListener("error", () => {
-        alert("Error al subir el archivo");
+        setToast({ message: "✗ Error al subir el archivo", type: "error" });
       });
 
       xhr.open("POST", "/api/admin/documents");
       xhr.send(formData);
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al subir el archivo");
+      setToast({ message: "✗ Error al subir el archivo", type: "error" });
     } finally {
       setUploading(false);
     }
   }
 
-  async function handleDelete(docId) {
-    if (!confirm("¿Eliminar este documento?")) return;
+  function openDeleteConfirm(docId) {
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar documento",
+      message: "¿Estás seguro de que deseas eliminar este documento?",
+      confirmText: "Eliminar",
+      onConfirm: () => handleDelete(docId),
+      type: "danger",
+    });
+  }
 
+  async function handleDelete(docId) {
     try {
+      setDeletingId(docId);
       const res = await fetch(`/api/admin/documents/${docId}`, {
         method: "DELETE",
       });
 
       if (!res.ok) throw new Error("Error al eliminar");
       await loadDocuments();
+      setToast({ message: "✓ Documento eliminado correctamente", type: "success" });
+      setConfirmModal({ ...confirmModal, isOpen: false });
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar documento");
+      setToast({ message: "✗ Error al eliminar documento", type: "error" });
+      setConfirmModal({ ...confirmModal, isOpen: false });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -176,15 +209,17 @@ export default function DocumentsSection({ clientId }) {
 
       {/* Zona de drag & drop */}
       <div
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-          dragActive
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-            : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
+        onDragEnter={!uploading ? handleDragEnter : undefined}
+        onDragLeave={!uploading ? handleDragLeave : undefined}
+        onDragOver={!uploading ? handleDragOver : undefined}
+        onDrop={!uploading ? handleDrop : undefined}
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          uploading
+            ? "border-zinc-300 dark:border-zinc-700 cursor-not-allowed opacity-50"
+            : dragActive
+            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer"
+            : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 cursor-pointer"
         }`}
       >
         <input
@@ -243,8 +278,9 @@ export default function DocumentsSection({ clientId }) {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleDelete(doc.id)}
-                  className="ml-4 flex-shrink-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                  onClick={() => openDeleteConfirm(doc.id)}
+                  disabled={deletingId === doc.id}
+                  className="ml-4 flex-shrink-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Eliminar documento"
                 >
                   🗑️
@@ -254,6 +290,22 @@ export default function DocumentsSection({ clientId }) {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        type={confirmModal.type}
+      />
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: "success" })}
+      />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import ConfirmModal from "../components/ConfirmModal";
+import Toast from "../components/Toast";
 
 export default function ConversacionesPage() {
   const searchParams = useSearchParams();
@@ -16,6 +18,14 @@ export default function ConversacionesPage() {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
+  const [toast, setToast] = useState({ message: "", type: "success" });
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "danger",
+  });
 
   // Cargar usuario y verificar acceso al cliente
   useEffect(() => {
@@ -112,10 +122,18 @@ export default function ConversacionesPage() {
   }
 
   // Eliminar conversación
-  async function deleteConversation(sessionId) {
-    if (!confirm("¿Estás seguro de que deseas eliminar esta conversación?"))
-      return;
+  function openDeleteConfirm(sessionId) {
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar conversación",
+      message: "¿Estás seguro de que deseas eliminar esta conversación?",
+      confirmText: "Eliminar",
+      onConfirm: () => deleteConversation(sessionId),
+      type: "danger",
+    });
+  }
 
+  async function deleteConversation(sessionId) {
     try {
       setDeletingId(sessionId);
 
@@ -133,9 +151,12 @@ export default function ConversacionesPage() {
         setSelectedSessionId(null);
         setMessages([]);
       }
+      setToast({ message: "✓ Conversación eliminada", type: "success" });
+      setConfirmModal({ ...confirmModal, isOpen: false });
     } catch (err) {
       console.error("Error:", err);
-      setError(err.message);
+      setToast({ message: "✗ Error al eliminar conversación", type: "error" });
+      setConfirmModal({ ...confirmModal, isOpen: false });
     } finally {
       setDeletingId(null);
     }
@@ -226,7 +247,7 @@ export default function ConversacionesPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteConversation(conv.session_id);
+                              openDeleteConfirm(conv.session_id);
                             }}
                             disabled={deletingId === conv.session_id}
                             className="flex-shrink-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 text-lg"
@@ -290,6 +311,22 @@ export default function ConversacionesPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        type={confirmModal.type}
+      />
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: "success" })}
+      />
     </main>
   );
 }

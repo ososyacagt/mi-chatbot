@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ConfirmModal from "../components/ConfirmModal";
+import Toast from "../components/Toast";
 
 export default function PlansPage() {
   const router = useRouter();
@@ -27,6 +29,15 @@ export default function PlansPage() {
     orden: 0
   });
   const [newFeature, setNewFeature] = useState("");
+  const [toast, setToast] = useState({ message: "", type: "success" });
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Eliminar",
+    onConfirm: null,
+    type: "danger",
+  });
 
   useEffect(() => {
     loadPlans();
@@ -178,15 +189,16 @@ export default function PlansPage() {
 
       if (res.ok) {
         console.log('[handleSubmit] ✓ Plan guardado correctamente');
+        setToast({ message: "✓ Plan guardado correctamente", type: "success" });
         setShowModal(false);
         await loadPlans();
       } else {
         const error = await res.json();
-        alert("Error: " + error.error);
+        setToast({ message: "✗ Error: " + error.error, type: "error" });
       }
     } catch (err) {
       console.error("Error guardando plan:", err);
-      alert("Error al guardar el plan");
+      setToast({ message: "✗ Error al guardar el plan", type: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -224,19 +236,35 @@ export default function PlansPage() {
     }
   };
 
-  const handleDelete = async (plan) => {
-    if (!confirm(`¿Eliminar plan "${plan.nombre}"?`)) return;
+  const handleDeleteClick = (plan) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar plan",
+      message: `¿Estás seguro de que deseas eliminar el plan "${plan.nombre}"?`,
+      confirmText: "Eliminar",
+      onConfirm: () => handleDelete(plan),
+      type: "danger",
+    });
+  };
 
+  const handleDelete = async (plan) => {
     try {
       const res = await fetch(`/api/admin/plans/${plan.id}`, {
         method: "DELETE"
       });
 
       if (res.ok) {
+        setToast({ message: "✓ Plan eliminado correctamente", type: "success" });
         await loadPlans();
+      } else {
+        const error = await res.json();
+        setToast({ message: "✗ Error: " + error.error, type: "error" });
       }
+      setConfirmModal({ ...confirmModal, isOpen: false });
     } catch (err) {
       console.error("Error deleting plan:", err);
+      setToast({ message: "✗ Error al eliminar el plan", type: "error" });
+      setConfirmModal({ ...confirmModal, isOpen: false });
     }
   };
 
@@ -349,7 +377,7 @@ export default function PlansPage() {
                   Editar
                 </button>
                 <button
-                  onClick={() => handleDelete(plan)}
+                  onClick={() => handleDeleteClick(plan)}
                   className="px-3 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/40"
                 >
                   Eliminar
@@ -657,6 +685,22 @@ export default function PlansPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        type={confirmModal.type}
+      />
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: "success" })}
+      />
     </div>
   );
 }

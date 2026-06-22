@@ -74,7 +74,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error("[escalation chat GET] Error:", error);
     return NextResponse.json(
-      { error: "Error interno: " + error.message },
+      { error: "Error interno" },
       { status: 500 }
     );
   }
@@ -175,7 +175,7 @@ export async function POST(request, { params }) {
   } catch (error) {
     console.error("[escalation chat POST] Error:", error);
     return NextResponse.json(
-      { error: "Error interno: " + error.message },
+      { error: "Error interno" },
       { status: 500 }
     );
   }
@@ -238,7 +238,7 @@ export async function PATCH(request, { params }) {
   } catch (error) {
     console.error("[escalation chat PATCH] Error:", error);
     return NextResponse.json(
-      { error: "Error interno: " + error.message },
+      { error: "Error interno" },
       { status: 500 }
     );
   }

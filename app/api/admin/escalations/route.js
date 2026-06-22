@@ -158,9 +158,13 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[/api/admin/escalations POST] Error:", error);
+    console.error("[/api/admin/escalations POST] Error completo:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
     return NextResponse.json(
-      { error: "Error al responder escalación: " + error.message },
+      { error: "Error al responder escalación" },
       { status: 500 }
     );
   }
