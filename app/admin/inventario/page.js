@@ -31,6 +31,7 @@ function InventoryPageContent() {
 
   const [activeTab, setActiveTab] = useState(TABS.PRODUCTS);
   const [loading, setLoading] = useState(false);
+  const [clientName, setClientName] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false });
 
@@ -196,6 +197,7 @@ function InventoryPageContent() {
       if (res.ok) {
         const data = await res.json();
         setConfig(data.config);
+        setClientName(data.config.nombre || clientId);
         setConfigForm({
           ecommerce_mode: data.config.ecommerce_mode || "none",
           whatsapp_number: data.config.whatsapp_number || "",
@@ -622,27 +624,49 @@ function InventoryPageContent() {
         onCancel={() => setConfirmModal({ isOpen: false })}
       />
 
-      {/* Tabs */}
-      <div className="flex gap-2 bg-white border border-slate-200 rounded-lg p-4">
-        {Object.entries(TABS).map(([key, value]) => (
-          <button
-            key={value}
-            onClick={() => setActiveTab(value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === value
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
-          >
-            {key === "PRODUCTS"
+      {/* Header con Breadcrumb */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
+          <a href="/admin" className="hover:text-slate-900 font-medium">Panel</a>
+          <span>›</span>
+          <a href="/admin" className="hover:text-slate-900 font-medium">Admin</a>
+          <span>›</span>
+          <span className="text-slate-900 font-medium">Inventario</span>
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {clientName ? `Inventario - ${clientName}` : "Inventario"}
+        </h1>
+      </div>
+
+      {/* Tabs - Diseño moderno */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="flex gap-0.5 px-6">
+          {Object.entries(TABS).map(([key, value]) => {
+            const tabLabel = key === "PRODUCTS"
               ? "📦 Productos"
               : key === "CATEGORIES"
                 ? "📂 Categorías"
                 : key === "RULES"
                   ? "⚙️ Reglas"
-                  : "⚙️ Configuración"}
-          </button>
-        ))}
+                  : "⚙️ Configuración";
+
+            const isActive = activeTab === value;
+
+            return (
+              <button
+                key={value}
+                onClick={() => setActiveTab(value)}
+                className={`px-4 py-3 font-medium text-sm transition-all border-b-2 ${
+                  isActive
+                    ? "border-blue-600 text-blue-600 bg-blue-50"
+                    : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                {tabLabel}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {loading && (
@@ -820,19 +844,20 @@ function ProductsTab({
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4">
-        <div className="flex gap-4 mb-4">
+      <div className="bg-white border border-slate-200 rounded-lg">
+        {/* Barra de búsqueda y filtros */}
+        <div className="border-b border-slate-200 p-4 flex gap-3">
           <input
             type="text"
             placeholder="Buscar por nombre..."
             value={searchProduct}
             onChange={(e) => setSearchProduct(e.target.value)}
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg"
+            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Todas las categorías</option>
             {categories.map((cat) => (
@@ -843,131 +868,180 @@ function ProductsTab({
           </select>
         </div>
 
+        {/* Tabla mejorada */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b">
+            <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-2 text-left">Imagen</th>
-                <th className="px-4 py-2 text-left">Nombre</th>
-                <th className="px-4 py-2 text-left">Categoría</th>
-                <th className="px-4 py-2 text-left">Precio</th>
-                <th className="px-4 py-2 text-left">Stock</th>
-                <th className="px-4 py-2 text-left">Acciones</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-700">Imagen</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-700">Producto</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-700">Categoría</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-700">Precio</th>
+                <th className="px-4 py-3 text-center font-semibold text-slate-700">Stock</th>
+                <th className="px-4 py-3 text-center font-semibold text-slate-700">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => {
-                const cat = categories.find((c) => c.id === product.category_id);
-                return (
-                  <tr key={product.id} className="border-b hover:bg-slate-50">
-                    <td className="px-4 py-2">
-                      {product.imagen ? (
-                        <img
-                          src={product.imagen}
-                          alt={product.nombre}
-                          className="w-8 h-8 rounded"
-                          onError={(e) => (e.target.src = "")}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 bg-slate-200 rounded" />
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="font-medium">{product.nombre}</div>
-                      <div className="flex gap-1 mt-1">
-                        {product.es_servicio && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
-                            Servicio
-                          </span>
-                        )}
-                        {product.featured && (
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-                            ⭐ Destacado
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      {cat ? `${cat.emoji} ${cat.nombre}` : "-"}
-                    </td>
-                    <td className="px-4 py-2">
-                      ${product.precio.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          product.stock <=
-                          (product.stock_minimo || 0)
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {product.stock}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 flex gap-1">
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-4 py-8 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="text-4xl">📦</div>
+                      <div className="text-slate-600">No hay productos aún</div>
                       <button
                         onClick={() => {
-                          setProductForm(product);
-                          setVariantes(product.variantes || []);
-                          setEditingProduct(product);
+                          setEditingProduct(null);
+                          setProductForm({
+                            nombre: "",
+                            descripcion: "",
+                            imagen: "",
+                            precio: "",
+                            precioOriginal: "",
+                            category_id: "",
+                            stock: "",
+                            stockMinimo: "",
+                            stockMaximo: "",
+                            sku: "",
+                            esServicio: false,
+                            fechaExpiracion: "",
+                            destacado: false,
+                            activo: true,
+                          });
+                          setVariantes([]);
                           setShowProductModal(true);
                         }}
-                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                        className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700"
                       >
-                        Editar
+                        ➕ Agregar primer producto
                       </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                products.map((product) => {
+                  const cat = categories.find((c) => c.id === product.category_id);
+                  const stockStatus = product.stock <= 0
+                    ? { color: "bg-red-100 text-red-700", label: "Agotado" }
+                    : product.stock <= (product.stock_minimo || 5)
+                      ? { color: "bg-yellow-100 text-yellow-700", label: `Bajo (${product.stock})` }
+                      : { color: "bg-green-100 text-green-700", label: `${product.stock}` };
+
+                  return (
+                    <tr key={product.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3">
+                        {product.imagen ? (
+                          <img
+                            src={product.imagen}
+                            alt={product.nombre}
+                            className="w-10 h-10 rounded object-cover"
+                            onError={(e) => (e.target.style.display = "none")}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">📷</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-slate-900">{product.nombre}</div>
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {product.es_servicio && (
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Servicio</span>
+                          )}
+                          {product.featured && (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">⭐ Destacado</span>
+                          )}
+                          {!product.activo && (
+                            <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Inactivo</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {cat ? `${cat.emoji} ${cat.nombre}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-slate-900">
+                        ${product.precio.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${stockStatus.color}`}>
+                          {stockStatus.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setProductForm(product);
+                              setVariantes(product.variantes || []);
+                              setEditingProduct(product);
+                              setShowProductModal(true);
+                            }}
+                            className="px-2.5 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 font-medium transition-colors"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="px-2.5 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 font-medium transition-colors"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
-          {products.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              No hay productos
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Modal Producto */}
+      {/* Modal Producto - Mejorado */}
       {showProductModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 space-y-4">
-              <h2 className="text-xl font-bold">
-                {editingProduct ? "Editar" : "Nuevo"} Producto
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">
+                {editingProduct ? "✏️ Editar Producto" : "➕ Nuevo Producto"}
               </h2>
+              <button
+                onClick={() => {
+                  setShowProductModal(false);
+                  setImagePreview(null);
+                  setSelectedImageFile(null);
+                }}
+                className="text-slate-500 hover:text-slate-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
 
-              <input
-                type="text"
-                placeholder="Nombre"
-                value={productForm.nombre}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, nombre: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              />
+            <div className="p-6 space-y-6">
+              {/* Sección Información básica */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">Información básica</h3>
 
-              <textarea
-                placeholder="Descripción"
-                value={productForm.descripcion}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    descripcion: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                rows="3"
-              />
+                <input
+                  type="text"
+                  placeholder="Nombre del producto *"
+                  value={productForm.nombre}
+                  onChange={(e) =>
+                    setProductForm({ ...productForm, nombre: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+
+                <textarea
+                  placeholder="Descripción"
+                  value={productForm.descripcion}
+                  onChange={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      descripcion: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                />
 
               <div className="space-y-2">
                 <label className="block">
@@ -1007,120 +1081,155 @@ function ProductsTab({
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  placeholder="Precio"
-                  value={productForm.precio}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, precio: e.target.value })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Precio original"
-                  value={productForm.precioOriginal}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      precioOriginal: e.target.value,
-                    })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <select
-                  value={productForm.category_id}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      category_id: e.target.value,
-                    })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                >
-                  <option value="">Categoría</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.emoji} {cat.nombre}
-                    </option>
-                  ))}
-                </select>
+              {/* Sección Precios y Categoría */}
+              <div className="space-y-4 pb-4 border-b border-slate-200">
+                <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">Precios y categoría</h3>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Precio *</label>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={productForm.precio}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, precio: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Precio original</label>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={productForm.precioOriginal}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          precioOriginal: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Categoría</label>
+                    <select
+                      value={productForm.category_id}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          category_id: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecciona</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.emoji} {cat.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  placeholder="Stock"
-                  value={productForm.stock}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, stock: e.target.value })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Stock mínimo"
-                  value={productForm.stockMinimo}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      stockMinimo: e.target.value,
-                    })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="SKU"
-                  value={productForm.sku}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, sku: e.target.value })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
+              {/* Sección Stock */}
+              <div className="space-y-4 pb-4 border-b border-slate-200">
+                <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">Inventario</h3>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Stock *</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={productForm.stock}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, stock: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Stock mínimo</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={productForm.stockMinimo}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          stockMinimo: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">SKU</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: SKU-001"
+                      value={productForm.sku}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, sku: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={productForm.esServicio}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        esServicio: e.target.checked,
-                      })
-                    }
-                  />
-                  Servicio
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={productForm.destacado}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        destacado: e.target.checked,
-                      })
-                    }
-                  />
-                  Destacado
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={productForm.activo}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        activo: e.target.checked,
-                      })
-                    }
-                  />
-                  Activo
-                </label>
+              {/* Sección Estados */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">Estado</h3>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={productForm.activo}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          activo: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded border-slate-300"
+                    />
+                    <span>Producto activo</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={productForm.destacado}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          destacado: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded border-slate-300"
+                    />
+                    <span>⭐ Destacado</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={productForm.esServicio}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          esServicio: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded border-slate-300"
+                    />
+                    <span>Es un servicio</span>
+                  </label>
+                </div>
               </div>
 
               <div className="border-t pt-4">
@@ -1175,24 +1284,25 @@ function ProductsTab({
                 </div>
               </div>
 
-              <div className="flex gap-2 justify-end border-t pt-4">
-                <button
-                  onClick={() => {
-                    setShowProductModal(false);
-                    setImagePreview(null);
-                    setSelectedImageFile(null);
-                  }}
-                  className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveProduct}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Guardar
-                </button>
-              </div>
+            {/* Sticky Footer */}
+            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowProductModal(false);
+                  setImagePreview(null);
+                  setSelectedImageFile(null);
+                }}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveProduct}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                💾 Guardar producto
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -1201,9 +1311,18 @@ function ProductsTab({
       {/* Modal Carga Masiva */}
       {showBulkModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">📥 Carga masiva de productos</h2>
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="text-slate-500 hover:text-slate-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
             <div className="p-6 space-y-4">
-              <h2 className="text-xl font-bold">Carga masiva de productos</h2>
 
               {bulkStep === 1 && (
                 <>
@@ -1363,11 +1482,20 @@ function CategoriesTab({
 
       {showCategoryModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 space-y-4">
-              <h2 className="text-xl font-bold">
-                {editingCategory ? "Editar" : "Nueva"} Categoría
+          <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
+            <div className="sticky top-0 bg-gradient-to-r from-emerald-50 to-emerald-100 border-b border-emerald-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">
+                {editingCategory ? "✏️ Editar categoría" : "➕ Nueva categoría"}
               </h2>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="text-slate-500 hover:text-slate-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
 
               <input
                 type="text"
@@ -1564,11 +1692,20 @@ function RuleModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 space-y-4">
-          <h2 className="text-xl font-bold">
-            {editingRule ? "Editar" : "Nueva"} Regla
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="sticky top-0 bg-gradient-to-r from-violet-50 to-violet-100 border-b border-violet-200 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">
+            {editingRule ? "✏️ Editar regla" : "➕ Nueva regla"}
           </h2>
+          <button
+            onClick={() => setShowRuleModal(false)}
+            className="text-slate-500 hover:text-slate-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
 
           <select
             value={ruleForm.tipo}
