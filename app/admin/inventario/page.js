@@ -22,6 +22,44 @@ const RULE_TYPES = {
   LIMITED_EDITION: { id: "limited_edition", label: "Edición limitada" },
 };
 
+const INITIAL_PRODUCT_FORM = {
+  nombre: "",
+  descripcion: "",
+  imagen: "",
+  precio: "",
+  precioOriginal: "",
+  category_id: "",
+  stock: "",
+  stockMinimo: "0",
+  stockMaximo: "",
+  sku: "",
+  esServicio: false,
+  fechaExpiracion: "",
+  destacado: false,
+  activo: true,
+};
+
+function mapProductToForm(product) {
+  if (!product) return { ...INITIAL_PRODUCT_FORM };
+  return {
+    id: product.id,
+    nombre: product.nombre || "",
+    descripcion: product.descripcion || "",
+    imagen: product.imagenes?.[0] || "",
+    precio: product.precio?.toString() || "",
+    precioOriginal: product.precio_original?.toString() || "",
+    category_id: product.category_id || "",
+    stock: product.stock?.toString() || "0",
+    stockMinimo: product.stock_minimo?.toString() || "0",
+    stockMaximo: product.stock_maximo?.toString() || "",
+    sku: product.sku || "",
+    esServicio: product.es_servicio || false,
+    fechaExpiracion: product.fecha_expiracion || "",
+    destacado: product.destacado || false,
+    activo: product.activo !== false,
+  };
+}
+
 function InventoryPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -42,22 +80,7 @@ function InventoryPageContent() {
   const [filterCategory, setFilterCategory] = useState("");
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState({
-    nombre: "",
-    descripcion: "",
-    imagen: "",
-    precio: "",
-    precioOriginal: "",
-    category_id: "",
-    stock: "",
-    stockMinimo: "",
-    stockMaximo: "",
-    sku: "",
-    esServicio: false,
-    fechaExpiracion: "",
-    destacado: false,
-    activo: true,
-  });
+  const [productForm, setProductForm] = useState(INITIAL_PRODUCT_FORM);
   const [variantes, setVariantes] = useState([]);
   const [newVariante, setNewVariante] = useState({
     nombre: "",
@@ -331,25 +354,11 @@ function InventoryPageContent() {
           type: "success",
         });
         setShowProductModal(false);
-        setProductForm({
-          nombre: "",
-          descripcion: "",
-          imagen: "",
-          precio: "",
-          precioOriginal: "",
-          category_id: "",
-          stock: "",
-          stockMinimo: "",
-          stockMaximo: "",
-          sku: "",
-          esServicio: false,
-          fechaExpiracion: "",
-          destacado: false,
-          activo: true,
-        });
+        setProductForm(INITIAL_PRODUCT_FORM);
         setVariantes([]);
         setSelectedImageFile(null);
         setImagePreview(null);
+        setEditingProduct(null);
         await loadProducts();
       } else {
         setToast({ message: "✗ Error al guardar producto", type: "error" });
@@ -806,23 +815,10 @@ function ProductsTab({
         <button
           onClick={() => {
             setEditingProduct(null);
-            setProductForm({
-              nombre: "",
-              descripcion: "",
-              imagen: "",
-              precio: "",
-              precioOriginal: "",
-              category_id: "",
-              stock: "",
-              stockMinimo: "",
-              stockMaximo: "",
-              sku: "",
-              esServicio: false,
-              fechaExpiracion: "",
-              destacado: false,
-              activo: true,
-            });
+            setProductForm(INITIAL_PRODUCT_FORM);
             setVariantes([]);
+            setImagePreview(null);
+            setSelectedImageFile(null);
             setShowProductModal(true);
           }}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
@@ -928,7 +924,7 @@ function ProductsTab({
                     <td className="px-4 py-2 flex gap-1">
                       <button
                         onClick={() => {
-                          setProductForm(product);
+                          setProductForm(mapProductToForm(product));
                           setVariantes(product.variantes || []);
                           setEditingProduct(product);
                           setShowProductModal(true);
