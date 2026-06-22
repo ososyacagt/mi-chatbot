@@ -39,23 +39,10 @@ export async function GET(request) {
     console.log("[GET /api/admin/inventory/rules] Obteniendo reglas para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const { data: rules } = await supabase
       .from("business_rules")
       .select("*")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", clientId)
       .order("prioridad", { ascending: true });
 
     return NextResponse.json({ rules: rules || [] });
@@ -87,24 +74,11 @@ export async function POST(request) {
     console.log("[POST /api/admin/inventory/rules] Creando regla para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const { data: rule, error } = await supabase
       .from("business_rules")
       .insert([
         {
-          tenant_id: tenant.id,
+          tenant_id: clientId,
           tipo: body.tipo,
           nombre: body.nombre,
           condiciones: body.condiciones,

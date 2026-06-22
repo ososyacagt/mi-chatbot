@@ -39,23 +39,10 @@ export async function GET(request) {
     console.log("[GET /api/admin/inventory/products] Obteniendo productos para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const { data: products } = await supabase
       .from("products")
       .select("*, variantes:product_variants(*)")
-      .eq("tenant_id", tenant.id);
+      .eq("tenant_id", clientId);
 
     return NextResponse.json({ products: products || [] });
   } catch (error) {
@@ -87,24 +74,11 @@ export async function POST(request) {
     console.log("[POST /api/admin/inventory/products] Creando producto para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const { data: product, error } = await supabase
       .from("products")
       .insert([
         {
-          tenant_id: tenant.id,
+          tenant_id: clientId,
           nombre: body.nombre,
           descripcion: body.descripcion,
           imagen: body.imagen,

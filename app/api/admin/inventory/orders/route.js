@@ -40,23 +40,10 @@ export async function GET(request) {
     console.log("[GET /api/admin/inventory/orders] Obteniendo órdenes para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     let query = supabase
       .from("orders")
       .select("*")
-      .eq("tenant_id", tenant.id);
+      .eq("tenant_id", clientId);
 
     if (status) {
       query = query.eq("status", status);

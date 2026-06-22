@@ -39,23 +39,10 @@ export async function GET(request) {
     console.log("[GET /api/admin/inventory/categories] Obteniendo categorías para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const { data: categories } = await supabase
       .from("categories")
       .select("*")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", clientId)
       .order("orden", { ascending: true });
 
     return NextResponse.json({ categories: categories || [] });
@@ -113,28 +100,9 @@ export async function POST(request) {
     }
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant, error: tenantError } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    console.log("[POST /api/admin/inventory/categories] Búsqueda de tenant:", {
-      clientId,
-      tenantFound: !!tenant,
-      tenantError,
-    });
-
-    if (!tenant) {
-      console.error("[POST /api/admin/inventory/categories] Tenant no encontrado para clientId:", clientId);
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
 
     const insertData = {
-      tenant_id: tenant.id,
+      tenant_id: clientId,
       nombre: body.nombre,
       descripcion: body.descripcion || "",
       emoji: body.emoji || "",

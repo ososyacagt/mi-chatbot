@@ -42,7 +42,7 @@ export async function GET(request) {
     const { data: tenant } = await supabase
       .from("tenants")
       .select(
-        "id, ecommerce_mode, whatsapp_number, currency, store_name, store_logo, store_banner, topbar_message, min_order_amount, payment_methods"
+        "id, ecommerce_mode, whatsapp_number, currency, store_name, store_logo, store_banner, topbar_message, min_order_amount, payment_methods, nombre"
       )
       .eq("client_id", clientId)
       .single();
@@ -90,19 +90,6 @@ export async function PUT(request) {
     console.log("[PUT /api/admin/inventory/config] Actualizando config para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const { data: config, error } = await supabase
       .from("tenants")
       .update({
@@ -116,13 +103,13 @@ export async function PUT(request) {
         min_order_amount: body.min_order_amount,
         payment_methods: body.payment_methods,
       })
-      .eq("id", tenant.id)
+      .eq("client_id", clientId)
       .select()
       .single();
 
     if (error) throw error;
 
-    console.log("[PUT /api/admin/inventory/config] ✓ Actualizada:", tenant.id);
+    console.log("[PUT /api/admin/inventory/config] ✓ Actualizada:", clientId);
 
     return NextResponse.json({ config });
   } catch (error) {

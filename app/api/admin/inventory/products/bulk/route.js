@@ -40,19 +40,6 @@ export async function POST(request) {
     console.log("[POST /api/admin/inventory/products/bulk] Importando productos para:", clientId);
 
     const supabase = createSupabaseAdmin();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
-      .eq("client_id", clientId)
-      .single();
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const products = body.productos || [];
     const errors = [];
     let imported = 0;
@@ -71,7 +58,7 @@ export async function POST(request) {
       try {
         const { error } = await supabase.from("products").insert([
           {
-            tenant_id: tenant.id,
+            tenant_id: clientId,
             nombre: p.nombre,
             descripcion: p.descripcion || "",
             imagen: p.imagen || null,
