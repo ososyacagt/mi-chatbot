@@ -39,11 +39,7 @@ export async function POST(request, { params }) {
     }
 
     for (const item of items) {
-      const hasStock = await checkStock(
-        item.productId,
-        item.quantity,
-        item.variantId
-      );
+      const hasStock = await checkStock(item.productId, item.quantity);
 
       if (!hasStock) {
         return Response.json(
@@ -54,7 +50,7 @@ export async function POST(request, { params }) {
     }
 
     const order = await createOrder({
-      tenantId: tenant.id,
+      tenantId: clientId,
       clienteNombre,
       clienteTelefono,
       clienteDireccion,
@@ -74,7 +70,7 @@ export async function POST(request, { params }) {
     }
 
     for (const item of items) {
-      await updateStock(item.productId, item.quantity, item.variantId);
+      await updateStock(item.productId, item.quantity);
     }
 
     console.log("[POST /api/store/[clientId]/order] ✓ Orden creada:", order.numero_orden);
