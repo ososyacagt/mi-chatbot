@@ -176,7 +176,9 @@ export default function CatalogPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cart,
+          items: cartData?.cartItems || cart,
+          giftItems: cartData?.giftItems || [],
+          appliedRules: cartData?.appliedRules || [],
           clienteNombre: orderForm.clienteNombre,
           clienteTelefono: orderForm.clienteTelefono,
           clienteDireccion: orderForm.clienteDireccion,

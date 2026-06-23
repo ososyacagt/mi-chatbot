@@ -6,6 +6,8 @@ export async function POST(request, { params }) {
     const { clientId } = await params;
     const {
       items,
+      giftItems,
+      appliedRules,
       clienteNombre,
       clienteTelefono,
       clienteDireccion,
@@ -49,6 +51,15 @@ export async function POST(request, { params }) {
       }
     }
 
+    const todosLosItems = [
+      ...(items || []),
+      ...(giftItems || []).map(g => ({
+        ...g,
+        precio: 0,
+        esRegalo: true
+      }))
+    ];
+
     const order = await createOrder({
       tenantId: clientId,
       clienteNombre,
@@ -56,7 +67,7 @@ export async function POST(request, { params }) {
       clienteDireccion,
       notas,
       metodoPago: metodoPago || "whatsapp",
-      items,
+      items: todosLosItems,
       subtotal,
       descuentos,
       total,

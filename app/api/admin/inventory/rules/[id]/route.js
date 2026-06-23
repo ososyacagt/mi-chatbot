@@ -39,8 +39,8 @@ export async function PUT(request, { params }) {
         nombre: body.nombre,
         condiciones: body.condiciones,
         acciones: body.acciones,
-        fecha_inicio: body.fecha_inicio,
-        fecha_fin: body.fecha_fin,
+        fecha_inicio: body.fecha_inicio || null,
+        fecha_fin: body.fecha_fin || null,
         activo: body.activo !== false,
         prioridad: body.prioridad || 0,
       })

@@ -1637,7 +1637,16 @@ function RulesTab({
                   </span>
                   <button
                     onClick={() => {
-                      setRuleForm(rule);
+                      setRuleForm({
+                        id: rule.id,
+                        tipo: rule.tipo,
+                        nombre: rule.nombre,
+                        condiciones: rule.condiciones || {},
+                        acciones: rule.acciones || {},
+                        activo: rule.activo,
+                        fecha_inicio: rule.fecha_inicio || "",
+                        fecha_fin: rule.fecha_fin || "",
+                      });
                       setEditingRule(rule);
                       setShowRuleModal(true);
                     }}
