@@ -96,15 +96,16 @@ export async function PUT(request) {
     const { data: config, error } = await supabase
       .from("tenants")
       .update({
-        ecommerce_mode: body.ecommerceMode,
-        whatsapp_number: body.whatsapp_number,
-        currency: body.currency,
-        store_name: body.store_name,
-        store_logo: body.store_logo,
-        store_banner: body.store_banner,
-        topbar_message: body.topbar_message,
-        min_order_amount: body.min_order_amount,
-        payment_methods: body.payment_methods,
+        ecommerce_mode: body.ecommerce_mode || 'none',
+        whatsapp_number: body.whatsapp_number || null,
+        currency: body.currency || 'USD',
+        store_name: body.store_name || null,
+        store_logo: body.store_logo || null,
+        store_banner: body.store_banner || null,
+        topbar_message: body.topbar_message || null,
+        min_order_amount: body.min_order_amount !== '' && body.min_order_amount != null
+          ? parseFloat(body.min_order_amount) : null,
+        payment_methods: body.payment_methods || [],
       })
       .eq("client_id", clientId)
       .select()
