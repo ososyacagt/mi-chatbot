@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Toast from "@/app/admin/components/Toast";
+import { applyBusinessRules } from "@/lib/business-rules";
 
 const stripHTML = (html) => html?.replace(/<[^>]*>/g, '') || '';
 
@@ -135,6 +136,9 @@ export default function CatalogPage() {
       }
       const cartData = await cartRes.json();
 
+      // Aplicar reglas de negocio
+      const rulesResult = await applyBusinessRules(clientId, cart);
+
       const orderRes = await fetch(`/api/store/${clientId}/order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,8 +149,8 @@ export default function CatalogPage() {
           clienteDireccion: orderForm.clienteDireccion,
           notas: orderForm.notas,
           subtotal: cartData.subtotal,
-          descuentos: cartData.totalDiscount,
-          total: cartData.total,
+          descuentos: rulesResult.totalDiscount,
+          total: cartData.total - rulesResult.totalDiscount,
         }),
       });
 
@@ -156,7 +160,8 @@ export default function CatalogPage() {
       const message = formatWhatsAppMessage(
         orderData.order,
         cartData,
-        orderForm.clienteNombre
+        orderForm.clienteNombre,
+        rulesResult
       );
       const whatsappUrl = `https://wa.me/${storeData.whatsappNumber}?text=${encodeURIComponent(
         message
@@ -174,25 +179,32 @@ export default function CatalogPage() {
     }
   };
 
-  const formatWhatsAppMessage = (order, cartData, clienteName) => {
+  const formatWhatsAppMessage = (order, cartData, clienteName, rulesResult = {}) => {
     const moneda = storeData.currency || 'Q';
     const itemsList = cartData.cartItems
       .map((item) => `• ${item.quantity}x ${item.nombre} - ${moneda} ${(item.precio * item.quantity).toFixed(2)}`)
       .join("\n");
 
-    const giftsText = cartData.giftItems?.length
-      ? cartData.giftItems.map((g) => `🎁 • ${g.nombre} (GRATIS)`).join("\n")
+    const giftsText = (rulesResult.giftItems || cartData.giftItems)?.length
+      ? (rulesResult.giftItems || cartData.giftItems).map((g) => `🎁 • ${g.nombre} (GRATIS)`).join("\n")
       : "";
+
+    const discountsText = (rulesResult.appliedRules || [])
+      .filter(r => !r.warning && r.ahorro > 0)
+      .map((r) => `• ${r.descripcion}: -${moneda} ${r.ahorro.toFixed(2)}`)
+      .join("\n");
+
+    const totalDiscount = rulesResult.totalDiscount || cartData.totalDiscount || 0;
 
     return `Hola! Quiero hacer el siguiente pedido:
 
 📋 *Orden #${order.numero_orden}*
 
 🛍️ *Productos:*
-${itemsList}${giftsText ? "\n" + giftsText : ""}
+${itemsList}${giftsText ? "\n🎁 *Regalos:*\n" + giftsText : ""}
 
 💰 *Subtotal:* ${moneda} ${cartData.subtotal.toFixed(2)}
-${cartData.totalDiscount > 0 ? `🏷️ *Descuentos:* -${moneda} ${cartData.totalDiscount.toFixed(2)}\n` : ""}✅ *Total:* ${moneda} ${cartData.total.toFixed(2)}
+${discountsText ? `🏷️ *Descuentos aplicados:*\n${discountsText}\n` : ""}${totalDiscount > 0 ? `🏷️ *Total descuentos:* -${moneda} ${totalDiscount.toFixed(2)}\n` : ""}✅ *Total:* ${moneda} ${order.total.toFixed(2)}
 
 👤 *Cliente:* ${order.cliente_nombre}
 ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : ""}${order.notas ? `📝 *Notas:* ${order.notas}` : ""}`;
@@ -669,6 +681,12 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
                       </span>
                     </div>
                   </div>
+
+                  {/* Gifts */}
+                  {/* This will be populated after applyBusinessRules is called during order submission */}
+
+                  {/* Rules Applied */}
+                  {/* This will be populated after applyBusinessRules is called during order submission */}
 
                   {/* Form */}
                   <form onSubmit={handleOrderSubmit} className="space-y-3">
