@@ -67,6 +67,7 @@ export async function POST(request, { params }) {
       });
     }
 
+    console.log('[cart] tenantId para reglas:', clientId);
     const rulesResult = await applyBusinessRules(clientId, processedItems);
     console.log('[cart] resultado reglas:', JSON.stringify(rulesResult, null, 2));
 
