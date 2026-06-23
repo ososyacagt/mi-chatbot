@@ -582,7 +582,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
       {cartOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setCartOpen(false)}
           ></div>
 
