@@ -45,11 +45,22 @@ export async function POST(request, { params }) {
       const product = await getProduct(item.productId);
       if (!product) continue;
 
+      console.log('[cart] Verificando stock:', {
+        productId: item.productId,
+        productNombre: product.nombre,
+        productStock: product.stock,
+        quantity: item.quantity,
+        variantId: item.variantId,
+        variantes: product.variantes?.map(v => ({ id: v.id, stock: v.stock }))
+      });
+
       const stockAvailable = await checkStock(
         item.productId,
         item.quantity,
         item.variantId
       );
+
+      console.log('[cart] Stock check result:', { productNombre: product.nombre, stockAvailable });
 
       if (!stockAvailable) {
         const errorMsg = `Stock insuficiente para ${product.nombre}`;
