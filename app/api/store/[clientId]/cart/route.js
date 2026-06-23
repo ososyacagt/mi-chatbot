@@ -10,8 +10,12 @@ export async function POST(request, { params }) {
     const { items } = body;
 
     console.log('[cart] body recibido:', JSON.stringify(body, null, 2));
+    console.log('[cart] clientId:', clientId, 'tipo:', typeof clientId);
+    console.log('[cart] items:', items, 'tipo:', typeof items, 'isArray:', Array.isArray(items));
+    console.log('[cart] validación: !clientId=', !clientId, '!items=', !items, '!Array.isArray=', !Array.isArray(items));
 
     if (!clientId || !items || !Array.isArray(items)) {
+      console.error('[cart] VALIDACIÓN FALLÓ');
       return NextResponse.json(
         { error: "clientId e items son requeridos" },
         { status: 400 }
