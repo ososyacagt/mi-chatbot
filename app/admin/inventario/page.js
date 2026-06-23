@@ -1635,8 +1635,8 @@ function RulesTab({
       tipo: rule.tipo,
       nombre: rule.nombre,
       activo: rule.activo,
-      fecha_inicio: rule.fecha_inicio || '',
-      fecha_fin: rule.fecha_fin || '',
+      fecha_inicio: rule.fecha_inicio ? rule.fecha_inicio.split('T')[0] : '',
+      fecha_fin: rule.fecha_fin ? rule.fecha_fin.split('T')[0] : '',
       condiciones: {},
       acciones: {}
     }
