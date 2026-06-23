@@ -68,6 +68,7 @@ export async function POST(request, { params }) {
     }
 
     const rulesResult = await applyBusinessRules(clientId, processedItems);
+    console.log('[cart] resultado reglas:', JSON.stringify(rulesResult, null, 2));
 
     const subtotal = rulesResult.cartItems.reduce(
       (sum, item) => sum + item.precio * item.quantity,
