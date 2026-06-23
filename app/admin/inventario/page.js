@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import Papa from "papaparse";
@@ -71,6 +72,7 @@ function InventoryPageContent() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false });
+  const [clientName, setClientName] = useState("");
 
   // Productos
   const [products, setProducts] = useState([]);
@@ -150,6 +152,18 @@ function InventoryPageContent() {
       </div>
     );
   }
+
+  const loadClientName = async () => {
+    try {
+      const res = await fetch(`/api/tenants/${clientId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setClientName(data.store_name || data.nombre || clientId);
+      }
+    } catch (err) {
+      console.error("[inventario] Error loading client name:", err);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -247,6 +261,9 @@ function InventoryPageContent() {
     }
 
     console.log("[inventario] clientId está disponible, cargando tab:", activeTab);
+
+    // Cargar nombre del cliente
+    loadClientName();
 
     if (activeTab === TABS.PRODUCTS) {
       console.log("[inventario] → Cargando productos");
@@ -637,6 +654,16 @@ function InventoryPageContent() {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ isOpen: false })}
       />
+
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-700 flex items-center gap-1">
+          ← Volver al panel
+        </Link>
+        <h1 className="text-2xl font-bold">
+          📦 Inventario — {clientName || clientId}
+        </h1>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 bg-white border border-slate-200 rounded-lg p-4">
