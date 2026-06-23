@@ -42,6 +42,13 @@ export async function GET(request, { params }) {
       });
     }
 
+    // Auto-desactivar productos con stock = 0
+    await supabase
+      .from("products")
+      .update({ activo: false })
+      .eq("tenant_id", clientId)
+      .eq("stock", 0);
+
     // Obtener categorías con productos
     const { data: categories = [] } = await supabase
       .from("categories")
@@ -50,7 +57,7 @@ export async function GET(request, { params }) {
       .eq("activo", true)
       .order("orden", { ascending: true });
 
-    // Obtener productos con variantes
+    // Obtener productos con variantes (solo activos)
     const { data: products = [] } = await supabase
       .from("products")
       .select("*, variantes:product_variants(*)")
