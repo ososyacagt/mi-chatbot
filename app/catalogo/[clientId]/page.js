@@ -43,6 +43,9 @@ export default function CatalogPage() {
   const getFilteredProducts = () => {
     let filtered = products;
 
+    // Filtrar solo productos con stock > 0
+    filtered = filtered.filter((p) => p.stock > 0);
+
     if (selectedCategory && !searchQuery) {
       filtered = filtered.filter((p) => p.category_id === selectedCategory);
     }
@@ -93,8 +96,18 @@ export default function CatalogPage() {
 
   const updateCartItemQuantity = (index, quantity) => {
     const newCart = [...cart];
+    const item = newCart[index];
+    const product = products.find((p) => p.id === item.productId);
+    const maxQuantity = product?.stock || 0;
+
     if (quantity <= 0) {
       newCart.splice(index, 1);
+    } else if (quantity > maxQuantity) {
+      setToast({
+        message: `✗ Stock disponible: ${maxQuantity}`,
+        type: "error",
+      });
+      newCart[index].quantity = maxQuantity;
     } else {
       newCart[index].quantity = quantity;
     }
