@@ -2133,6 +2133,26 @@ function ConfigTab({
               <option value="tienda">Tienda completa</option>
             </select>
 
+            {configForm.ecommerce_mode === "chatbot" && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <div className="text-2xl flex-shrink-0">🤖</div>
+                  <div>
+                    <h4 className="font-semibold text-purple-900 mb-2">Modo Chatbot IA activado</h4>
+                    <p className="text-sm text-purple-700 mb-3">
+                      El chatbot responderá preguntas sobre tu catálogo de productos en tiempo real y podrá tomar pedidos automáticamente. Los clientes pueden comprar directamente en la conversación.
+                    </p>
+                    <div className="space-y-2 text-xs text-purple-600">
+                      <p>✅ El bot tendrá acceso al catálogo actualizado</p>
+                      <p>✅ Tomará pedidos automáticamente y los guardará en el sistema</p>
+                      <p>✅ Los descuentos y promociones se aplicarán automáticamente</p>
+                      <p className="font-semibold text-purple-800 mt-2">💡 Recomendación: Configura el System Prompt del cliente para que el bot sepa cómo presentarse y ayudar a los clientes con el catálogo.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <input
               type="tel"
               placeholder="Número WhatsApp (ej: +1234567890)"
