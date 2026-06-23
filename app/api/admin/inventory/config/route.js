@@ -80,6 +80,8 @@ export async function PUT(request) {
     const clientId = searchParams.get("clientId");
     const body = await request.json();
 
+    console.log('[PUT config] body:', JSON.stringify(body, null, 2));
+
     if (!clientId) {
       return NextResponse.json(
         { error: "clientId es requerido" },
@@ -88,12 +90,13 @@ export async function PUT(request) {
     }
 
     console.log("[PUT /api/admin/inventory/config] Actualizando config para:", clientId);
+    console.log('[PUT config] ecommerce_mode a guardar:', body.ecommerceMode);
 
     const supabase = createSupabaseAdmin();
     const { data: config, error } = await supabase
       .from("tenants")
       .update({
-        ecommerce_mode: body.ecommerce_mode,
+        ecommerce_mode: body.ecommerceMode,
         whatsapp_number: body.whatsapp_number,
         currency: body.currency,
         store_name: body.store_name,

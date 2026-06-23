@@ -1970,6 +1970,7 @@ function ConfigTab({
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
             >
+              <option value="none">Ninguno (desactivado)</option>
               <option value="catalogo_whatsapp">Catálogo + WhatsApp</option>
               <option value="chatbot">Chatbot con pedidos</option>
               <option value="tienda">Tienda completa</option>
