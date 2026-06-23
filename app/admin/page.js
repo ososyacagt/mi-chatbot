@@ -444,9 +444,9 @@ export default function AdminPanel() {
                 </Link>
 
                 {/* Fila 4 */}
-                {tenant.ecommerce_mode && tenant.ecommerce_mode !== 'none' ? (
+                {tenant.ecommerceMode && tenant.ecommerceMode !== 'none' ? (
                   <Link
-                    href={`/catalogo/${tenant.client_id}`}
+                    href={`/catalogo/${tenant.id}`}
                     className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-cyan-600 hover:bg-cyan-700 text-white whitespace-nowrap"
                     title="Ver catálogo de tienda"
                   >
