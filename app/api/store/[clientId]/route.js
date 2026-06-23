@@ -1,19 +1,22 @@
-import { supabase } from "@/lib/supabase";
-import { getCategories, getProducts } from "@/lib/store";
+import { NextResponse } from "next/server";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(request, { params }) {
   try {
     const { clientId } = await params;
 
     if (!clientId) {
-      return Response.json(
+      return NextResponse.json(
         { error: "clientId es requerido" },
         { status: 400 }
       );
     }
 
-    console.log("[GET /api/store/[clientId]] Obteniendo configuración para:", clientId);
+    console.log("[GET /api/store/[clientId]] Obteniendo tienda para:", clientId);
 
+    const supabase = createSupabaseAdmin();
+
+    // Obtener tenant
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
       .select("*")
@@ -21,40 +24,55 @@ export async function GET(request, { params }) {
       .single();
 
     if (tenantError || !tenant) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Cliente no encontrado" },
         { status: 404 }
       );
     }
 
     if (tenant.ecommerce_mode === "none") {
-      return Response.json(
+      return NextResponse.json(
         { error: "E-commerce no habilitado" },
         { status: 403 }
       );
     }
 
-    const categories = await getCategories(tenant.id);
-    const products = await getProducts(tenant.id);
-
-    const { data: storeConfig } = await supabase
-      .from("store_settings")
+    // Obtener categorías con productos
+    const { data: categories = [] } = await supabase
+      .from("categories")
       .select("*")
       .eq("tenant_id", tenant.id)
-      .single();
+      .eq("activo", true)
+      .order("orden", { ascending: true });
 
-    console.log("[GET /api/store/[clientId]] ✓ Retornando configuración");
+    // Obtener productos con variantes
+    const { data: products = [] } = await supabase
+      .from("products")
+      .select("*, variantes:product_variants(*)")
+      .eq("tenant_id", tenant.id)
+      .eq("activo", true)
+      .order("nombre", { ascending: true });
 
-    return Response.json({
+    console.log("[GET /api/store/[clientId]] ✓ Retornando tienda:", {
+      tenant: tenant.nombre,
+      categorias: categories.length,
+      productos: products.length,
+    });
+
+    return NextResponse.json({
       tenant: {
         id: tenant.id,
-        nombre: storeConfig?.store_name || tenant.nombre,
-        whatsapp: storeConfig?.whatsapp_number,
-        moneda: storeConfig?.currency || "USD",
-        colorPrimary: storeConfig?.primary_color || "#3b82f6",
-        logo: storeConfig?.logo_url,
-        banner: storeConfig?.banner_url,
-        topbarMessage: tenant.topbar_message || 'Bienvenido a nuestra tienda',
+        nombre: tenant.store_name || tenant.nombre,
+        colorPrimary: tenant.store_logo ? undefined : "#3b82f6",
+        whatsappNumber: tenant.whatsapp_number,
+        currency: tenant.currency || "USD",
+        storeName: tenant.store_name || tenant.nombre,
+        storeLogo: tenant.store_logo,
+        storeBanner: tenant.store_banner,
+        topbarMessage: tenant.topbar_message || "Bienvenido a nuestra tienda",
+        minOrderAmount: tenant.min_order_amount || 0,
+        paymentMethods: tenant.payment_methods || [],
+        ecommerceMode: tenant.ecommerce_mode,
       },
       categories,
       products,
@@ -63,9 +81,8 @@ export async function GET(request, { params }) {
     console.error("[GET /api/store/[clientId]] Error completo:", {
       message: error.message,
       code: error.code,
-      stack: error.stack,
     });
-    return Response.json(
+    return NextResponse.json(
       { error: "Error al obtener configuración de tienda" },
       { status: 500 }
     );
