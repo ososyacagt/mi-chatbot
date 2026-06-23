@@ -17,6 +17,7 @@ export default function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState([]);
+  const [cartResult, setCartResult] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [orderForm, setOrderForm] = useState({
@@ -30,6 +31,42 @@ export default function CatalogPage() {
   useEffect(() => {
     loadStore();
   }, [clientId]);
+
+  // Procesar carrito contra las reglas de negocio
+  useEffect(() => {
+    if (cart.length === 0) {
+      setCartResult(null);
+      return;
+    }
+
+    const processCart = async () => {
+      try {
+        const res = await fetch(`/api/store/${clientId}/cart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: cart.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId || null,
+              quantity: item.quantity,
+            })),
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setCartResult(data);
+          console.log("[cart] resultado procesar:", data);
+        } else {
+          console.error("[cart] error procesando:", res.status);
+        }
+      } catch (err) {
+        console.error("[cart] error:", err);
+      }
+    };
+
+    processCart();
+  }, [cart, clientId]);
 
   const loadStore = async () => {
     try {
@@ -655,17 +692,58 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
             {cart.length > 0 && (
               <>
                 <div className="border-t border-slate-200 p-6 space-y-4">
+                  {/* Regalos incluidos */}
+                  {cartResult?.giftItems?.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="font-semibold text-green-700 text-sm mb-2">
+                        🎁 Regalos incluidos:
+                      </p>
+                      {cartResult.giftItems.map((gift, i) => (
+                        <div key={i} className="flex justify-between text-sm text-green-600 mb-1">
+                          <span>{gift.nombre}</span>
+                          <span className="font-bold">¡GRATIS!</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Descuentos aplicados */}
+                  {cartResult?.appliedRules?.filter((r) => r.ahorro > 0).length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="font-semibold text-blue-700 text-sm mb-2">
+                        🏷️ Descuentos aplicados:
+                      </p>
+                      {cartResult.appliedRules
+                        .filter((r) => r.ahorro > 0)
+                        .map((rule, i) => (
+                          <div key={i} className="flex justify-between text-sm text-blue-600 mb-1">
+                            <span>{rule.descripcion}</span>
+                            <span>-{moneda}{rule.ahorro.toFixed(2)}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Resumen de totales */}
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex justify-between mb-2">
                       <span className="text-slate-600">Subtotal:</span>
                       <span className="font-semibold">
-                        {moneda} {subtotal.toFixed(2)}
+                        {moneda} {cartResult?.subtotal?.toFixed(2) || subtotal.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-lg">
+                    {cartResult?.totalDiscount > 0 && (
+                      <div className="flex justify-between mb-2 text-green-600">
+                        <span className="text-slate-600">Descuentos:</span>
+                        <span className="font-semibold">
+                          -{moneda}{cartResult.totalDiscount.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg border-t border-blue-200 pt-2">
                       <span className="font-bold">Total:</span>
                       <span className="font-bold" style={{ color: primaryColor }}>
-                        {moneda} {subtotal.toFixed(2)}
+                        {moneda} {(cartResult?.total || subtotal).toFixed(2)}
                       </span>
                     </div>
                   </div>
