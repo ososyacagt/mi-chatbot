@@ -157,7 +157,7 @@ export default function CatalogPage() {
       setCartOpen(false);
     } catch (err) {
       console.error("Error:", err);
-      setToast({ message: "✗ Error al procesar pedido", type: "error" });
+      setToast({ message: "✗ " + (err.message || "Error al procesar pedido"), type: "error" });
     }
   };
 
