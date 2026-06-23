@@ -1635,8 +1635,8 @@ function RulesTab({
       tipo: rule.tipo,
       nombre: rule.nombre,
       activo: rule.activo,
-      fecha_inicio: rule.fecha_inicio ? rule.fecha_inicio.split('T')[0] : '',
-      fecha_fin: rule.fecha_fin ? rule.fecha_fin.split('T')[0] : '',
+      fecha_inicio: rule.fecha_inicio ? rule.fecha_inicio.substring(0, 16) : '',
+      fecha_fin: rule.fecha_fin ? rule.fecha_fin.substring(0, 16) : '',
       condiciones: {},
       acciones: {}
     }
@@ -1836,23 +1836,33 @@ function RuleModal({
             className="w-full px-3 py-2 border border-slate-300 rounded-lg"
           />
 
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="date"
-              value={ruleForm.fecha_inicio || ""}
-              onChange={(e) =>
-                setRuleForm({ ...ruleForm, fecha_inicio: e.target.value })
-              }
-              className="px-3 py-2 border border-slate-300 rounded-lg"
-            />
-            <input
-              type="date"
-              value={ruleForm.fecha_fin || ""}
-              onChange={(e) =>
-                setRuleForm({ ...ruleForm, fecha_fin: e.target.value })
-              }
-              className="px-3 py-2 border border-slate-300 rounded-lg"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Válido desde
+              </label>
+              <input
+                type="datetime-local"
+                value={ruleForm.fecha_inicio || ""}
+                onChange={(e) =>
+                  setRuleForm({ ...ruleForm, fecha_inicio: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Válido hasta
+              </label>
+              <input
+                type="datetime-local"
+                value={ruleForm.fecha_fin || ""}
+                onChange={(e) =>
+                  setRuleForm({ ...ruleForm, fecha_fin: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              />
+            </div>
           </div>
 
           {ruleForm.tipo === "cross_sell" && (
