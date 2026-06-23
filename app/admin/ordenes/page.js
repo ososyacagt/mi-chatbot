@@ -8,7 +8,7 @@ import Toast from "../components/Toast";
 const STATUS_COLORS = {
   pendiente: "bg-yellow-100 text-yellow-800",
   confirmada: "bg-blue-100 text-blue-800",
-  en_proceso: "bg-purple-100 text-purple-800",
+  en_proceso: "bg-orange-100 text-orange-800",
   entregada: "bg-green-100 text-green-800",
   cancelada: "bg-red-100 text-red-800",
 };
@@ -26,10 +26,14 @@ export default function OrdenesPage() {
   const clientId = searchParams.get("clientId");
 
   const [orders, setOrders] = useState([]);
+  const [statusCounts, setStatusCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [selectedStatus, setSelectedStatus] = useState("pendiente");
+  const [selectedStatus, setSelectedStatus] = useState("todas");
+  const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [newStatus, setNewStatus] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (clientId) {
@@ -40,14 +44,16 @@ export default function OrdenesPage() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `/api/admin/inventory/orders?clientId=${clientId}&status=${selectedStatus}`
-      );
+      const params = new URLSearchParams();
+      params.append("clientId", clientId);
+      if (selectedStatus !== "todas") params.append("status", selectedStatus);
 
+      const res = await fetch(`/api/admin/orders?${params.toString()}`);
       if (!res.ok) throw new Error("Error al cargar órdenes");
 
       const data = await res.json();
       setOrders(data.orders || []);
+      setStatusCounts(data.statusCounts || {});
     } catch (err) {
       console.error("Error:", err);
       setToast({ message: "✗ Error al cargar órdenes", type: "error" });
@@ -56,251 +62,205 @@ export default function OrdenesPage() {
     }
   };
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const updateOrderStatus = async () => {
+    if (!newStatus || !selectedOrder) return;
+
     try {
-      const res = await fetch(
-        `/api/admin/inventory/orders/${orderId}?clientId=${clientId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
+      setUpdating(true);
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newStatus }),
+      });
 
       if (!res.ok) throw new Error("Error al actualizar");
 
       setToast({
-        message: "✓ Estado actualizado",
+        message: `✓ Orden actualizada a ${STATUS_LABELS[newStatus]}`,
         type: "success",
       });
 
       setSelectedOrder(null);
-      await loadOrders();
+      setNewStatus("");
+      loadOrders();
     } catch (err) {
       console.error("Error:", err);
       setToast({ message: "✗ Error al actualizar orden", type: "error" });
+    } finally {
+      setUpdating(false);
     }
   };
+
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.numero_orden.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.cliente_nombre.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="text-slate-600 hover:text-slate-900 dark:text-slate-400"
-            >
-              ← Volver
-            </Link>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              📋 Órdenes
-            </h1>
-          </div>
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/admin" className="text-2xl text-slate-600 hover:text-slate-900">
+            ←
+          </Link>
+          <h1 className="text-3xl font-bold text-slate-900">📋 Órdenes</h1>
+          <span className="bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-sm font-medium">
+            {statusCounts.total || 0}
+          </span>
         </div>
 
-        {/* Filtros */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          {Object.entries(STATUS_LABELS).map(([status, label]) => (
-            <button
-              key={status}
-              onClick={() => setSelectedStatus(status)}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-                selectedStatus === status
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-700 hover:border-slate-300"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Buscador */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Buscar por número de orden o cliente..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
-        {/* Lista de órdenes */}
+        {/* Tabs de Status */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {["todas", "pendiente", "confirmada", "en_proceso", "entregada", "cancelada"].map(
+            (status) => (
+              <button
+                key={status}
+                onClick={() => setSelectedStatus(status)}
+                className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition ${
+                  selectedStatus === status
+                    ? "bg-blue-600 text-white"
+                    : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                {status === "todas" ? "Todas" : STATUS_LABELS[status]}
+                <span className="ml-2 text-xs opacity-75">({statusCounts[status] || 0})</span>
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Tabla de Órdenes */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-slate-600">Cargando órdenes...</p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
-            <p className="text-slate-600">
-              No hay órdenes con estado "{STATUS_LABELS[selectedStatus]}"
-            </p>
+          <div className="text-center py-12 text-slate-600">Cargando órdenes...</div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-slate-600">
+            No hay órdenes
           </div>
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-slate-900">
-                      {order.numero_orden}
-                    </h3>
-
-                    <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-slate-600">Cliente</p>
-                        <p className="font-medium text-slate-900">
-                          {order.cliente_nombre}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-slate-600">Total</p>
-                        <p className="font-bold text-slate-900">
-                          ${order.total?.toFixed(2) || "0.00"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-slate-600">Fecha</p>
-                        <p className="text-slate-900">
-                          {new Date(order.created_at).toLocaleDateString("es-ES")}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-slate-600">Estado</p>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                            STATUS_COLORS[order.status] || "bg-slate-100 text-slate-800"
-                          }`}
-                        >
-                          {STATUS_LABELS[order.status] || order.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {order.cliente_telefono && (
-                      <div className="mt-3 flex gap-2">
-                        <a
-                          href={`https://wa.me/${order.cliente_telefono}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-                        >
-                          💬 WhatsApp
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 ml-4"
-                  >
-                    Ver detalles
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900"># Orden</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Cliente</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Total</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Método</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Status</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Fecha</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="px-6 py-4 font-mono text-slate-900">{order.numero_orden.slice(-8)}</td>
+                    <td className="px-6 py-4 text-slate-900">{order.cliente_nombre}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-900">${order.total.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-slate-600 text-xs">{order.metodo_pago || "—"}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[order.status]}`}>
+                        {STATUS_LABELS[order.status]}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 text-xs">
+                      {new Date(order.created_at).toLocaleDateString("es-MX")}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setNewStatus("");
+                        }}
+                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                      >
+                        Ver detalle
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
-        {/* Modal de detalles */}
+        {/* Modal de detalle */}
         {selectedOrder && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full p-6 my-8">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {selectedOrder.numero_orden}
-                </h2>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Orden #{selectedOrder.numero_orden.slice(-8)}</h2>
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xl"
+                  className="text-slate-500 hover:text-slate-900 text-2xl"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="space-y-6">
-                {/* Información del cliente */}
-                <div className="border-b border-slate-200 pb-4">
-                  <h3 className="font-bold text-slate-900 dark:text-white mb-3">
-                    👤 Información del cliente
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-slate-600 dark:text-slate-400">Nombre</p>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        {selectedOrder.cliente_nombre}
-                      </p>
-                    </div>
-                    {selectedOrder.cliente_telefono && (
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Teléfono</p>
-                        <a
-                          href={`https://wa.me/${selectedOrder.cliente_telefono}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-green-600 hover:text-green-700"
-                        >
-                          {selectedOrder.cliente_telefono}
-                        </a>
-                      </div>
-                    )}
-                    {selectedOrder.cliente_direccion && (
-                      <div className="col-span-2">
-                        <p className="text-slate-600 dark:text-slate-400">Dirección</p>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {selectedOrder.cliente_direccion}
-                        </p>
-                      </div>
-                    )}
+              <div className="p-6 space-y-6">
+                {/* Cliente */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-slate-600">Nombre</p>
+                    <p className="font-semibold">{selectedOrder.cliente_nombre}</p>
                   </div>
+                  <div>
+                    <p className="text-sm text-slate-600">Teléfono</p>
+                    <p className="font-semibold">{selectedOrder.cliente_telefono || "—"}</p>
+                  </div>
+                  {selectedOrder.cliente_direccion && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-slate-600">Dirección</p>
+                      <p className="font-semibold">{selectedOrder.cliente_direccion}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Productos */}
-                <div className="border-b border-slate-200 pb-4">
-                  <h3 className="font-bold text-slate-900 dark:text-white mb-3">
-                    🛍️ Productos
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    {selectedOrder.items?.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex justify-between py-2 border-b border-slate-100"
-                      >
-                        <span className="text-slate-900 dark:text-white">
-                          {item.quantity}x {item.nombre}
-                          {item.variantInfo && (
-                            <span className="text-slate-600 dark:text-slate-400 ml-1">
-                              ({item.variantInfo.valor})
-                            </span>
-                          )}
-                        </span>
-                        <span className="font-medium text-slate-900 dark:text-white">
-                          ${(item.precio * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Totales */}
-                <div className="border-b border-slate-200 pb-4 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600 dark:text-slate-400">Subtotal:</span>
-                    <span className="font-medium text-slate-900 dark:text-white">
-                      ${selectedOrder.subtotal?.toFixed(2) || "0.00"}
-                    </span>
-                  </div>
-                  {selectedOrder.descuentos > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-600 dark:text-slate-400">Descuentos:</span>
-                      <span className="font-medium text-green-600">
-                        -${selectedOrder.descuentos.toFixed(2)}
-                      </span>
+                {selectedOrder.items && (
+                  <div>
+                    <h3 className="font-semibold mb-3">Productos</h3>
+                    <div className="space-y-2">
+                      {selectedOrder.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm p-2 bg-slate-50 rounded">
+                          <div className="flex-1">
+                            <p className="font-medium">{item.nombre}</p>
+                            <p className="text-slate-600 text-xs">
+                              {item.quantity}x ${item.precio.toFixed(2)}
+                            </p>
+                          </div>
+                          <p className="font-semibold">
+                            ${(item.quantity * item.precio).toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  <div className="flex justify-between pt-2 border-t border-slate-200 text-base">
-                    <span className="font-bold text-slate-900 dark:text-white">Total:</span>
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      ${selectedOrder.total?.toFixed(2) || "0.00"}
+                  </div>
+                )}
+
+                {/* Resumen */}
+                <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Subtotal:</span>
+                    <span className="font-semibold">${selectedOrder.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg">
+                    <span className="font-bold">Total:</span>
+                    <span className="font-bold text-blue-600">
+                      ${selectedOrder.total.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -308,54 +268,72 @@ export default function OrdenesPage() {
                 {/* Notas */}
                 {selectedOrder.notas && (
                   <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      📝 Notas
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <h3 className="font-semibold mb-2">Notas</h3>
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap">
                       {selectedOrder.notas}
                     </p>
                   </div>
                 )}
 
-                {/* Cambiar estado */}
-                <div className="border-t border-slate-200 pt-4">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                    Cambiar estado
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(STATUS_LABELS).map(([status, label]) => (
-                      <button
-                        key={status}
-                        onClick={() => updateOrderStatus(selectedOrder.id, status)}
-                        disabled={selectedOrder.status === status}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                          selectedOrder.status === status
-                            ? "bg-slate-200 text-slate-600 cursor-not-allowed"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                {/* Cambiar Status */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold">Cambiar status</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Seleccionar nuevo status...</option>
+                      {["pendiente", "confirmada", "en_proceso", "entregada", "cancelada"].map(
+                        (status) => (
+                          <option key={status} value={status}>
+                            {STATUS_LABELS[status]}
+                          </option>
+                        )
+                      )}
+                    </select>
+                    <button
+                      onClick={updateOrderStatus}
+                      disabled={!newStatus || updating}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {updating ? "..." : "Actualizar"}
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="w-full mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-              >
-                Cerrar
-              </button>
+                {/* Acciones */}
+                <div className="flex gap-2">
+                  {selectedOrder.cliente_telefono && (
+                    <a
+                      href={`https://wa.me/${selectedOrder.cliente_telefono}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg font-medium text-center hover:bg-green-600"
+                    >
+                      💬 WhatsApp
+                    </a>
+                  )}
+                  <button
+                    onClick={() => window.print()}
+                    className="flex-1 px-4 py-2 bg-slate-600 text-white rounded-lg font-medium hover:bg-slate-700"
+                  >
+                    🖨️ Imprimir
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast({ message: "", type: "success" })}
-        />
+        {toast.message && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast({ message: "", type: "success" })}
+          />
+        )}
       </div>
     </div>
   );
