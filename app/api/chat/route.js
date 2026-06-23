@@ -7,6 +7,8 @@ import { detectEscalation, createEscalation, sendEscalationEmail, getActiveEscal
 import { getLanguageInstruction } from "@/lib/languages";
 import { sendPushNotification } from "@/lib/push-notifications";
 import { createSupabaseAdmin } from "@/lib/supabase-server";
+import { getCatalogContext, createChatbotOrder } from "@/lib/chatbot-store";
+import { applyBusinessRules } from "@/lib/business-rules";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -22,6 +24,17 @@ export async function POST(request) {
 
     const tenant = await getTenant(clientId);
     const sessionId = providedSessionId || randomUUID();
+
+    // Obtener contexto de catálogo si el modo es chatbot
+    let catalogInfo = null;
+    if (tenant.ecommerceMode === 'chatbot') {
+      try {
+        catalogInfo = await getCatalogContext(clientId);
+        console.log("[chat] Catálogo obtenido para modo chatbot:", clientId);
+      } catch (err) {
+        console.error("[chat] Error obteniendo catálogo:", err);
+      }
+    }
 
     // PASO 1: Detectar escalación ANTES de cualquier otra operación
     const userMessage = messages[messages.length - 1]?.content || "";
@@ -142,6 +155,30 @@ export async function POST(request) {
       systemPrompt += "\n\nCONOCIMIENTO BASE:\n" + docsText;
     }
 
+    // Agregar contexto de tienda si está en modo chatbot
+    if (catalogInfo) {
+      const storeSystemPrompt = `
+
+CAPACIDADES DE PEDIDO:
+Puedes tomar pedidos de productos. Cuando el usuario quiera hacer un pedido:
+1. Confirma los productos, cantidades y variantes
+2. Solicita nombre, teléfono y dirección de entrega
+3. Muestra el resumen del pedido con precios
+4. Cuando el usuario confirme, responde EXACTAMENTE con este JSON en tu mensaje (además del texto normal):
+
+[ORDER_JSON]{"items":[{"productId":"id","nombre":"nombre","precio":0,"quantity":1,"variantId":null}],"clienteNombre":"nombre","clienteTelefono":"tel","clienteDireccion":"dir","notas":"","subtotal":0,"total":0}[/ORDER_JSON]
+
+REGLAS IMPORTANTES:
+- Solo ofrece productos que aparecen en el catálogo
+- Verifica el stock antes de confirmar
+- Si un producto está AGOTADO no lo ofrezcas
+- Aplica los precios exactos del catálogo
+- Si hay descuentos por volumen o promociones, infórmalos
+
+${catalogInfo.catalogText}`;
+      systemPrompt += storeSystemPrompt;
+    }
+
     const response = await sendMessage({
       provider,
       model,
@@ -149,6 +186,54 @@ export async function POST(request) {
       messages,
       images: docImages,
     });
+
+    // Detectar y procesar ORDER_JSON si existe
+    let orderCreated = false;
+    let orderNumber = null;
+    let reply = response.reply;
+
+    if (catalogInfo) {
+      const orderMatch = reply.match(/\[ORDER_JSON\](.*?)\[\/ORDER_JSON\]/s);
+
+      if (orderMatch) {
+        try {
+          const orderData = JSON.parse(orderMatch[1]);
+          console.log('[chat] Orden detectada, procesando:', orderData);
+
+          // Procesar con reglas de negocio
+          const cartResult = await applyBusinessRules(clientId, orderData.items);
+          console.log('[chat] Reglas aplicadas, total descuento:', cartResult.totalDiscount);
+
+          // Crear la orden
+          const order = await createChatbotOrder({
+            tenantId: clientId,
+            items: cartResult.cartItems,
+            giftItems: cartResult.giftItems,
+            appliedRules: cartResult.appliedRules,
+            clienteNombre: orderData.clienteNombre,
+            clienteTelefono: orderData.clienteTelefono,
+            clienteDireccion: orderData.clienteDireccion,
+            notas: orderData.notas,
+            subtotal: orderData.subtotal,
+            total: orderData.total - cartResult.totalDiscount,
+            currency: catalogInfo?.currency || 'USD'
+          });
+
+          console.log('[chat] Orden creada:', order.numero_orden);
+
+          // Limpiar el JSON del mensaje para el usuario
+          reply = reply
+            .replace(/\[ORDER_JSON\].*?\[\/ORDER_JSON\]/s, '')
+            .trim() + `\n\n✅ *Orden #${order.numero_orden} creada exitosamente*`;
+
+          orderCreated = true;
+          orderNumber = order.numero_orden;
+        } catch (orderError) {
+          console.error('[chat] Error creando orden:', orderError);
+          // Continuar sin crear orden si hay error
+        }
+      }
+    }
 
     // Guardar mensaje del usuario
     const lastMessage = messages[messages.length - 1];
@@ -185,7 +270,7 @@ export async function POST(request) {
 
     // Guardar respuesta del bot
     console.log('[chat] guardando mensaje assistant, sessionId:', sessionId);
-    await saveMessage(tenant.id, sessionId, "assistant", response.reply);
+    await saveMessage(tenant.id, sessionId, "assistant", reply);
 
     // Actualizar métricas
     console.log('[chat] actualizando metrics para:', tenant.id, 'isNewSession:', isNewSession);
@@ -195,10 +280,17 @@ export async function POST(request) {
     console.log('[chat] incrementando contador de mensajes para:', clientId);
     await incrementMessageCount(clientId);
 
-    return Response.json({
-      reply: response.reply,
+    const responseData = {
+      reply,
       sessionId
-    });
+    };
+
+    if (orderCreated) {
+      responseData.orderCreated = true;
+      responseData.orderNumber = orderNumber;
+    }
+
+    return Response.json(responseData);
   } catch (error) {
     console.error("Error en /api/chat:", error);
     return Response.json(
