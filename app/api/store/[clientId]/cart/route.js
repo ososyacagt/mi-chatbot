@@ -45,22 +45,7 @@ export async function POST(request, { params }) {
       const product = await getProduct(item.productId);
       if (!product) continue;
 
-      console.log('[cart] Verificando stock:', {
-        productId: item.productId,
-        productNombre: product.nombre,
-        productStock: product.stock,
-        quantity: item.quantity,
-        variantId: item.variantId,
-        variantes: product.variantes?.map(v => ({ id: v.id, stock: v.stock }))
-      });
-
-      const stockAvailable = await checkStock(
-        item.productId,
-        item.quantity,
-        item.variantId
-      );
-
-      console.log('[cart] Stock check result:', { productNombre: product.nombre, stockAvailable });
+      const stockAvailable = await checkStock(item.productId, item.quantity);
 
       if (!stockAvailable) {
         const errorMsg = `Stock insuficiente para ${product.nombre}`;
@@ -71,31 +56,14 @@ export async function POST(request, { params }) {
         );
       }
 
-      let itemPrice = product.precio;
-      let variantInfo = null;
-
-      if (item.variantId && product.variantes) {
-        const variant = product.variantes.find((v) => v.id === item.variantId);
-        if (variant) {
-          itemPrice += variant.precio_adicional || 0;
-          variantInfo = {
-            id: variant.id,
-            nombre: variant.nombre,
-            valor: variant.valor,
-          };
-        }
-      }
-
       processedItems.push({
         productId: item.productId,
         nombre: product.nombre,
         descripcion: product.descripcion,
         imagen: product.imagen,
-        precio: itemPrice,
-        precioOriginal: product.precio_original || itemPrice,
+        precio: product.precio,
+        precioOriginal: product.precio_original || product.precio,
         quantity: item.quantity,
-        variantId: item.variantId,
-        variantInfo,
       });
     }
 

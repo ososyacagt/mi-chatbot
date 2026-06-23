@@ -62,7 +62,7 @@ export default function CatalogPage() {
     return filtered;
   };
 
-  const addToCart = (product, variant = null) => {
+  const addToCart = (product) => {
     const cartItem = {
       productId: product.id,
       nombre: product.nombre,
@@ -71,16 +71,9 @@ export default function CatalogPage() {
       precio: product.precio,
       precioOriginal: product.precio_original,
       quantity: 1,
-      variantId: variant?.id,
-      variantInfo: variant
-        ? { nombre: variant.nombre, valor: variant.valor }
-        : null,
     };
 
-    const existingItem = cart.find(
-      (item) =>
-        item.productId === product.id && item.variantId === variant?.id
-    );
+    const existingItem = cart.find((item) => item.productId === product.id);
 
     if (existingItem) {
       existingItem.quantity += 1;
