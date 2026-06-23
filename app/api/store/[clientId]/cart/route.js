@@ -1,21 +1,27 @@
+import { NextResponse } from "next/server";
 import { checkStock, getProduct } from "@/lib/store";
 import { applyBusinessRules } from "@/lib/business-rules";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(request, { params }) {
   try {
     const { clientId } = await params;
-    const { items } = await request.json();
+    const body = await request.json();
+    const { items } = body;
+
+    console.log('[cart] body recibido:', JSON.stringify(body, null, 2));
 
     if (!clientId || !items || !Array.isArray(items)) {
-      return Response.json(
+      return NextResponse.json(
         { error: "clientId e items son requeridos" },
         { status: 400 }
       );
     }
 
     console.log("[POST /api/store/[clientId]/cart] Procesando carrito para:", clientId);
+    console.log('[cart] items recibidos:', JSON.stringify(items, null, 2));
 
+    const supabase = createSupabaseAdmin();
     const { data: tenant } = await supabase
       .from("tenants")
       .select("id")
@@ -23,7 +29,7 @@ export async function POST(request, { params }) {
       .single();
 
     if (!tenant) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Cliente no encontrado" },
         { status: 404 }
       );
@@ -42,8 +48,10 @@ export async function POST(request, { params }) {
       );
 
       if (!stockAvailable) {
-        return Response.json(
-          { error: `Stock insuficiente para ${product.nombre}` },
+        const errorMsg = `Stock insuficiente para ${product.nombre}`;
+        console.log('[cart] error específico:', errorMsg);
+        return NextResponse.json(
+          { error: errorMsg },
           { status: 400 }
         );
       }
@@ -76,7 +84,7 @@ export async function POST(request, { params }) {
       });
     }
 
-    const rulesResult = await applyBusinessRules(tenant.id, processedItems);
+    const rulesResult = await applyBusinessRules(clientId, processedItems);
 
     const subtotal = rulesResult.cartItems.reduce(
       (sum, item) => sum + item.precio * item.quantity,
@@ -87,7 +95,7 @@ export async function POST(request, { params }) {
 
     console.log("[POST /api/store/[clientId]/cart] ✓ Carrito procesado");
 
-    return Response.json({
+    return NextResponse.json({
       cartItems: rulesResult.cartItems,
       appliedRules: rulesResult.appliedRules,
       giftItems: rulesResult.giftItems,
@@ -101,8 +109,8 @@ export async function POST(request, { params }) {
       code: error.code,
       stack: error.stack,
     });
-    return Response.json(
-      { error: "Error al procesar carrito" },
+    return NextResponse.json(
+      { error: "Error al procesar carrito: " + error.message },
       { status: 500 }
     );
   }
