@@ -467,7 +467,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
             {filteredProducts.map((product) => {
               const discount = product.precio_original
                 ? Math.round(
@@ -480,7 +480,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
               return (
                 <div
                   key={product.id}
-                  className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+                  className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex flex-col h-full"
                 >
                   {/* Image */}
                   <div className="relative w-full aspect-square bg-slate-100 overflow-hidden">
@@ -520,51 +520,56 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 flex flex-col h-full">
-                    <h3 className="font-bold text-slate-900 line-clamp-2 mb-2">
-                      {product.nombre}
-                    </h3>
+                  <div className="p-4 flex flex-col flex-1">
+                    {/* Main Content */}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-slate-900 line-clamp-2 mb-2">
+                        {product.nombre}
+                      </h3>
 
-                    <p className="text-sm text-slate-600 line-clamp-2 mb-3 flex-grow">
-                      {stripHTML(product.descripcion || "").substring(0, 60)}
-                      {stripHTML(product.descripcion || "").length > 60 ? "..." : ""}
-                    </p>
+                      <p className="text-sm text-slate-600 line-clamp-2 mb-3">
+                        {stripHTML(product.descripcion || "").substring(0, 60)}
+                        {stripHTML(product.descripcion || "").length > 60 ? "..." : ""}
+                      </p>
 
-                    {/* Price */}
-                    <div className="mb-4">
-                      {product.precio_original && product.precio < product.precio_original ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-500 line-through">
-                            {moneda} {product.precio_original.toFixed(2)}
-                          </span>
+                      {/* Price */}
+                      <div className="mb-4">
+                        {product.precio_original && product.precio < product.precio_original ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-500 line-through">
+                              {moneda} {product.precio_original.toFixed(2)}
+                            </span>
+                            <span className="text-lg font-bold text-slate-900">
+                              {moneda} {product.precio.toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
                           <span className="text-lg font-bold text-slate-900">
                             {moneda} {product.precio.toFixed(2)}
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-lg font-bold text-slate-900">
-                          {moneda} {product.precio.toFixed(2)}
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
 
-                    {/* Button */}
-                    {product.stock > 0 ? (
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="w-full py-2 rounded-lg font-semibold text-white transition hover:opacity-90 active:scale-95"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        Agregar al carrito
-                      </button>
-                    ) : (
-                      <button
-                        disabled
-                        className="w-full py-2 rounded-lg font-semibold text-slate-500 bg-slate-100 cursor-not-allowed"
-                      >
-                        Sin stock
-                      </button>
-                    )}
+                    {/* Button - Always at bottom */}
+                    <div className="mt-auto">
+                      {product.stock > 0 ? (
+                        <button
+                          onClick={() => addToCart(product)}
+                          className="w-full py-2 rounded-lg font-semibold text-white transition hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          Agregar al carrito
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full py-2 rounded-lg font-semibold text-slate-500 bg-slate-100 cursor-not-allowed"
+                        >
+                          Sin stock
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
