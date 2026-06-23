@@ -30,18 +30,23 @@ export async function GET(request, { params }) {
       );
     }
 
-    if (tenant.ecommerce_mode === "none") {
-      return NextResponse.json(
-        { error: "E-commerce no habilitado" },
-        { status: 403 }
-      );
+    if (!tenant.ecommerce_mode || tenant.ecommerce_mode === "none") {
+      return NextResponse.json({
+        tenant: {
+          nombre: tenant.store_name || tenant.nombre,
+          ecommerceMode: tenant.ecommerce_mode || "none",
+          notConfigured: true
+        },
+        categories: [],
+        products: []
+      });
     }
 
     // Obtener categorías con productos
     const { data: categories = [] } = await supabase
       .from("categories")
       .select("*")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", clientId)
       .eq("activo", true)
       .order("orden", { ascending: true });
 
@@ -49,7 +54,7 @@ export async function GET(request, { params }) {
     const { data: products = [] } = await supabase
       .from("products")
       .select("*, variantes:product_variants(*)")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", clientId)
       .eq("activo", true)
       .order("nombre", { ascending: true });
 

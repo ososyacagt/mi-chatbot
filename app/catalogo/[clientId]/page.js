@@ -202,6 +202,30 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
     );
   }
 
+  if (storeData?.notConfigured) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-7xl mb-6">🚧</div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">
+            {storeData.nombre || 'Tienda'}
+          </h1>
+          <p className="text-xl text-slate-600 mb-8">
+            Esta tienda está en construcción
+          </p>
+          <p className="text-slate-500 mb-8">
+            El administrador aún está configurando la tienda. Por favor, vuelve más tarde.
+          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-slate-500">
+              ℹ️ Modo e-commerce: <span className="font-semibold">{storeData.ecommerceMode || 'No configurado'}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const filteredProducts = getFilteredProducts();
 
   return (
