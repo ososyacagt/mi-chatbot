@@ -41,7 +41,6 @@ export async function GET(request) {
       .eq("tenant_id", clientId);
 
     const statusCounts = {
-      total: countByStatus?.length || 0,
       pendiente: 0,
       confirmada: 0,
       en_proceso: 0,
@@ -54,10 +53,10 @@ export async function GET(request) {
         statusCounts[order.status]++;
       }
     });
-    statusCounts.total = Object.values(statusCounts).reduce(
-      (sum, val) => (typeof val === "number" ? sum + val : sum),
-      0
-    ) / 6;
+
+    // Total es la suma de todos los status
+    const total = Object.values(statusCounts).reduce((sum, val) => sum + val, 0);
+    statusCounts.total = total;
 
     // Obtener órdenes
     let query = supabase
