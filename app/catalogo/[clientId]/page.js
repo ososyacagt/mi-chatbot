@@ -197,9 +197,8 @@ export default function CatalogPage() {
         cartData,
         orderForm.clienteNombre
       );
-      const whatsappUrl = `https://wa.me/${storeData.whatsappNumber}?text=${encodeURIComponent(
-        message
-      )}`;
+      const numero = storeData.whatsappNumber?.replace(/[^0-9]/g, '');
+      const whatsappUrl = `https://wa.me/${numero}?text=${encodeURIComponent(message)}`;
 
       window.open(whatsappUrl, "_blank");
       setCart([]);
@@ -335,7 +334,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
           <div className="flex items-center gap-3">
             {storeData?.whatsappNumber && (
               <a
-                href={`https://wa.me/${storeData.whatsappNumber}`}
+                href={`https://wa.me/${storeData.whatsappNumber.replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 hover:bg-slate-100 rounded-lg transition"
@@ -836,7 +835,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
           <h3 className="font-bold text-lg mb-2">{storeData?.nombre}</h3>
           {storeData?.whatsappNumber && (
             <a
-              href={`https://wa.me/${storeData.whatsappNumber}`}
+              href={`https://wa.me/${storeData.whatsappNumber.replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-green-400 hover:text-green-300 text-sm block mb-4"
