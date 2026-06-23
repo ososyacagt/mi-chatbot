@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Toast from "@/app/admin/components/Toast";
 
+const stripHTML = (html) => html?.replace(/<[^>]*>/g, '') || '';
+
 export default function CatalogPage() {
   const params = useParams();
   const clientId = params.clientId;
@@ -12,11 +14,18 @@ export default function CatalogPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [orderForm, setOrderForm] = useState({
+    clienteNombre: "",
+    clienteTelefono: "",
+    clienteDireccion: "",
+    notas: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadStore();
@@ -26,12 +35,10 @@ export default function CatalogPage() {
     try {
       const res = await fetch(`/api/store/${clientId}`);
       if (!res.ok) throw new Error("Error loading store");
-
       const data = await res.json();
       setStoreData(data.tenant);
       setCategories(data.categories);
       setProducts(data.products);
-      setSelectedCategory(data.categories[0]?.id);
     } catch (err) {
       console.error("Error:", err);
       setToast({ message: "✗ Error al cargar la tienda", type: "error" });
@@ -41,12 +48,9 @@ export default function CatalogPage() {
   };
 
   const getFilteredProducts = () => {
-    let filtered = products;
+    let filtered = products.filter((p) => p.stock > 0);
 
-    // Filtrar solo productos con stock > 0
-    filtered = filtered.filter((p) => p.stock > 0);
-
-    if (selectedCategory && !searchQuery) {
+    if (selectedCategory !== "all") {
       filtered = filtered.filter((p) => p.category_id === selectedCategory);
     }
 
@@ -55,7 +59,7 @@ export default function CatalogPage() {
       filtered = filtered.filter(
         (p) =>
           p.nombre.toLowerCase().includes(query) ||
-          p.descripcion?.toLowerCase().includes(query)
+          stripHTML(p.descripcion || "").toLowerCase().includes(query)
       );
     }
 
@@ -74,7 +78,6 @@ export default function CatalogPage() {
     };
 
     const existingItem = cart.find((item) => item.productId === product.id);
-
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
@@ -108,16 +111,17 @@ export default function CatalogPage() {
   };
 
   const removeFromCart = (index) => {
-    const newCart = cart.filter((_, i) => i !== index);
-    setCart(newCart);
+    setCart(cart.filter((_, i) => i !== index));
   };
 
-  const handleOrderSubmit = async (clienteNombre, clienteTelefono, clienteDireccion, notas) => {
-    if (!clienteNombre || !cart.length) {
-      setToast({ message: "✗ Completa el formulario y agrega productos", type: "error" });
+  const handleOrderSubmit = async (e) => {
+    e.preventDefault();
+    if (!orderForm.clienteNombre || !cart.length) {
+      setToast({ message: "✗ Completa el nombre y agrega productos", type: "error" });
       return;
     }
 
+    setSubmitting(true);
     try {
       const cartRes = await fetch(`/api/store/${clientId}/cart`, {
         method: "POST",
@@ -136,10 +140,10 @@ export default function CatalogPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: cart,
-          clienteNombre,
-          clienteTelefono,
-          clienteDireccion,
-          notas,
+          clienteNombre: orderForm.clienteNombre,
+          clienteTelefono: orderForm.clienteTelefono,
+          clienteDireccion: orderForm.clienteDireccion,
+          notas: orderForm.notas,
           subtotal: cartData.subtotal,
           descuentos: cartData.totalDiscount,
           total: cartData.total,
@@ -152,7 +156,7 @@ export default function CatalogPage() {
       const message = formatWhatsAppMessage(
         orderData.order,
         cartData,
-        clienteNombre
+        orderForm.clienteNombre
       );
       const whatsappUrl = `https://wa.me/${storeData.whatsappNumber}?text=${encodeURIComponent(
         message
@@ -161,24 +165,22 @@ export default function CatalogPage() {
       window.open(whatsappUrl, "_blank");
       setCart([]);
       setCartOpen(false);
+      setOrderForm({ clienteNombre: "", clienteTelefono: "", clienteDireccion: "", notas: "" });
     } catch (err) {
       console.error("Error:", err);
       setToast({ message: "✗ " + (err.message || "Error al procesar pedido"), type: "error" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const formatWhatsAppMessage = (order, cartData, clienteName) => {
     const moneda = storeData.currency || 'Q';
     const itemsList = cartData.cartItems
-      .map(
-        (item) =>
-          `• ${item.quantity}x ${item.nombre}${
-            item.variantInfo ? ` (${item.variantInfo.valor})` : ""
-          } - ${moneda} ${(item.precio * item.quantity).toFixed(2)}`
-      )
+      .map((item) => `• ${item.quantity}x ${item.nombre} - ${moneda} ${(item.precio * item.quantity).toFixed(2)}`)
       .join("\n");
 
-    const giftsText = cartData.giftItems.length
+    const giftsText = cartData.giftItems?.length
       ? cartData.giftItems.map((g) => `🎁 • ${g.nombre} (GRATIS)`).join("\n")
       : "";
 
@@ -199,7 +201,10 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-slate-600">Cargando tienda...</div>
+        <div className="text-center">
+          <div className="text-4xl mb-4">📦</div>
+          <div className="text-slate-600">Cargando tienda...</div>
+        </div>
       </div>
     );
   }
@@ -207,7 +212,10 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
   if (!storeData) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-slate-600">Tienda no encontrada</div>
+        <div className="text-center">
+          <div className="text-4xl mb-4">❌</div>
+          <div className="text-slate-600">Tienda no encontrada</div>
+        </div>
       </div>
     );
   }
@@ -226,82 +234,177 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
           <p className="text-slate-500 mb-8">
             El administrador aún está configurando la tienda. Por favor, vuelve más tarde.
           </p>
-          <div className="space-y-3">
-            <p className="text-sm text-slate-500">
-              ℹ️ Modo e-commerce: <span className="font-semibold">{storeData.ecommerceMode || 'No configurado'}</span>
-            </p>
-          </div>
         </div>
       </div>
     );
   }
 
   const filteredProducts = getFilteredProducts();
+  const subtotal = cart.reduce((sum, item) => sum + item.precio * item.quantity, 0);
+  const primaryColor = storeData.colorPrimary || "#3b82f6";
+  const moneda = storeData.currency || 'Q';
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Topbar */}
-      <div className="bg-slate-100 border-b border-slate-200 py-3 px-4 text-center text-sm text-slate-700">
+      {/* TOPBAR */}
+      <div className="bg-slate-900 text-white py-3 px-4 text-center text-sm flex items-center justify-center gap-2">
+        <div className="relative w-2 h-2">
+          <div className="absolute inset-0 bg-yellow-400 rounded-full animate-pulse"></div>
+        </div>
         {storeData?.topbarMessage || '📦 Bienvenido a nuestra tienda'}
       </div>
 
-      {/* Navbar */}
+      {/* NAVBAR */}
       <nav className="sticky top-0 z-40 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="text-xl font-bold text-slate-900">
-            {storeData.storeLogo ? (
-              <img src={storeData.storeLogo} alt="Logo" className="h-8 w-auto" />
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            {storeData?.storeLogo ? (
+              <img
+                src={storeData.storeLogo}
+                alt="Logo"
+                className="w-12 h-12 rounded-full object-cover"
+              />
             ) : (
-              storeData.nombre
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {storeData?.nombre?.charAt(0).toUpperCase()}
+              </div>
             )}
+            <div className="hidden sm:block">
+              <h1 className="font-bold text-slate-900">{storeData?.nombre}</h1>
+            </div>
           </div>
 
-          <div className="flex-1 mx-8">
+          {/* Search - hidden on mobile */}
+          <div className="hidden md:flex flex-1 max-w-xs">
             <input
               type="text"
               placeholder="Buscar productos..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                if (e.target.value) setSelectedCategory(null);
+                if (e.target.value) setSelectedCategory("all");
               }}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 rounded-full border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <div className="flex items-center gap-4">
-            <a
-              href={`https://wa.me/${storeData.whatsappNumber}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-600 hover:text-green-700 font-bold text-lg"
-            >
-              💬
-            </a>
-
+          {/* Right icons */}
+          <div className="flex items-center gap-3">
+            {storeData?.whatsappNumber && (
+              <a
+                href={`https://wa.me/${storeData.whatsappNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-slate-100 rounded-lg transition"
+                title="WhatsApp"
+              >
+                💬
+              </a>
+            )}
             <button
               onClick={() => setCartOpen(!cartOpen)}
-              className="relative p-2 text-slate-600 hover:text-slate-900"
+              className="relative p-2 hover:bg-slate-100 rounded-lg transition"
             >
               🛒
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span
+                  className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: primaryColor }}
+                >
                   {cart.length}
                 </span>
               )}
             </button>
           </div>
         </div>
+
+        {/* Mobile search bar */}
+        <div className="md:hidden px-4 pb-3">
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value) setSelectedCategory("all");
+            }}
+            className="w-full px-4 py-2 rounded-full border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </nav>
 
-      {/* Hero */}
-      {storeData.storeBanner && (
-        <div className="h-48 bg-cover bg-center" style={{ backgroundImage: `url(${storeData.storeBanner})` }} />
-      )}
+      {/* HERO SECTION */}
+      <div
+        className="relative h-64 sm:h-80 flex items-center justify-center text-white overflow-hidden"
+        style={{
+          backgroundColor: primaryColor,
+          backgroundImage: storeData?.storeBanner ? `url(${storeData.storeBanner})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {storeData?.storeBanner && (
+          <div className="absolute inset-0 bg-black opacity-40"></div>
+        )}
+        <div className="relative text-center px-4">
+          <div className="inline-block mb-3 px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-semibold flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            EN LÍNEA
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-2">{storeData?.nombre}</h1>
+          <p className="text-lg opacity-90">Compra en línea, entrega rápida</p>
+        </div>
+      </div>
 
-      {/* Categorías */}
-      <div className="sticky top-16 z-30 bg-white border-b border-slate-200 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 flex gap-4 py-3">
+      {/* TRUST STRIP */}
+      <div className="bg-slate-50 border-b border-slate-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          <div>
+            <div className="text-2xl mb-1">📦</div>
+            <div className="text-xs text-slate-600">Productos</div>
+            <div className="font-bold text-slate-900">{products.length}</div>
+          </div>
+          <div>
+            <div className="text-2xl mb-1">✅</div>
+            <div className="text-xs text-slate-600">Garantía</div>
+            <div className="font-bold text-slate-900">100%</div>
+          </div>
+          <div>
+            <div className="text-2xl mb-1">🚚</div>
+            <div className="text-xs text-slate-600">Entrega</div>
+            <div className="font-bold text-slate-900">Rápida</div>
+          </div>
+          <div>
+            <div className="text-2xl mb-1">💬</div>
+            <div className="text-xs text-slate-600">Soporte</div>
+            <div className="font-bold text-slate-900">24/7</div>
+          </div>
+        </div>
+      </div>
+
+      {/* CATEGORIES TABS */}
+      <div className="sticky top-[140px] z-30 bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto overflow-x-auto flex gap-2 px-4 py-3">
+          <button
+            onClick={() => {
+              setSelectedCategory("all");
+              setSearchQuery("");
+            }}
+            className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition ${
+              selectedCategory === "all"
+                ? "text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+            style={{
+              backgroundColor: selectedCategory === "all" ? primaryColor : undefined,
+            }}
+          >
+            Todos
+          </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -309,323 +412,363 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
                 setSelectedCategory(cat.id);
                 setSearchQuery("");
               }}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-all ${
+              className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition ${
                 selectedCategory === cat.id
-                  ? "bg-blue-600 text-white"
+                  ? "text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
+              style={{
+                backgroundColor: selectedCategory === cat.id ? primaryColor : undefined,
+              }}
             >
-              {cat.emoji} {cat.nombre}
+              {cat.nombre}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Productos Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* MAIN CONTENT */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {searchQuery && (
+          <div className="mb-6 flex items-center justify-between">
+            <p className="text-slate-600">
+              Resultados para "<strong>{searchQuery}</strong>" ({filteredProducts.length})
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("all");
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        )}
+
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-500">
+            <div className="text-4xl mb-4">📭</div>
+            <p className="text-slate-600 mb-4">
               {searchQuery
-                ? `Sin resultados para "${searchQuery}"`
-                : "No hay productos en esta categoría"}
+                ? `No encontramos productos para "${searchQuery}"`
+                : "No hay productos disponibles"}
             </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                moneda={storeData.moneda}
-                onAddToCart={addToCart}
-                inCart={cart.some((item) => item.productId === product.id)}
-              />
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Carrito Lateral */}
-      {cartOpen && (
-        <CartSidebar
-          cart={cart}
-          storeData={storeData}
-          onClose={() => setCartOpen(false)}
-          onUpdateQuantity={updateCartItemQuantity}
-          onRemove={removeFromCart}
-          onSubmitOrder={handleOrderSubmit}
-        />
-      )}
-
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ message: "", type: "success" })}
-      />
-    </div>
-  );
-}
-
-function ProductCard({ product, moneda, onAddToCart, inCart }) {
-  // La imagen se guarda como array en la DB (campo `imagenes`)
-  const imagenUrl = product.imagenes?.[0] || product.imagen || null;
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-      {/* Imagen */}
-      <div className="relative h-48 bg-slate-100 overflow-hidden">
-        {imagenUrl ? (
-          <img
-            src={imagenUrl}
-            alt={product.nombre}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl text-slate-300">
-            📦
-          </div>
-        )}
-
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.stock < 5 && (
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-              Stock Bajo
-            </span>
-          )}
-          {product.destacado && (
-            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
-              Destacado
-            </span>
-          )}
-          {product.precio_original && (
-            <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-              Oferta
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Contenido */}
-      <div className="p-4">
-        <h3 className="font-bold text-slate-900 line-clamp-2 text-sm">
-          {product.nombre}
-        </h3>
-
-        {/* Descripción: renderizar como HTML porque viene del editor de texto rico */}
-        <div
-          className="text-slate-600 text-xs line-clamp-3 mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_b]:font-bold [&_i]:italic [&_u]:underline"
-          dangerouslySetInnerHTML={{ __html: product.descripcion || '' }}
-        />
-
-        {/* Precio */}
-        <div className="mt-3 flex items-center gap-2">
-          {product.precio_original ? (
-            <>
-              <span className="text-slate-400 line-through text-xs">
-                {moneda} {product.precio_original.toFixed(2)}
-              </span>
-              <span className="text-lg font-bold text-slate-900">
-                {moneda} {product.precio.toFixed(2)}
-              </span>
-            </>
-          ) : (
-            <span className="text-lg font-bold text-slate-900">
-              {moneda} {product.precio.toFixed(2)}
-            </span>
-          )}
-        </div>
-
-        {/* Botón Agregar al Carrito */}
-        <button
-          onClick={() => onAddToCart(product)}
-          className={`w-full mt-3 py-2 rounded-lg font-bold text-sm transition-all ${
-            inCart
-              ? "bg-green-600 text-white hover:bg-green-700"
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }`}
-        >
-          {inCart ? "✓ En carrito" : "Agregar al carrito"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CartSidebar({
-  cart,
-  storeData,
-  onClose,
-  onUpdateQuantity,
-  onRemove,
-  onSubmitOrder,
-}) {
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const subtotal = cart.reduce((sum, item) => sum + item.precio * item.quantity, 0);
-
-  const handleSubmit = async () => {
-    if (!clientName.trim()) {
-      alert("Por favor ingresa tu nombre");
-      return;
-    }
-
-    setSubmitting(true);
-    await onSubmitOrder(clientName, clientPhone, clientAddress, notes);
-    setSubmitting(false);
-  };
-
-  return (
-    <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div className="fixed right-0 top-0 h-screen w-full md:w-96 bg-white shadow-lg z-50 overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex justify-between items-center">
-          <h2 className="font-bold text-slate-900">Carrito</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-600 hover:text-slate-900 text-xl"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Items */}
-        <div className="p-4 space-y-3">
-          {cart.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">Tu carrito está vacío</p>
-          ) : (
-            cart.map((item, idx) => (
-              <div key={idx} className="border border-slate-200 rounded-lg p-3">
-                {item.imagen && (
-                  <img
-                    src={item.imagen}
-                    alt={item.nombre}
-                    className="w-full h-32 object-cover rounded mb-2"
-                  />
-                )}
-                <h4 className="font-bold text-sm text-slate-900">{item.nombre}</h4>
-                {item.variantInfo && (
-                  <p className="text-xs text-slate-600">
-                    {item.variantInfo.nombre}: {item.variantInfo.valor}
-                  </p>
-                )}
-                <p className="text-sm font-bold mt-1">
-                  {storeData.moneda} {(item.precio * item.quantity).toFixed(2)}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    onClick={() => onUpdateQuantity(idx, item.quantity - 1)}
-                    className="px-2 py-1 bg-slate-200 rounded text-sm"
-                  >
-                    −
-                  </button>
-                  <span className="flex-1 text-center text-sm">{item.quantity}</span>
-                  <button
-                    onClick={() => onUpdateQuantity(idx, item.quantity + 1)}
-                    className="px-2 py-1 bg-slate-200 rounded text-sm"
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => onRemove(idx)}
-                    className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-bold"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {cart.length > 0 && (
-          <>
-            {/* Totales */}
-            <div className="border-t border-slate-200 p-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Subtotal:</span>
-                <span className="font-bold">
-                  {storeData.moneda} {subtotal.toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            {/* Formulario */}
-            <div className="p-4 space-y-3 border-t border-slate-200">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tu nombre *
-                </label>
-                <input
-                  type="text"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Juan Pérez"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="+1 234 567 8900"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Dirección
-                </label>
-                <input
-                  type="text"
-                  value={clientAddress}
-                  onChange={(e) => setClientAddress(e.target.value)}
-                  placeholder="Ciudad de Guatemala"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Notas (ej: Sin picante)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
+            {searchQuery && (
               <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 transition-all"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                }}
+                className="text-blue-600 hover:text-blue-700 font-medium"
               >
-                {submitting ? "Procesando..." : "💬 Enviar por WhatsApp"}
+                Ver todos los productos
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredProducts.map((product) => {
+              const discount = product.precio_original
+                ? Math.round(
+                    ((product.precio_original - product.precio) /
+                      product.precio_original) *
+                      100
+                  )
+                : 0;
+
+              return (
+                <div
+                  key={product.id}
+                  className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+                >
+                  {/* Image */}
+                  <div className="relative w-full aspect-square bg-slate-100 overflow-hidden">
+                    {product.imagenes?.[0] ? (
+                      <img
+                        src={product.imagenes[0]}
+                        alt={product.nombre}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">
+                        📦
+                      </div>
+                    )}
+
+                    {/* Badges */}
+                    {product.destacado && (
+                      <div className="absolute top-2 left-2 bg-yellow-400 text-slate-900 px-2 py-1 rounded-full text-xs font-bold">
+                        ⭐ DESTACADO
+                      </div>
+                    )}
+                    {product.stock <= 3 && product.stock > 0 && (
+                      <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        ⚡ ÚLTIMAS UNIDADES
+                      </div>
+                    )}
+                    {product.stock === 0 && (
+                      <div className="absolute inset-0 bg-black opacity-40 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">AGOTADO</span>
+                      </div>
+                    )}
+                    {discount > 0 && (
+                      <div className="absolute bottom-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        {discount}% OFF
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4 flex flex-col h-full">
+                    <h3 className="font-bold text-slate-900 line-clamp-2 mb-2">
+                      {product.nombre}
+                    </h3>
+
+                    <p className="text-sm text-slate-600 line-clamp-2 mb-3 flex-grow">
+                      {stripHTML(product.descripcion || "").substring(0, 60)}
+                      {stripHTML(product.descripcion || "").length > 60 ? "..." : ""}
+                    </p>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      {product.precio_original && product.precio < product.precio_original ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-500 line-through">
+                            {moneda} {product.precio_original.toFixed(2)}
+                          </span>
+                          <span className="text-lg font-bold text-slate-900">
+                            {moneda} {product.precio.toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-bold text-slate-900">
+                          {moneda} {product.precio.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Button */}
+                    {product.stock > 0 ? (
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="w-full py-2 rounded-lg font-semibold text-white transition hover:opacity-90 active:scale-95"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        Agregar al carrito
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full py-2 rounded-lg font-semibold text-slate-500 bg-slate-100 cursor-not-allowed"
+                      >
+                        Sin stock
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* CART SIDEBAR */}
+      {cartOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity"
+            onClick={() => setCartOpen(false)}
+          ></div>
+
+          <div className="fixed right-0 top-0 h-screen w-full sm:w-96 bg-white z-50 shadow-lg flex flex-col overflow-hidden animate-in slide-in-from-right">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h2 className="text-2xl font-bold">Tu pedido</h2>
+              <button
+                onClick={() => setCartOpen(false)}
+                className="text-slate-500 hover:text-slate-900 text-2xl"
+              >
+                ✕
               </button>
             </div>
-          </>
-        )}
-      </div>
-    </>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <div className="text-4xl mb-2">🛒</div>
+                  <p>Tu carrito está vacío</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item, idx) => (
+                    <div key={idx} className="flex gap-3 pb-4 border-b border-slate-200">
+                      <img
+                        src={item.imagen || "https://via.placeholder.com/60"}
+                        alt={item.nombre}
+                        className="w-16 h-16 rounded object-cover bg-slate-100"
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm text-slate-900">
+                          {item.nombre}
+                        </h4>
+                        <p className="text-sm text-slate-600">
+                          {moneda} {item.precio.toFixed(2)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => updateCartItemQuantity(idx, item.quantity - 1)}
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm"
+                          >
+                            −
+                          </button>
+                          <span className="w-8 text-center font-semibold">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateCartItemQuantity(idx, item.quantity + 1)}
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(idx)}
+                            className="ml-auto text-red-500 hover:text-red-700 text-sm font-semibold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer with form */}
+            {cart.length > 0 && (
+              <>
+                <div className="border-t border-slate-200 p-6 space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-slate-600">Subtotal:</span>
+                      <span className="font-semibold">
+                        {moneda} {subtotal.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-lg">
+                      <span className="font-bold">Total:</span>
+                      <span className="font-bold" style={{ color: primaryColor }}>
+                        {moneda} {subtotal.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Form */}
+                  <form onSubmit={handleOrderSubmit} className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-1">
+                        Nombre *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={orderForm.clienteNombre}
+                        onChange={(e) =>
+                          setOrderForm({ ...orderForm, clienteNombre: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Tu nombre"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-1">
+                        Teléfono
+                      </label>
+                      <input
+                        type="tel"
+                        value={orderForm.clienteTelefono}
+                        onChange={(e) =>
+                          setOrderForm({ ...orderForm, clienteTelefono: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="+502 7000-0000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-1">
+                        Dirección
+                      </label>
+                      <input
+                        type="text"
+                        value={orderForm.clienteDireccion}
+                        onChange={(e) =>
+                          setOrderForm({ ...orderForm, clienteDireccion: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Tu dirección"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-1">
+                        Notas
+                      </label>
+                      <textarea
+                        value={orderForm.notas}
+                        onChange={(e) => setOrderForm({ ...orderForm, notas: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Instrucciones especiales..."
+                        rows="2"
+                      ></textarea>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition active:scale-95 disabled:opacity-50"
+                    >
+                      {submitting ? "Procesando..." : "Enviar pedido por WhatsApp 📲"}
+                    </button>
+                  </form>
+
+                  <p className="text-xs text-slate-500 text-center">
+                    Se abrirá WhatsApp con tu pedido detallado
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* FOOTER */}
+      <footer className="bg-slate-900 text-white py-8 mt-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <h3 className="font-bold text-lg mb-2">{storeData?.nombre}</h3>
+          {storeData?.whatsappNumber && (
+            <a
+              href={`https://wa.me/${storeData.whatsappNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-400 hover:text-green-300 text-sm block mb-4"
+            >
+              💬 {storeData.whatsappNumber}
+            </a>
+          )}
+          <p className="text-slate-400 text-sm">
+            © 2026 {storeData?.nombre}. Todos los derechos reservados.
+          </p>
+        </div>
+      </footer>
+
+      {/* Toast */}
+      {toast.message && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: "", type: "success" })} />
+      )}
+    </div>
   );
 }
