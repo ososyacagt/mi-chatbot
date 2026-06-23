@@ -113,6 +113,8 @@ export default function ChatPage() {
   const [lastAdminResponseTime, setLastAdminResponseTime] = useState(null);
   const [agentActive, setAgentActive] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [lastOrderCreated, setLastOrderCreated] = useState(false);
+  const [lastOrderNumber, setLastOrderNumber] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -387,8 +389,16 @@ export default function ChatPage() {
       setAgentActive(false);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.reply, timestamp: new Date() },
+        { role: "assistant", content: data.reply, timestamp: new Date(), orderCreated: data.orderCreated, orderNumber: data.orderNumber },
       ]);
+
+      // Guardar información de orden si se creó
+      if (data.orderCreated) {
+        setLastOrderCreated(true);
+        setLastOrderNumber(data.orderNumber);
+        // Limpiar estado después de 10 segundos
+        setTimeout(() => setLastOrderCreated(false), 10000);
+      }
     } catch (err) {
       setError(err.message);
       if (err.message.includes("límite de")) {
@@ -627,6 +637,38 @@ export default function ChatPage() {
                     <MessageRating messageIndex={i} sessionId={sessionId} tenantColorPrimary={tenant?.colorPrimary} />
                   )}
                 </div>
+
+                {/* Banner de confirmación de orden */}
+                {msg.role === "assistant" && msg.orderCreated && msg.orderNumber && (
+                  <div className="mt-4 flex justify-start">
+                    <div className="max-w-md bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700 rounded-2xl p-4 rounded-bl-none">
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl">✅</div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-green-900 dark:text-green-100 mb-1">
+                            ¡Pedido creado exitosamente!
+                          </h3>
+                          <p className="text-sm text-green-700 dark:text-green-200 mb-3">
+                            Tu número de orden es: <span className="font-mono font-bold">#{msg.orderNumber}</span>
+                          </p>
+                          <p className="text-xs text-green-600 dark:text-green-300 mb-3">
+                            Recibirás una confirmación pronto. Guarda este número para referencia.
+                          </p>
+                          {tenant?.whatsappNumber && (
+                            <a
+                              href={`https://wa.me/${tenant.whatsappNumber.replace(/[^0-9]/g, '')}?text=Hola, me gustaría conocer el estado de mi pedido ${msg.orderNumber}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm rounded-lg transition-colors"
+                            >
+                              💬 Ver estado del pedido
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               </div>
             );
