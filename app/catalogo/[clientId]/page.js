@@ -67,7 +67,7 @@ export default function CatalogPage() {
       productId: product.id,
       nombre: product.nombre,
       descripcion: product.descripcion,
-      imagen: product.imagen,
+      imagen: product.imagenes?.[0] || product.imagen || null,
       precio: product.precio,
       precioOriginal: product.precio_original,
       quantity: 1,
@@ -154,7 +154,7 @@ export default function CatalogPage() {
         cartData,
         clienteNombre
       );
-      const whatsappUrl = `https://wa.me/${storeData.whatsapp}?text=${encodeURIComponent(
+      const whatsappUrl = `https://wa.me/${storeData.whatsappNumber}?text=${encodeURIComponent(
         message
       )}`;
 
@@ -168,12 +168,13 @@ export default function CatalogPage() {
   };
 
   const formatWhatsAppMessage = (order, cartData, clienteName) => {
+    const moneda = storeData.currency || 'Q';
     const itemsList = cartData.cartItems
       .map(
         (item) =>
           `• ${item.quantity}x ${item.nombre}${
             item.variantInfo ? ` (${item.variantInfo.valor})` : ""
-          } - ${storeData.moneda} ${(item.precio * item.quantity).toFixed(2)}`
+          } - ${moneda} ${(item.precio * item.quantity).toFixed(2)}`
       )
       .join("\n");
 
@@ -188,8 +189,8 @@ export default function CatalogPage() {
 🛍️ *Productos:*
 ${itemsList}${giftsText ? "\n" + giftsText : ""}
 
-💰 *Subtotal:* ${storeData.moneda} ${cartData.subtotal.toFixed(2)}
-${cartData.totalDiscount > 0 ? `🏷️ *Descuentos:* -${storeData.moneda} ${cartData.totalDiscount.toFixed(2)}\n` : ""}✅ *Total:* ${storeData.moneda} ${cartData.total.toFixed(2)}
+💰 *Subtotal:* ${moneda} ${cartData.subtotal.toFixed(2)}
+${cartData.totalDiscount > 0 ? `🏷️ *Descuentos:* -${moneda} ${cartData.totalDiscount.toFixed(2)}\n` : ""}✅ *Total:* ${moneda} ${cartData.total.toFixed(2)}
 
 👤 *Cliente:* ${order.cliente_nombre}
 ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : ""}${order.notas ? `📝 *Notas:* ${order.notas}` : ""}`;
@@ -248,8 +249,8 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
       <nav className="sticky top-0 z-40 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="text-xl font-bold text-slate-900">
-            {storeData.logo ? (
-              <img src={storeData.logo} alt="Logo" className="h-8 w-auto" />
+            {storeData.storeLogo ? (
+              <img src={storeData.storeLogo} alt="Logo" className="h-8 w-auto" />
             ) : (
               storeData.nombre
             )}
@@ -270,7 +271,7 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
 
           <div className="flex items-center gap-4">
             <a
-              href={`https://wa.me/${storeData.whatsapp}`}
+              href={`https://wa.me/${storeData.whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-green-600 hover:text-green-700 font-bold text-lg"
@@ -294,8 +295,8 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
       </nav>
 
       {/* Hero */}
-      {storeData.banner && (
-        <div className="h-48 bg-cover bg-center" style={{ backgroundImage: `url(${storeData.banner})` }} />
+      {storeData.storeBanner && (
+        <div className="h-48 bg-cover bg-center" style={{ backgroundImage: `url(${storeData.storeBanner})` }} />
       )}
 
       {/* Categorías */}
@@ -367,18 +368,21 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
 }
 
 function ProductCard({ product, moneda, onAddToCart, inCart }) {
+  // La imagen se guarda como array en la DB (campo `imagenes`)
+  const imagenUrl = product.imagenes?.[0] || product.imagen || null;
+
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
       {/* Imagen */}
       <div className="relative h-48 bg-slate-100 overflow-hidden">
-        {product.imagen ? (
+        {imagenUrl ? (
           <img
-            src={product.imagen}
+            src={imagenUrl}
             alt={product.nombre}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-400">
+          <div className="w-full h-full flex items-center justify-center text-4xl text-slate-300">
             📦
           </div>
         )}
@@ -390,7 +394,7 @@ function ProductCard({ product, moneda, onAddToCart, inCart }) {
               Stock Bajo
             </span>
           )}
-          {product.featured && (
+          {product.destacado && (
             <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
               Destacado
             </span>
@@ -409,9 +413,11 @@ function ProductCard({ product, moneda, onAddToCart, inCart }) {
           {product.nombre}
         </h3>
 
-        <p className="text-slate-600 text-xs line-clamp-2 mt-1">
-          {product.descripcion}
-        </p>
+        {/* Descripción: renderizar como HTML porque viene del editor de texto rico */}
+        <div
+          className="text-slate-600 text-xs line-clamp-3 mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_b]:font-bold [&_i]:italic [&_u]:underline"
+          dangerouslySetInnerHTML={{ __html: product.descripcion || '' }}
+        />
 
         {/* Precio */}
         <div className="mt-3 flex items-center gap-2">

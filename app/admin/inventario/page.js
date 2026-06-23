@@ -877,16 +877,15 @@ function ProductsTab({
                 return (
                   <tr key={product.id} className="border-b hover:bg-slate-50">
                     <td className="px-4 py-2">
-                      {product.imagen ? (
+                      {(product.imagenes?.[0] || product.imagen) ? (
                         <img
-                          src={product.imagen}
+                          src={product.imagenes?.[0] || product.imagen}
                           alt={product.nombre}
-                          className="w-8 h-8 rounded"
-                          onError={(e) => (e.target.src = "")}
+                          className="w-8 h-8 object-cover rounded"
+                          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                         />
-                      ) : (
-                        <div className="w-8 h-8 bg-slate-200 rounded" />
-                      )}
+                      ) : null}
+                      <div className="w-8 h-8 bg-slate-200 rounded" style={{ display: (product.imagenes?.[0] || product.imagen) ? 'none' : 'block' }} />
                     </td>
                     <td className="px-4 py-2">
                       <div className="font-medium">{product.nombre}</div>
