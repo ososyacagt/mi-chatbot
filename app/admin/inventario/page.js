@@ -227,46 +227,6 @@ function InventoryPageContent() {
     }
   };
 
-  // Mapea nombres de BD a nombres del modal para EDITAR
-  const mapRuleFromDB = (rule) => {
-    const mapped = {
-      id: rule.id,
-      tipo: rule.tipo,
-      nombre: rule.nombre,
-      activo: rule.activo,
-      fecha_inicio: rule.fecha_inicio || "",
-      fecha_fin: rule.fecha_fin || "",
-      condiciones: { ...rule.condiciones },
-      acciones: { ...rule.acciones },
-    };
-
-    if (rule.tipo === "gift_purchase") {
-      mapped.condiciones.monto_minimo = rule.condiciones?.min_subtotal || "";
-      mapped.acciones.producto_regalo_id = rule.acciones?.gift_product_id || "";
-    } else if (rule.tipo === "cross_sell") {
-      mapped.condiciones.producto_disparador = rule.condiciones?.trigger_product_id || "";
-      mapped.condiciones.producto_recomendado = rule.condiciones?.discount_product_id || "";
-      mapped.condiciones.descuento_porcentaje = rule.condiciones?.discount_percent || "";
-    } else if (rule.tipo === "volume_pricing") {
-      mapped.condiciones.producto_id = rule.condiciones?.product_id || "";
-      mapped.condiciones.tiers = rule.condiciones?.tiers || [];
-    } else if (rule.tipo === "kit_combo") {
-      mapped.condiciones.product_ids = rule.condiciones?.product_ids || [];
-      mapped.acciones.descuento_porcentaje = rule.acciones?.discount_percent || "";
-      mapped.acciones.precio_fijo = rule.acciones?.fixed_price || "";
-    } else if (rule.tipo === "intro_price") {
-      mapped.condiciones.producto_id = rule.condiciones?.product_id || "";
-      mapped.condiciones.expires_at = rule.condiciones?.expires_at || "";
-      mapped.acciones.precio_especial = rule.acciones?.special_price || "";
-    } else if (rule.tipo === "limited_edition") {
-      mapped.condiciones.producto_id = rule.condiciones?.product_id || "";
-      mapped.condiciones.max_stock = rule.condiciones?.max_stock || "";
-      mapped.condiciones.expires_at = rule.condiciones?.expires_at || "";
-    }
-
-    return mapped;
-  };
-
   // Mapea nombres del modal a nombres de BD para GUARDAR
   const mapRuleToDB = (form) => {
     const mapped = {
@@ -1669,6 +1629,82 @@ function RulesTab({
   handleSaveRule,
   handleDeleteRule,
 }) {
+  function mapRuleFromDB(rule) {
+    const base = {
+      id: rule.id,
+      tipo: rule.tipo,
+      nombre: rule.nombre,
+      activo: rule.activo,
+      fecha_inicio: rule.fecha_inicio || '',
+      fecha_fin: rule.fecha_fin || '',
+      condiciones: {},
+      acciones: {}
+    }
+
+    switch (rule.tipo) {
+      case 'gift_purchase':
+        return {
+          ...base,
+          condiciones: {
+            monto_minimo: rule.condiciones?.min_subtotal || ''
+          },
+          acciones: {
+            producto_regalo_id: rule.acciones?.gift_product_id || ''
+          }
+        }
+      case 'cross_sell':
+        return {
+          ...base,
+          condiciones: {
+            producto_disparador: rule.condiciones?.trigger_product_id || '',
+            producto_recomendado: rule.condiciones?.discount_product_id || '',
+            descuento_porcentaje: rule.condiciones?.discount_percent || ''
+          }
+        }
+      case 'volume_pricing':
+        return {
+          ...base,
+          condiciones: {
+            product_id: rule.condiciones?.product_id || '',
+            tiers: rule.condiciones?.tiers || []
+          }
+        }
+      case 'kit_combo':
+        return {
+          ...base,
+          condiciones: {
+            product_ids: rule.condiciones?.product_ids || []
+          },
+          acciones: {
+            discount_percent: rule.acciones?.discount_percent || '',
+            fixed_price: rule.acciones?.fixed_price || ''
+          }
+        }
+      case 'intro_price':
+        return {
+          ...base,
+          condiciones: {
+            product_id: rule.condiciones?.product_id || '',
+            expires_at: rule.condiciones?.expires_at || ''
+          },
+          acciones: {
+            precio_especial: rule.acciones?.special_price || ''
+          }
+        }
+      case 'limited_edition':
+        return {
+          ...base,
+          condiciones: {
+            product_id: rule.condiciones?.product_id || '',
+            max_stock: rule.condiciones?.max_stock || '',
+            expires_at: rule.condiciones?.expires_at || ''
+          }
+        }
+      default:
+        return base
+    }
+  }
+
   return (
     <>
       <button
