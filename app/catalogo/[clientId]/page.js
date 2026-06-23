@@ -367,9 +367,6 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
 }
 
 function ProductCard({ product, moneda, onAddToCart, inCart }) {
-  const [variantOpen, setVariantOpen] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
       {/* Imagen */}
@@ -434,49 +431,9 @@ function ProductCard({ product, moneda, onAddToCart, inCart }) {
           )}
         </div>
 
-        {/* Variantes */}
-        {product.variantes && product.variantes.length > 0 && (
-          <button
-            onClick={() => setVariantOpen(!variantOpen)}
-            className="mt-2 w-full text-center text-xs text-blue-600 hover:text-blue-700"
-          >
-            {variantOpen ? "Ocultar" : "Ver"} variantes ({product.variantes.length})
-          </button>
-        )}
-
-        {variantOpen && product.variantes && (
-          <div className="mt-2 space-y-1">
-            {product.variantes.map((variant) => (
-              <div
-                key={variant.id}
-                className="flex items-center justify-between text-xs p-2 bg-slate-50 rounded"
-              >
-                <span className="text-slate-700">
-                  {variant.nombre}: {variant.valor}
-                </span>
-                <button
-                  onClick={() => {
-                    onAddToCart(product, variant);
-                    setVariantOpen(false);
-                  }}
-                  className="text-blue-600 hover:text-blue-700 font-bold"
-                >
-                  Agregar
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Botón Principal */}
+        {/* Botón Agregar al Carrito */}
         <button
-          onClick={() => {
-            if (product.variantes && product.variantes.length > 0) {
-              setVariantOpen(!variantOpen);
-            } else {
-              onAddToCart(product);
-            }
-          }}
+          onClick={() => onAddToCart(product)}
           className={`w-full mt-3 py-2 rounded-lg font-bold text-sm transition-all ${
             inCart
               ? "bg-green-600 text-white hover:bg-green-700"
