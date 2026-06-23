@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { randomUUID } from "crypto";
 import ReactMarkdown from "react-markdown";
 import { LANGUAGES, WIDGET_PLACEHOLDERS } from "@/lib/languages";
+import { supabase } from "@/lib/supabase";
 
 function welcomeMessageFor(tenant) {
   return { role: "assistant", content: tenant.welcomeMessage, synthetic: true };
@@ -111,6 +112,7 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState(null);
   const [lastAdminResponseTime, setLastAdminResponseTime] = useState(null);
   const [agentActive, setAgentActive] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -165,6 +167,19 @@ export default function ChatPage() {
       loadTenant();
     }
   }, [clientId]);
+
+  // Verificar si el usuario está autenticado
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsAdmin(!!user);
+      } catch {
+        setIsAdmin(false);
+      }
+    }
+    checkAuth();
+  }, []);
 
   // Aplicar override de media queries SOLO si el tema es light
   useEffect(() => {
@@ -461,13 +476,15 @@ export default function ChatPage() {
             >
               🔄
             </button>
-            <Link
-              href="/"
-              className="p-2 hover:bg-white/10 rounded-lg transition-all hover:scale-110 text-white"
-              title="Página principal"
-            >
-              ⚙️
-            </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="p-2 hover:bg-white/10 rounded-lg transition-all hover:scale-110 text-white"
+                title="Panel de administración"
+              >
+                ⚙️
+              </Link>
+            )}
           </div>
         </div>
       </header>

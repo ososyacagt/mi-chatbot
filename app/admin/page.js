@@ -444,13 +444,29 @@ export default function AdminPanel() {
                 </Link>
 
                 {/* Fila 4 */}
+                {tenant.ecommerce_mode && tenant.ecommerce_mode !== 'none' ? (
+                  <Link
+                    href={`/catalogo/${tenant.client_id}`}
+                    className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-cyan-600 hover:bg-cyan-700 text-white whitespace-nowrap"
+                    title="Ver catálogo de tienda"
+                  >
+                    🛍️ Catálogo
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-gray-400 text-gray-600 whitespace-nowrap cursor-not-allowed"
+                    title="Activa el e-commerce en Inventario"
+                  >
+                    🛍️ Catálogo
+                  </button>
+                )}
                 <button
                   onClick={() => handleEdit(tenant)}
                   className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-sky-600 hover:bg-sky-700 text-white whitespace-nowrap"
                 >
                   ✏️ Editar
                 </button>
-                <div></div>
 
                 {/* Fila 5: Eliminar (full width) */}
                 {user?.role === "superadmin" && (
