@@ -227,6 +227,88 @@ function InventoryPageContent() {
     }
   };
 
+  // Mapea nombres de BD a nombres del modal para EDITAR
+  const mapRuleFromDB = (rule) => {
+    const mapped = {
+      id: rule.id,
+      tipo: rule.tipo,
+      nombre: rule.nombre,
+      activo: rule.activo,
+      fecha_inicio: rule.fecha_inicio || "",
+      fecha_fin: rule.fecha_fin || "",
+      condiciones: { ...rule.condiciones },
+      acciones: { ...rule.acciones },
+    };
+
+    if (rule.tipo === "gift_purchase") {
+      mapped.condiciones.monto_minimo = rule.condiciones?.min_subtotal || "";
+      mapped.acciones.producto_regalo_id = rule.acciones?.gift_product_id || "";
+    } else if (rule.tipo === "cross_sell") {
+      mapped.condiciones.producto_disparador = rule.condiciones?.trigger_product_id || "";
+      mapped.condiciones.producto_recomendado = rule.condiciones?.discount_product_id || "";
+      mapped.condiciones.descuento_porcentaje = rule.condiciones?.discount_percent || "";
+    } else if (rule.tipo === "volume_pricing") {
+      mapped.condiciones.producto_id = rule.condiciones?.product_id || "";
+      mapped.condiciones.tiers = rule.condiciones?.tiers || [];
+    } else if (rule.tipo === "kit_combo") {
+      mapped.condiciones.product_ids = rule.condiciones?.product_ids || [];
+      mapped.acciones.descuento_porcentaje = rule.acciones?.discount_percent || "";
+      mapped.acciones.precio_fijo = rule.acciones?.fixed_price || "";
+    } else if (rule.tipo === "intro_price") {
+      mapped.condiciones.producto_id = rule.condiciones?.product_id || "";
+      mapped.condiciones.expires_at = rule.condiciones?.expires_at || "";
+      mapped.acciones.precio_especial = rule.acciones?.special_price || "";
+    } else if (rule.tipo === "limited_edition") {
+      mapped.condiciones.producto_id = rule.condiciones?.product_id || "";
+      mapped.condiciones.max_stock = rule.condiciones?.max_stock || "";
+      mapped.condiciones.expires_at = rule.condiciones?.expires_at || "";
+    }
+
+    return mapped;
+  };
+
+  // Mapea nombres del modal a nombres de BD para GUARDAR
+  const mapRuleToDB = (form) => {
+    const mapped = {
+      tipo: form.tipo,
+      nombre: form.nombre,
+      activo: form.activo,
+      fecha_inicio: form.fecha_inicio || null,
+      fecha_fin: form.fecha_fin || null,
+      condiciones: {},
+      acciones: {},
+    };
+
+    if (form.tipo === "gift_purchase") {
+      mapped.condiciones.min_subtotal = form.condiciones?.monto_minimo || "";
+      mapped.acciones.gift_product_id = form.acciones?.producto_regalo_id || "";
+    } else if (form.tipo === "cross_sell") {
+      mapped.condiciones.trigger_product_id = form.condiciones?.producto_disparador || "";
+      mapped.condiciones.discount_product_id = form.condiciones?.producto_recomendado || "";
+      mapped.condiciones.discount_percent = form.condiciones?.descuento_porcentaje || "";
+    } else if (form.tipo === "volume_pricing") {
+      mapped.condiciones.product_id = form.condiciones?.product_id || "";
+      mapped.condiciones.tiers = form.condiciones?.tiers || [];
+    } else if (form.tipo === "kit_combo") {
+      mapped.condiciones.product_ids = form.condiciones?.product_ids || [];
+      mapped.acciones.discount_percent = form.acciones?.descuento_porcentaje || "";
+      mapped.acciones.fixed_price = form.acciones?.precio_fijo || "";
+    } else if (form.tipo === "intro_price") {
+      mapped.condiciones.product_id = form.condiciones?.product_id || "";
+      mapped.condiciones.expires_at = form.condiciones?.expires_at || "";
+      mapped.acciones.special_price = form.acciones?.precio_especial || "";
+    } else if (form.tipo === "limited_edition") {
+      mapped.condiciones.product_id = form.condiciones?.product_id || "";
+      mapped.condiciones.max_stock = form.condiciones?.max_stock || "";
+      mapped.condiciones.expires_at = form.condiciones?.expires_at || "";
+    } else {
+      mapped.condiciones = form.condiciones;
+      mapped.acciones = form.acciones;
+    }
+
+    return mapped;
+  };
+
   const loadConfig = async () => {
     try {
       setLoading(true);
@@ -487,10 +569,13 @@ function InventoryPageContent() {
         ? `/api/admin/inventory/rules/${editingRule.id}?clientId=${clientId}`
         : `/api/admin/inventory/rules?clientId=${clientId}`;
 
+      // Mapear nombres del modal a nombres de BD
+      const dataToSave = mapRuleToDB(ruleForm);
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ruleForm),
+        body: JSON.stringify(dataToSave),
       });
 
       if (res.ok) {
@@ -1637,16 +1722,7 @@ function RulesTab({
                   </span>
                   <button
                     onClick={() => {
-                      setRuleForm({
-                        id: rule.id,
-                        tipo: rule.tipo,
-                        nombre: rule.nombre,
-                        condiciones: rule.condiciones || {},
-                        acciones: rule.acciones || {},
-                        activo: rule.activo,
-                        fecha_inicio: rule.fecha_inicio || "",
-                        fecha_fin: rule.fecha_fin || "",
-                      });
+                      setRuleForm(mapRuleFromDB(rule));
                       setEditingRule(rule);
                       setShowRuleModal(true);
                     }}
