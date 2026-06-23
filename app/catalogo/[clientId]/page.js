@@ -119,7 +119,10 @@ export default function CatalogPage() {
         body: JSON.stringify({ items: cart }),
       });
 
-      if (!cartRes.ok) throw new Error("Error processing cart");
+      if (!cartRes.ok) {
+        const errorData = await cartRes.json();
+        throw new Error(errorData.error || "Error processing cart");
+      }
       const cartData = await cartRes.json();
 
       const orderRes = await fetch(`/api/store/${clientId}/order`, {
