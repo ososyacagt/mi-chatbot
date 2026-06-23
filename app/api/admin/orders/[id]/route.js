@@ -117,7 +117,6 @@ export async function PUT(request, { params }) {
       .update({
         status: newStatus,
         notas: updatedNotes,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", id)
       .select()

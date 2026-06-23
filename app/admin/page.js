@@ -15,6 +15,7 @@ export default function AdminPanel() {
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
   const [escalationCounts, setEscalationCounts] = useState({});
+  const [pendingOrdersCounts, setPendingOrdersCounts] = useState({});
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     title: "",
@@ -57,6 +58,21 @@ export default function AdminPanel() {
     }
   }
 
+  async function loadPendingOrdersForTenant(clientId) {
+    try {
+      const res = await fetch(`/api/admin/orders?clientId=${clientId}&status=pendiente`);
+      if (res.ok) {
+        const data = await res.json();
+        setPendingOrdersCounts((prev) => ({
+          ...prev,
+          [clientId]: data.orders?.length || 0,
+        }));
+      }
+    } catch (err) {
+      console.error(`Error cargando órdenes para ${clientId}:`, err);
+    }
+  }
+
   async function loadTenants() {
     try {
       setLoading(true);
@@ -71,9 +87,10 @@ export default function AdminPanel() {
       const loadedTenants = data.tenants || [];
       setTenants(loadedTenants);
 
-      // Cargar escalaciones pendientes por cada cliente
+      // Cargar escalaciones y órdenes pendientes por cada cliente
       for (const tenant of loadedTenants) {
         await loadEscalationsForTenant(tenant.client_id);
+        await loadPendingOrdersForTenant(tenant.client_id);
       }
     } catch (err) {
       console.error("Error:", err);
@@ -461,18 +478,29 @@ export default function AdminPanel() {
                     🛍️ Catálogo
                   </button>
                 )}
+                <Link
+                  href={`/admin/ordenes?clientId=${tenant.client_id}`}
+                  className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-indigo-600 hover:bg-indigo-700 text-white whitespace-nowrap relative"
+                >
+                  📋 Órdenes
+                  {pendingOrdersCounts[tenant.client_id] > 0 && (
+                    <span className="ml-1 inline-block bg-red-600 text-white text-xs font-bold rounded-full px-1.5 py-0.5">
+                      {pendingOrdersCounts[tenant.client_id]}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Fila 5 */}
                 <button
                   onClick={() => handleEdit(tenant)}
                   className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-sky-600 hover:bg-sky-700 text-white whitespace-nowrap"
                 >
                   ✏️ Editar
                 </button>
-
-                {/* Fila 5: Eliminar (full width) */}
                 {user?.role === "superadmin" && (
                   <button
                     onClick={() => handleDeleteClick(tenant.client_id, tenant.nombre)}
-                    className="col-span-2 h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-red-700 hover:bg-red-800 text-white whitespace-nowrap"
+                    className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-red-700 hover:bg-red-800 text-white whitespace-nowrap"
                   >
                     🗑️ Eliminar
                   </button>
