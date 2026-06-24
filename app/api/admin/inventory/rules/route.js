@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
+import { checkRuleLimit } from "@/lib/plan-limits";
 
 async function authCheck() {
   const user = await getSession();
@@ -72,6 +73,14 @@ export async function POST(request) {
     const body = await request.json();
 
     console.log("[POST /api/admin/inventory/rules] Creando regla para:", clientId);
+
+    // Verificar límite de reglas del plan
+    const limitCheck = await checkRuleLimit(clientId);
+    if (!limitCheck.allowed) {
+      return NextResponse.json({
+        error: `Límite de reglas de negocio alcanzado (${limitCheck.current}/${limitCheck.limit}). Actualiza tu plan para agregar más.`
+      }, { status: 403 });
+    }
 
     const supabase = createSupabaseAdmin();
     const { data: rule, error } = await supabase

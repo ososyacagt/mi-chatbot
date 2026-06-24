@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
+import { checkCategoryLimit } from "@/lib/plan-limits";
 
 async function authCheck() {
   const user = await getSession();
@@ -97,6 +98,14 @@ export async function POST(request) {
         { error: "nombre es requerido" },
         { status: 400 }
       );
+    }
+
+    // Verificar límite de categorías del plan
+    const limitCheck = await checkCategoryLimit(clientId);
+    if (!limitCheck.allowed) {
+      return NextResponse.json({
+        error: `Límite de categorías alcanzado (${limitCheck.current}/${limitCheck.limit}). Actualiza tu plan para agregar más.`
+      }, { status: 403 });
     }
 
     const supabase = createSupabaseAdmin();

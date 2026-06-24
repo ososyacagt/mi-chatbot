@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
+import { canUseEcommerceMode } from "@/lib/plan-limits";
 
 async function authCheck() {
   const user = await getSession();
@@ -91,6 +92,16 @@ export async function PUT(request) {
 
     console.log("[PUT /api/admin/inventory/config] Actualizando config para:", clientId);
     console.log('[PUT config] ecommerce_mode a guardar:', body.ecommerceMode);
+
+    // Verificar que el plan permite esta modalidad de e-commerce
+    if (body.ecommerce_mode && body.ecommerce_mode !== 'none') {
+      const allowed = await canUseEcommerceMode(clientId, body.ecommerce_mode);
+      if (!allowed) {
+        return NextResponse.json({
+          error: `Tu plan no incluye la modalidad "${body.ecommerce_mode}". Actualiza a Pro o Enterprise.`
+        }, { status: 403 });
+      }
+    }
 
     const supabase = createSupabaseAdmin();
     const { data: config, error } = await supabase

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSession, getAdminUser } from "@/lib/auth";
+import { checkProductLimit } from "@/lib/plan-limits";
 
 function cleanHTML(html) {
   if (!html) return '';
@@ -84,6 +85,14 @@ export async function POST(request) {
 
     console.log("[POST /api/admin/inventory/products] Creando producto para:", clientId);
     console.log('[POST products] body recibido:', JSON.stringify(body, null, 2));
+
+    // Verificar límite de productos del plan
+    const limitCheck = await checkProductLimit(clientId);
+    if (!limitCheck.allowed) {
+      return NextResponse.json({
+        error: `Límite de productos alcanzado (${limitCheck.current}/${limitCheck.limit}). Actualiza tu plan para agregar más.`
+      }, { status: 403 });
+    }
 
     const insertData = {
       tenant_id: clientId,
