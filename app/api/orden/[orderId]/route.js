@@ -5,6 +5,8 @@ export async function GET(request, { params }) {
   try {
     const { orderId } = await params;
 
+    console.log("[orden] orderId:", orderId);
+
     if (!orderId) {
       return NextResponse.json(
         { error: "orderId es requerido" },
@@ -23,8 +25,10 @@ export async function GET(request, { params }) {
       .eq("id", orderId)
       .single();
 
+    console.log("[orden] resultado:", { data: order, error: orderError });
+
     if (orderError || !order) {
-      console.error("[orden-api] Orden no encontrada:", orderId);
+      console.error("[orden-api] Orden no encontrada:", orderId, "Error:", orderError);
       return NextResponse.json(
         { error: "Orden no encontrada" },
         { status: 404 }

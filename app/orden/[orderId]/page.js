@@ -30,13 +30,22 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     const loadOrder = async () => {
       try {
-        const res = await fetch(`/api/orden/${orderId}`);
+        console.log("[order-tracking] Cargando orderId:", orderId);
+        const url = `/api/orden/${orderId}`;
+        console.log("[order-tracking] URL:", url);
+
+        const res = await fetch(url);
+        console.log("[order-tracking] Status:", res.status);
+
         if (!res.ok) {
+          const errorData = await res.json();
+          console.error("[order-tracking] Error respuesta:", errorData);
           setError("Orden no encontrada");
           setLoading(false);
           return;
         }
         const data = await res.json();
+        console.log("[order-tracking] Datos recibidos:", data);
         setOrder(data.order);
         setTenant(data.tenant);
       } catch (err) {
@@ -47,7 +56,9 @@ export default function OrderTrackingPage() {
       }
     };
 
-    loadOrder();
+    if (orderId) {
+      loadOrder();
+    }
   }, [orderId]);
 
   if (loading) {

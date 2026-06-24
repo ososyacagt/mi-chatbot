@@ -178,16 +178,29 @@ export default function OrdenesPage() {
                     <td className="px-6 py-4 text-slate-600 text-xs">
                       {new Date(order.created_at).toLocaleDateString("es-MX")}
                     </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => {
-                          setSelectedOrder(order);
-                          setNewStatus("");
-                        }}
-                        className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                      >
-                        Ver detalle
-                      </button>
+                    <td className="px-6 py-4 space-y-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => {
+                            const url = `${window.location.origin}/orden/${order.id}`;
+                            navigator.clipboard.writeText(url);
+                            setToast({ message: "✓ Link de seguimiento copiado", type: "success" });
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+                          title="Copiar link de seguimiento"
+                        >
+                          🔗 Link
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setNewStatus("");
+                          }}
+                          className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                        >
+                          Ver detalle
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
