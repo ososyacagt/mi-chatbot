@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 
 const STATUS_STEPS = [
-  { key: "recibido", icon: "📋", label: "Recibido" },
-  { key: "confirmado", icon: "✅", label: "Confirmado" },
+  { key: "pendiente", icon: "📋", label: "Pendiente" },
+  { key: "confirmada", icon: "✅", label: "Confirmada" },
   { key: "en_proceso", icon: "📦", label: "En proceso" },
-  { key: "entregado", icon: "🚚", label: "Entregado" },
+  { key: "entregada", icon: "🚚", label: "Entregada" },
 ];
 
 function formatPrice(amount, currency) {
@@ -172,15 +172,17 @@ export default function OrderTrackingPage() {
                 <div key={step.key} className="flex flex-col items-center flex-1">
                   {/* Step Circle */}
                   <div
-                    className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2 transition-all ${
+                    className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2 transition-all border-2 ${
                       idx < currentStep
-                        ? "bg-green-100 border-2 border-green-500"
+                        ? "bg-green-100 border-green-500"
                         : idx === currentStep
-                        ? `border-2 border-opacity-100`
-                        : "bg-gray-100 border-2 border-gray-300"
+                        ? "border-2"
+                        : "bg-gray-100 border-gray-300"
                     }`}
                     style={
-                      idx === currentStep && !isCancelled
+                      idx < currentStep
+                        ? {}
+                        : idx === currentStep && !isCancelled
                         ? {
                             backgroundColor: `${tenant.colorPrimary}20`,
                             borderColor: tenant.colorPrimary,
@@ -188,7 +190,11 @@ export default function OrderTrackingPage() {
                         : {}
                     }
                   >
-                    {step.icon}
+                    {idx < currentStep ? (
+                      <span className="text-white">✓</span>
+                    ) : (
+                      step.icon
+                    )}
                   </div>
 
                   {/* Label */}
@@ -274,17 +280,23 @@ export default function OrderTrackingPage() {
           <p className="text-sm font-medium text-gray-600 mb-4 uppercase">DATOS DEL CLIENTE</p>
           <div className="space-y-3">
             <div>
-              <p className="text-xs text-gray-600">Nombre</p>
-              <p className="font-medium text-gray-900">{order.clienteNombre}</p>
+              <p className="text-xs text-gray-500">Nombre</p>
+              <p className="font-medium text-gray-900">{order.clienteNombre || "No especificado"}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-600">Teléfono</p>
-              <p className="font-medium text-gray-900">{order.clienteTelefono}</p>
+              <p className="text-xs text-gray-500">Teléfono</p>
+              <p className="font-medium text-gray-900">{order.clienteTelefono || "No especificado"}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-600">Dirección de entrega</p>
-              <p className="font-medium text-gray-900">{order.clienteDireccion}</p>
+              <p className="text-xs text-gray-500">Dirección</p>
+              <p className="font-medium text-gray-900">{order.clienteDireccion || "No especificada"}</p>
             </div>
+            {order.clienteCiudad && (
+              <div>
+                <p className="text-xs text-gray-500">Ciudad</p>
+                <p className="font-medium text-gray-900">{order.clienteCiudad}</p>
+              </div>
+            )}
           </div>
         </div>
 
