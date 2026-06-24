@@ -316,8 +316,8 @@ function InventoryPageContent() {
           payment_methods: data.config.payment_methods || [],
         });
       }
-      // Cargar límites y info del plan
-      await Promise.all([loadPlanLimits(), loadPlanInfo()]);
+      // Cargar límites del plan
+      await loadPlanLimits();
     } catch (err) {
       console.error("[inventario] Error loading config:", err);
       setToast({ message: "✗ Error al cargar configuración", type: "error" });
@@ -336,6 +336,9 @@ function InventoryPageContent() {
 
     // Cargar nombre del cliente
     loadClientName();
+
+    // Cargar información del plan para TODAS las tabs
+    loadPlanInfo();
 
     if (activeTab === TABS.PRODUCTS) {
       console.log("[inventario] → Cargando productos");
