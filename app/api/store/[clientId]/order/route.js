@@ -103,7 +103,7 @@ export async function POST(request, { params }) {
         id: order.id,
         numero_orden: order.numero_orden,
         status: order.status,
-        trackingUrl: `/tienda/${clientId}/orden/${order.id}`,
+        trackingUrl: `/orden/${order.id}`,
         ...order,
       },
     }, { status: 201 });
