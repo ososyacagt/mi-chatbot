@@ -222,3 +222,69 @@ export async function DELETE(request, { params }) {
     );
   }
 }
+
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    
+    if (!supabase) {
+      return Response.json(
+        { error: "Supabase no está configurado" },
+        { status: 500 }
+      );
+    }
+
+    const user = await getSession();
+    if (!user) {
+      return Response.json(
+        { error: "No autorizado" },
+        { status: 401 }
+      );
+    }
+
+    const adminUser = await getAdminUser(user.id);
+    if (!adminUser) {
+      return Response.json(
+        { error: "Usuario no tiene permisos de admin" },
+        { status: 403 }
+      );
+    }
+
+    if (adminUser.role === "admin" && adminUser.tenant_id !== id) {
+      return Response.json(
+        { error: "No tienes permiso para ver este tenant" },
+        { status: 403 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("*")
+      .eq("client_id", id)
+      .single();
+
+    if (error) {
+      console.error("[GET /api/admin/tenants/[id]] Error:", error);
+      return Response.json(
+        { error: "Error al cargar tenant" },
+        { status: 500 }
+      );
+    }
+
+    if (!data) {
+      return Response.json(
+        { error: "No se encontró el tenant" },
+        { status: 404 }
+      );
+    }
+
+    const mappedData = mapFromDbFields(data);
+    return Response.json({ tenant: mappedData });
+  } catch (error) {
+    console.error("[GET /api/admin/tenants/[id]] Error inesperado:", error);
+    return Response.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    );
+  }
+}

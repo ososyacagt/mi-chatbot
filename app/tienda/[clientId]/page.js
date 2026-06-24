@@ -756,19 +756,29 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
               {checkoutStep === CheckoutStep.CART && (
                 <>
                   {cart.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <div className="text-4xl mb-2">🛒</div>
-                      <p>Tu carrito está vacío</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-zinc-400 dark:text-zinc-600">
+                      <svg className="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                      </svg>
+                      <p className="text-sm">Tu carrito está vacío</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {cart.map((item, idx) => (
                         <div key={idx} className="flex gap-3 pb-4 border-b border-slate-200">
-                          <img
-                            src={item.imagen || "https://via.placeholder.com/60"}
-                            alt={item.nombre}
-                            className="w-16 h-16 rounded object-cover bg-slate-100"
-                          />
+                          {item.imagen ? (
+                            <img
+                              src={item.imagen}
+                              alt={item.nombre}
+                              className="w-16 h-16 rounded-lg object-cover bg-zinc-100 dark:bg-zinc-800 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-6 h-6 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                              </svg>
+                            </div>
+                          )}
                           <div className="flex-1">
                             <h4 className="font-semibold text-sm text-slate-900">
                               {item.nombre}

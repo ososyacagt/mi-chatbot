@@ -23,43 +23,7 @@ const RULE_TYPES = {
   LIMITED_EDITION: { id: "limited_edition", label: "Edición limitada" },
 };
 
-const INITIAL_PRODUCT_FORM = {
-  nombre: "",
-  descripcion: "",
-  imagen: "",
-  precio: "",
-  precioOriginal: "",
-  category_id: "",
-  stock: "",
-  stockMinimo: "0",
-  stockMaximo: "",
-  sku: "",
-  esServicio: false,
-  fechaExpiracion: "",
-  destacado: false,
-  activo: true,
-};
 
-function mapProductToForm(product) {
-  if (!product) return { ...INITIAL_PRODUCT_FORM };
-  return {
-    id: product.id,
-    nombre: product.nombre || "",
-    descripcion: product.descripcion || "",
-    imagen: product.imagenes?.[0] || "",
-    precio: product.precio?.toString() || "",
-    precioOriginal: product.precio_original?.toString() || "",
-    category_id: product.category_id || "",
-    stock: product.stock?.toString() || "0",
-    stockMinimo: product.stock_minimo?.toString() || "0",
-    stockMaximo: product.stock_maximo?.toString() || "",
-    sku: product.sku || "",
-    esServicio: product.es_servicio || false,
-    fechaExpiracion: product.fecha_expiracion || "",
-    destacado: product.destacado || false,
-    activo: product.activo !== false,
-  };
-}
 
 function InventoryPageContent() {
   const searchParams = useSearchParams();
@@ -77,22 +41,8 @@ function InventoryPageContent() {
   // Productos
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchProduct, setSearchProduct] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState(INITIAL_PRODUCT_FORM);
-  const [variantes, setVariantes] = useState([]);
-  const [newVariante, setNewVariante] = useState({
-    nombre: "",
-    valor: "",
-    precioAdicional: "",
-    stock: "",
-  });
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const descriptionRef = useRef(null);
 
   // Carga masiva
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -139,6 +89,14 @@ function InventoryPageContent() {
     payment_methods: [],
   });
 
+  const openNewProduct = () => {
+    router.push(`/admin/inventario/productos/nuevo?clientId=${clientId}`);
+  };
+
+  const openEditProduct = (productId) => {
+    router.push(`/admin/inventario/productos/${productId}?clientId=${clientId}`);
+  };
+
   // Plan limits
   const [planLimits, setPlanLimits] = useState(null);
   const [planInfo, setPlanInfo] = useState(null);
@@ -183,9 +141,7 @@ function InventoryPageContent() {
 
       if (pRes.ok) {
         const data = await pRes.json();
-        console.log("[inventario] fetchProducts result:", data);
         setProducts(data.products || []);
-        setFilteredProducts(data.products || []);
       }
       if (cRes.ok) {
         const data = await cRes.json();
@@ -365,108 +321,8 @@ function InventoryPageContent() {
     }
   }, [activeTab, clientId]);
 
-  useEffect(() => {
-    let filtered = products;
-    if (searchProduct) {
-      filtered = filtered.filter((p) =>
-        p.nombre.toLowerCase().includes(searchProduct.toLowerCase())
-      );
-    }
-    if (filterCategory) {
-      filtered = filtered.filter((p) => p.category_id === filterCategory);
-    }
-    setFilteredProducts(filtered);
-  }, [searchProduct, filterCategory, products]);
 
-  useEffect(() => {
-    if (descriptionRef.current && productForm.descripcion) {
-      descriptionRef.current.innerHTML = productForm.descripcion;
-    }
-  }, [showProductModal]);
 
-  const handleSaveProduct = async () => {
-    if (!productForm.nombre || !productForm.precio) {
-      setToast({ message: "✗ Nombre y precio son requeridos", type: "error" });
-      return;
-    }
-
-    try {
-      let imageUrl = productForm.imagen;
-
-      // Si hay un archivo de imagen seleccionado, subirlo primero
-      if (selectedImageFile) {
-        setToast({ message: "⏳ Subiendo imagen...", type: "success" });
-
-        const formData = new FormData();
-        formData.append("file", selectedImageFile);
-        formData.append("tenantId", config?.id || "temp");
-        formData.append("productId", editingProduct?.id || "new");
-
-        const uploadRes = await fetch("/api/admin/inventory/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!uploadRes.ok) {
-          const uploadError = await uploadRes.json();
-          setToast({
-            message: `✗ Error al subir imagen: ${uploadError.error}`,
-            type: "error"
-          });
-          return;
-        }
-
-        const uploadData = await uploadRes.json();
-        imageUrl = uploadData.url;
-        console.log("[handleSaveProduct] Imagen subida:", imageUrl);
-      }
-
-      const method = editingProduct ? "PUT" : "POST";
-      const url = editingProduct
-        ? `/api/admin/inventory/products/${editingProduct.id}?clientId=${clientId}`
-        : `/api/admin/inventory/products?clientId=${clientId}`;
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...productForm,
-          imagen: imageUrl,
-          variantes,
-        }),
-      });
-
-      if (res.ok) {
-        setToast({
-          message: `✓ Producto ${editingProduct ? "actualizado" : "creado"}`,
-          type: "success",
-        });
-        setShowProductModal(false);
-        setProductForm(INITIAL_PRODUCT_FORM);
-        setVariantes([]);
-        setSelectedImageFile(null);
-        setImagePreview(null);
-        setEditingProduct(null);
-        await loadProducts();
-      } else {
-        setToast({ message: "✗ Error al guardar producto", type: "error" });
-      }
-    } catch (err) {
-      console.error("Error saving product:", err);
-      setToast({ message: "✗ Error al guardar producto", type: "error" });
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setImagePreview(event.target?.result);
-    };
-    reader.readAsDataURL(file);
-  };
 
   const handleDeleteProduct = (productId) => {
     setConfirmModal({
@@ -729,9 +585,18 @@ function InventoryPageContent() {
     }
   };
 
+  /* UX/UI: Header con SVG, tab bar con dark mode e íconos, spinner premium */
+  const TAB_CONFIG = [
+    { key: TABS.PRODUCTS, label: "Productos", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg> },
+    { key: TABS.CATEGORIES, label: "Categorías", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" /></svg> },
+    { key: TABS.RULES, label: "Reglas", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+    { key: TABS.CONFIG, label: "Configuración", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+  ];
+
   return (
-    <div className="space-y-4">
-      <Toast message={toast.message} type={toast.type} />
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-5">
+      <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: "", type: "success" })} />
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
@@ -740,71 +605,77 @@ function InventoryPageContent() {
         onCancel={() => setConfirmModal({ isOpen: false })}
       />
 
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-700 flex items-center gap-1">
-          ← Volver al panel
+      {/* Header con ícono SVG de retorno */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/admin"
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          aria-label="Volver al panel"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
         </Link>
-        <h1 className="text-2xl font-bold">
-          📦 Inventario — {clientName || clientId}
-        </h1>
+        <div>
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
+            Inventario — {clientName || clientId}
+          </h1>
+          {planInfo && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 capitalize">
+              Plan {planInfo.plan} · {planInfo.productsCount ?? 0} productos
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 bg-white border border-slate-200 rounded-lg p-4">
-        {Object.entries(TABS).map(([key, value]) => (
+      {/* Tabs con íconos SVG y dark mode */}
+      <div className="flex gap-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1.5 overflow-x-auto">
+        {TAB_CONFIG.map(({ key, label, icon }) => (
           <button
-            key={value}
-            onClick={() => setActiveTab(value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === value
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex-shrink-0
+              ${
+                activeTab === key
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }
+            `}
           >
-            {key === "PRODUCTS"
-              ? "📦 Productos"
-              : key === "CATEGORIES"
-                ? "📂 Categorías"
-                : key === "RULES"
-                  ? "⚙️ Reglas"
-                  : "⚙️ Configuración"}
+            {icon}
+            {label}
           </button>
         ))}
       </div>
 
       {loading && (
-        <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Cargando...</p>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-12 flex flex-col items-center justify-center gap-3">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-800" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 animate-spin" />
+          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Cargando…</p>
         </div>
       )}
 
       {!loading && activeTab === TABS.PRODUCTS && (
         <ProductsTab
           clientId={clientId}
-          products={filteredProducts}
+          products={products.filter((p) => {
+            const matchName = p.nombre
+              .toLowerCase()
+              .includes(searchProduct.toLowerCase());
+            const matchCat = filterCategory ? p.category_id === filterCategory : true;
+            return matchName && matchCat;
+          })}
           categories={categories}
           searchProduct={searchProduct}
           setSearchProduct={setSearchProduct}
           filterCategory={filterCategory}
           setFilterCategory={setFilterCategory}
-          showProductModal={showProductModal}
-          setShowProductModal={setShowProductModal}
-          editingProduct={editingProduct}
-          setEditingProduct={setEditingProduct}
-          productForm={productForm}
-          setProductForm={setProductForm}
-          variantes={variantes}
-          setVariantes={setVariantes}
-          newVariante={newVariante}
-          setNewVariante={setNewVariante}
-          imagePreview={imagePreview}
-          setImagePreview={setImagePreview}
-          selectedImageFile={selectedImageFile}
-          setSelectedImageFile={setSelectedImageFile}
-          handleImageChange={handleImageChange}
-          handleSaveProduct={handleSaveProduct}
+          openNewProduct={openNewProduct}
+          openEditProduct={openEditProduct}
           handleDeleteProduct={handleDeleteProduct}
           showBulkModal={showBulkModal}
           setShowBulkModal={setShowBulkModal}
@@ -815,7 +686,6 @@ function InventoryPageContent() {
           downloadCSVTemplate={downloadCSVTemplate}
           handleCSVUpload={handleCSVUpload}
           handleBulkImport={handleBulkImport}
-          descriptionRef={descriptionRef}
           planInfo={planInfo}
         />
       )}
@@ -861,6 +731,7 @@ function InventoryPageContent() {
         />
       )}
     </div>
+    </div>
   );
 }
 
@@ -868,9 +739,14 @@ export default function InventoryPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Cargando inventario...</p>
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-10 h-10">
+              <div className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-800" />
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 animate-spin" />
+            </div>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Cargando inventario…</p>
+          </div>
         </div>
       }
     >
@@ -887,22 +763,8 @@ function ProductsTab({
   setSearchProduct,
   filterCategory,
   setFilterCategory,
-  showProductModal,
-  setShowProductModal,
-  editingProduct,
-  setEditingProduct,
-  productForm,
-  setProductForm,
-  variantes,
-  setVariantes,
-  newVariante,
-  setNewVariante,
-  imagePreview,
-  setImagePreview,
-  selectedImageFile,
-  setSelectedImageFile,
-  handleImageChange,
-  handleSaveProduct,
+  openNewProduct,
+  openEditProduct,
   handleDeleteProduct,
   showBulkModal,
   setShowBulkModal,
@@ -913,19 +775,9 @@ function ProductsTab({
   downloadCSVTemplate,
   handleCSVUpload,
   handleBulkImport,
-  descriptionRef,
   planInfo,
 }) {
-  const applyFormat = (command, value = null) => {
-    const editor = document.getElementById('description-editor');
-    if (!editor) return;
-    editor.focus();
-    document.execCommand(command, false, value);
-    setProductForm(prev => ({
-      ...prev,
-      descripcion: editor.innerHTML
-    }));
-  };
+
 
   if (planInfo?.maxProductos === 0) {
     return (
@@ -953,14 +805,7 @@ function ProductsTab({
     <>
       <div className="flex gap-2 flex-wrap items-center">
         <button
-          onClick={() => {
-            setEditingProduct(null);
-            setProductForm(INITIAL_PRODUCT_FORM);
-            setVariantes([]);
-            setImagePreview(null);
-            setSelectedImageFile(null);
-            setShowProductModal(true);
-          }}
+          onClick={openNewProduct}
           disabled={planInfo?.atLimit?.productos}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             planInfo?.atLimit?.productos
@@ -1085,12 +930,7 @@ function ProductsTab({
                     </td>
                     <td className="px-4 py-2 flex gap-1">
                       <button
-                        onClick={() => {
-                          setProductForm(mapProductToForm(product));
-                          setVariantes(product.variantes || []);
-                          setEditingProduct(product);
-                          setShowProductModal(true);
-                        }}
+                        onClick={() => openEditProduct(product.id)}
                         className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                       >
                         Editar
@@ -1115,347 +955,7 @@ function ProductsTab({
         </div>
       </div>
 
-      {/* Modal Producto */}
-      {showProductModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 space-y-4">
-              <h2 className="text-xl font-bold">
-                {editingProduct ? "Editar" : "Nuevo"} Producto
-              </h2>
 
-              <input
-                type="text"
-                placeholder="Nombre"
-                value={productForm.nombre}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, nombre: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              />
-
-              {/* Editor de texto rico mejorado */}
-              <div className="border border-slate-300 rounded-lg overflow-hidden">
-                {/* Toolbar */}
-                <div className="flex gap-1 p-2 border-b border-slate-300 bg-slate-50 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('bold')}
-                    className="px-2 py-1 text-sm font-bold rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Negrita (Cmd+B)"
-                  >
-                    B
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('italic')}
-                    className="px-2 py-1 text-sm italic rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Cursiva (Cmd+I)"
-                  >
-                    I
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('underline')}
-                    className="px-2 py-1 text-sm underline rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Subrayado (Cmd+U)"
-                  >
-                    U
-                  </button>
-                  <div className="border-l border-slate-300 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('insertUnorderedList')}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Lista con viñetas"
-                  >
-                    • Lista
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('insertOrderedList')}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Lista numerada"
-                  >
-                    1. Lista
-                  </button>
-                  <div className="border-l border-slate-300 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('formatBlock', 'h3')}
-                    className="px-2 py-1 text-sm font-semibold rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Título H3"
-                  >
-                    H3
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('formatBlock', 'p')}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Párrafo"
-                  >
-                    P
-                  </button>
-                  <div className="border-l border-slate-300 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('removeFormat')}
-                    className="px-2 py-1 text-sm rounded hover:bg-slate-200 active:bg-slate-300"
-                    title="Limpiar formato"
-                  >
-                    ✕
-                  </button>
-                </div>
-                {/* Editor */}
-                <div
-                  id="description-editor"
-                  contentEditable="true"
-                  suppressContentEditableWarning={true}
-                  ref={descriptionRef}
-                  tabIndex={0}
-                  onInput={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      descripcion: e.currentTarget.innerHTML,
-                    })
-                  }
-                  onPaste={(e) => {
-                    e.preventDefault();
-                    const text = e.clipboardData.getData('text/plain');
-                    document.execCommand('insertText', false, text);
-                  }}
-                  className="min-h-32 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h3]:font-bold [&_h3]:text-base"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block">
-                  <span className="text-sm font-medium text-slate-700 mb-2 block">
-                    Imagen del producto
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={handleImageChange}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                </label>
-                {imagePreview && (
-                  <div className="relative inline-block">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-32 h-32 object-cover rounded-lg border border-slate-300"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedImageFile(null);
-                        setImagePreview(null);
-                      }}
-                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-700"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-                {productForm.imagen && !imagePreview && (
-                  <div className="text-sm text-slate-500">
-                    Imagen actual: {productForm.imagen}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  placeholder="Precio"
-                  value={productForm.precio}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, precio: e.target.value })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Precio original"
-                  value={productForm.precioOriginal}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      precioOriginal: e.target.value,
-                    })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <select
-                  value={productForm.category_id}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      category_id: e.target.value,
-                    })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                >
-                  <option value="">Categoría</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.emoji} {cat.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  placeholder="Stock"
-                  value={productForm.stock}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, stock: e.target.value })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Stock mínimo"
-                  value={productForm.stockMinimo}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      stockMinimo: e.target.value,
-                    })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="SKU"
-                  value={productForm.sku}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, sku: e.target.value })
-                  }
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={productForm.esServicio}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        esServicio: e.target.checked,
-                      })
-                    }
-                  />
-                  Servicio
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={productForm.destacado}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        destacado: e.target.checked,
-                      })
-                    }
-                  />
-                  Destacado
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={productForm.activo}
-                    onChange={(e) =>
-                      setProductForm({
-                        ...productForm,
-                        activo: e.target.checked,
-                      })
-                    }
-                  />
-                  Activo
-                </label>
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="font-bold mb-2">Variantes</h3>
-                {variantes.map((v, i) => (
-                  <div key={i} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={v.nombre}
-                      readOnly
-                      className="flex-1 px-2 py-1 bg-slate-100 rounded text-sm"
-                    />
-                    <button
-                      onClick={() =>
-                        setVariantes(variantes.filter((_, idx) => idx !== i))
-                      }
-                      className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                ))}
-                <div className="flex gap-2 mt-2">
-                  <input
-                    type="text"
-                    placeholder="Nombre variante"
-                    value={newVariante.nombre}
-                    onChange={(e) =>
-                      setNewVariante({ ...newVariante, nombre: e.target.value })
-                    }
-                    className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm"
-                  />
-                  <button
-                    onClick={() => {
-                      if (newVariante.nombre) {
-                        setVariantes([
-                          ...variantes,
-                          { ...newVariante, id: Date.now() },
-                        ]);
-                        setNewVariante({
-                          nombre: "",
-                          valor: "",
-                          precioAdicional: "",
-                          stock: "",
-                        });
-                      }
-                    }}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Agregar
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-2 justify-end border-t pt-4">
-                <button
-                  onClick={() => {
-                    setShowProductModal(false);
-                    setImagePreview(null);
-                    setSelectedImageFile(null);
-                  }}
-                  className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveProduct}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal Carga Masiva */}
       {showBulkModal && (
