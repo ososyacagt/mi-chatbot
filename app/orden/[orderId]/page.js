@@ -11,6 +11,17 @@ const STATUS_STEPS = [
   { key: "entregado", icon: "🚚", label: "Entregado" },
 ];
 
+function formatPrice(amount, currency) {
+  const symbols = {
+    GTQ: "Q",
+    USD: "$",
+    EUR: "€",
+    MXN: "$",
+  };
+  const symbol = symbols[currency] || currency || "$";
+  return `${symbol}${Number(amount).toFixed(2)}`;
+}
+
 const PAYMENT_METHOD_LABELS = {
   efectivo: "💰 Efectivo",
   tarjeta: "💳 Tarjeta",
@@ -306,14 +317,14 @@ export default function OrderTrackingPage() {
                       <p className="text-xs text-gray-600">{item.variante}</p>
                     )}
                     <p className="text-sm text-gray-700 mt-1">
-                      {item.quantity} x ${item.precio?.toFixed(2) || "0.00"}
+                      {item.quantity} x {formatPrice(item.precio || 0, tenant?.currency || "USD")}
                     </p>
                   </div>
 
                   {/* Item Subtotal */}
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">
-                      ${(item.subtotal || item.quantity * item.precio).toFixed(2)}
+                      {formatPrice(item.subtotal || item.quantity * item.precio, tenant?.currency || "USD")}
                     </p>
                     {item.esRegalo && (
                       <p className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded mt-1 whitespace-nowrap">
@@ -332,14 +343,14 @@ export default function OrderTrackingPage() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Subtotal</span>
               <span className="text-gray-900">
-                ${(order.subtotal || 0).toFixed(2)}
+                {formatPrice(order.subtotal || 0, tenant?.currency || "USD")}
               </span>
             </div>
             {order.total_discount > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Descuento</span>
                 <span className="text-green-600 font-medium">
-                  -${order.total_discount.toFixed(2)}
+                  -{formatPrice(order.total_discount, tenant?.currency || "USD")}
                 </span>
               </div>
             )}
@@ -349,8 +360,7 @@ export default function OrderTrackingPage() {
                 className="text-2xl font-bold"
                 style={{ color: tenant.colorPrimary }}
               >
-                ${(order.total || order.subtotal || 0).toFixed(2)}{" "}
-                <span className="text-lg">{tenant.currency || "USD"}</span>
+                {formatPrice(order.total || order.subtotal || 0, tenant?.currency || "USD")}
               </span>
             </div>
           </div>

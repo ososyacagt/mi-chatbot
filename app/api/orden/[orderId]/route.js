@@ -41,7 +41,7 @@ export async function GET(request, { params }) {
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
       .select(
-        "nombre, color_primary, whatsapp_number, ecommerce_mode, store_name, store_logo, client_id"
+        "nombre, color_primary, whatsapp_number, ecommerce_mode, store_name, store_logo, client_id, currency"
       )
       .eq("client_id", order.tenant_id)
       .single();
@@ -57,6 +57,7 @@ export async function GET(request, { params }) {
       store_name: "Tienda",
       store_logo: null,
       client_id: order.tenant_id,
+      currency: order.currency || "USD",
     };
 
     console.log("[orden-api] ✓ Orden encontrada:", {
