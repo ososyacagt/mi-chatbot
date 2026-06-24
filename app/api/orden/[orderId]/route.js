@@ -21,13 +21,7 @@ export async function GET(request, { params }) {
     // Obtener orden
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select(`
-        id, numero_orden, tenant_id, status, created_at,
-        cliente_nombre, cliente_email, cliente_telefono,
-        cliente_direccion, cliente_ciudad, cliente_pais,
-        items, subtotal, descuento, total, moneda,
-        metodo_pago, notas, reglas_aplicadas, status_timeline
-      `)
+      .select("*")
       .eq("id", orderId)
       .single();
 
