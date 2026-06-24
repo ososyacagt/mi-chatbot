@@ -36,41 +36,37 @@ export async function GET(request, { params }) {
     }
 
     // Obtener datos del tenant
+    console.log("[orden-api] Buscando tenant con client_id:", order.tenant_id);
+
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
       .select(
-        `
-        id,
-        nombre,
-        store_name,
-        store_logo,
-        store_banner,
-        colorPrimary,
-        ecommerce_mode,
-        whatsapp_number,
-        currency,
-        topbar_message
-      `
+        "nombre, color_primary, whatsapp_number, ecommerce_mode, store_name, store_logo, client_id"
       )
-      .eq("id", order.tenant_id)
+      .eq("client_id", order.tenant_id)
       .single();
 
-    if (tenantError || !tenant) {
-      console.error("[orden-api] Tenant no encontrado:", order.tenant_id);
-      return NextResponse.json(
-        { error: "Tienda no encontrada" },
-        { status: 404 }
-      );
-    }
+    console.log("[orden-api] Tenant resultado:", { tenant, error: tenantError });
+
+    // Si no encuentra tenant, usar datos por defecto
+    const tenantData = tenant || {
+      nombre: "Tienda",
+      color_primary: "#3b82f6",
+      whatsapp_number: null,
+      ecommerce_mode: "catalogo_whatsapp",
+      store_name: "Tienda",
+      store_logo: null,
+      client_id: order.tenant_id,
+    };
 
     console.log("[orden-api] ✓ Orden encontrada:", {
       numero_orden: order.numero_orden,
-      tenant: tenant.nombre,
+      tenant: tenantData.nombre,
     });
 
     return NextResponse.json({
       order,
-      tenant,
+      tenant: tenantData,
     });
   } catch (error) {
     console.error("[GET /api/orden/[orderId]] Error:", error);
