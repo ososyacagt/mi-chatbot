@@ -304,7 +304,17 @@ export default function OrdenesPage() {
                 </div>
 
                 {/* Acciones */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      const trackingUrl = `${window.location.origin}/orden/${selectedOrder.id}`;
+                      navigator.clipboard.writeText(trackingUrl);
+                      setToast({ message: "🔗 Link de seguimiento copiado", type: "success" });
+                    }}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    🔗 Copiar link de seguimiento
+                  </button>
                   {selectedOrder.cliente_telefono && (
                     <a
                       href={`https://wa.me/${selectedOrder.cliente_telefono}`}
