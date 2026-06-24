@@ -176,26 +176,62 @@ function TenantCard({ tenant, user, escalationCounts, pendingOrdersCounts, onDel
             </Link>
           </div>
 
-          {/* Tienda/Catálogo */}
-          <div className="grid grid-cols-1 gap-2">
-            {tenant.ecommerceMode && tenant.ecommerceMode !== "none" ? (
-              <Link
-                href={tenant.ecommerceMode === "tienda" ? `/tienda/${tenant.client_id}` : `/catalogo/${tenant.client_id}`}
-                className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-cyan-100 dark:bg-cyan-950/30 hover:bg-cyan-200 dark:hover:bg-cyan-950/60 text-cyan-800 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-900"
-              >
-                {Icon.store}
-                {tenant.ecommerceMode === "tienda" ? "Ver Tienda" : "Ver Catálogo"}
-              </Link>
-            ) : (
-              <button
-                disabled
-                className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-zinc-800 cursor-not-allowed"
-                title="Activa el e-commerce en Inventario para habilitar"
-              >
-                {Icon.store} Tienda (inactiva)
-              </button>
-            )}
-          </div>
+          {/* Modalidades de E-commerce */}
+          {(() => {
+            const modes = tenant.ecommerce_modes || (tenant.ecommerceMode && tenant.ecommerceMode !== 'none' ? [tenant.ecommerceMode] : []);
+            const modeLinks = [];
+
+            if (modes.includes('catalogo_whatsapp')) {
+              modeLinks.push(
+                <Link key="catalogo" href={`/catalogo/${tenant.client_id}`}
+                  className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-cyan-100 dark:bg-cyan-950/30 hover:bg-cyan-200 dark:hover:bg-cyan-950/60 text-cyan-800 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-900">
+                  🛍️ Catálogo
+                </Link>
+              );
+            }
+
+            if (modes.includes('chatbot')) {
+              modeLinks.push(
+                <Link key="chatbot" href={`/chat/${tenant.id}`}
+                  className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-purple-100 dark:bg-purple-950/30 hover:bg-purple-200 dark:hover:bg-purple-950/60 text-purple-800 dark:text-purple-400 border border-purple-300 dark:border-purple-900">
+                  🤖 Chat
+                </Link>
+              );
+            }
+
+            if (modes.includes('tienda')) {
+              modeLinks.push(
+                <Link key="tienda" href={`/tienda/${tenant.client_id}`}
+                  className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-cyan-100 dark:bg-cyan-950/30 hover:bg-cyan-200 dark:hover:bg-cyan-950/60 text-cyan-800 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-900">
+                  🏪 Tienda
+                </Link>
+              );
+            }
+
+            if (modes.includes('pos')) {
+              modeLinks.push(
+                <Link key="pos" href={`/pos/${tenant.client_id}`}
+                  className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-orange-100 dark:bg-orange-950/30 hover:bg-orange-200 dark:hover:bg-orange-950/60 text-orange-800 dark:text-orange-400 border border-orange-300 dark:border-orange-900">
+                  🖥️ POS
+                </Link>
+              );
+            }
+
+            return (
+              <div className={`grid gap-2 ${modeLinks.length > 0 ? `grid-cols-${Math.min(modeLinks.length, 4)}` : 'grid-cols-1'}`}>
+                {modeLinks.length > 0 ? modeLinks : (
+                  <button
+                    disabled
+                    className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-zinc-800 cursor-not-allowed"
+                    title="Activa e-commerce en Inventario"
+                  >
+                    {Icon.store} E-commerce (inactivo)
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+
 
           {/* Grupo de admin */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 mt-1">

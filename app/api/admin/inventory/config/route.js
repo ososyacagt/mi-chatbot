@@ -37,13 +37,12 @@ export async function GET(request) {
       );
     }
 
-    console.log("[GET /api/admin/inventory/config] Obteniendo config para:", clientId);
 
     const supabase = createSupabaseAdmin();
     const { data: tenant } = await supabase
       .from("tenants")
       .select(
-        "id, ecommerce_mode, whatsapp_number, currency, store_name, store_logo, store_banner, topbar_message, min_order_amount, payment_methods, nombre"
+        "id, ecommerce_mode, ecommerce_modes, whatsapp_number, currency, store_name, store_logo, store_banner, topbar_message, min_order_amount, payment_methods, nombre"
       )
       .eq("client_id", clientId)
       .single();
@@ -81,8 +80,6 @@ export async function PUT(request) {
     const clientId = searchParams.get("clientId");
     const body = await request.json();
 
-    console.log('[PUT config] body:', JSON.stringify(body, null, 2));
-
     if (!clientId) {
       return NextResponse.json(
         { error: "clientId es requerido" },
@@ -90,15 +87,13 @@ export async function PUT(request) {
       );
     }
 
-    console.log("[PUT /api/admin/inventory/config] Actualizando config para:", clientId);
-    console.log('[PUT config] ecommerce_mode a guardar:', body.ecommerceMode);
-
-    // Verificar que el plan permite esta modalidad de e-commerce
-    if (body.ecommerce_mode && body.ecommerce_mode !== 'none') {
-      const allowed = await canUseEcommerceMode(clientId, body.ecommerce_mode);
+    // Verificar que el plan permite todas las modalidades
+    const modes = body.ecommerce_modes || [];
+    for (const mode of modes) {
+      const allowed = await canUseEcommerceMode(clientId, mode);
       if (!allowed) {
         return NextResponse.json({
-          error: `Tu plan no incluye la modalidad "${body.ecommerce_mode}". Actualiza a Pro o Enterprise.`
+          error: `Tu plan no incluye la modalidad "${mode}". Actualiza a Pro o Enterprise.`
         }, { status: 403 });
       }
     }
@@ -107,7 +102,8 @@ export async function PUT(request) {
     const { data: config, error } = await supabase
       .from("tenants")
       .update({
-        ecommerce_mode: body.ecommerce_mode || 'none',
+        ecommerce_modes: body.ecommerce_modes || [],
+        ecommerce_mode: body.ecommerce_modes?.[0] || 'none',
         whatsapp_number: body.whatsapp_number || null,
         currency: body.currency || 'USD',
         store_name: body.store_name || null,
@@ -124,7 +120,6 @@ export async function PUT(request) {
 
     if (error) throw error;
 
-    console.log("[PUT /api/admin/inventory/config] ✓ Actualizada:", clientId);
 
     return NextResponse.json({ config });
   } catch (error) {

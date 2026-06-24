@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import POSConfigTab from "../components/POSConfigTab";
 import Papa from "papaparse";
 
 const TABS = {
@@ -76,7 +77,7 @@ function InventoryPageContent() {
   // Configuración
   const [config, setConfig] = useState(null);
   const [configForm, setConfigForm] = useState({
-    ecommerce_mode: "none",
+    ecommerce_modes: [],
     whatsapp_number: "",
     currency: "USD",
     store_name: "",
@@ -259,7 +260,7 @@ function InventoryPageContent() {
         const data = await res.json();
         setConfig(data.config);
         setConfigForm({
-          ecommerce_mode: data.config.ecommerce_mode || "none",
+          ecommerce_modes: data.config.ecommerce_modes || (data.config.ecommerce_mode && data.config.ecommerce_mode !== 'none' ? [data.config.ecommerce_mode] : []),
           whatsapp_number: data.config.whatsapp_number || "",
           currency: data.config.currency || "USD",
           store_name: data.config.store_name || "",
@@ -697,6 +698,7 @@ function InventoryPageContent() {
 
       {!loading && activeTab === TABS.CONFIG && (
         <ConfigTab
+          clientId={clientId}
           configForm={configForm}
           setConfigForm={setConfigForm}
           handleSaveConfig={handleSaveConfig}
@@ -1741,7 +1743,15 @@ function RuleModal({
   );
 }
 
+const MODALIDADES = [
+  { value: 'catalogo_whatsapp', label: '🛍️ Catálogo + WhatsApp', plan: 'pro' },
+  { value: 'chatbot', label: '🤖 Chatbot con pedidos', plan: 'pro' },
+  { value: 'tienda', label: '🏪 Tienda completa', plan: 'enterprise' },
+  { value: 'pos', label: '🖥️ Punto de Venta (POS)', plan: 'enterprise' }
+];
+
 function ConfigTab({
+  clientId,
   configForm,
   setConfigForm,
   handleSaveConfig,
@@ -1920,55 +1930,50 @@ function ConfigTab({
           </div>
         ) : (
           <>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={configForm.ecommerce_mode !== "none"}
-                onChange={(e) =>
-                  setConfigForm({
-                    ...configForm,
-                    ecommerce_mode: e.target.checked ? "tienda" : "none",
-                  })
-                }
-                className="w-4 h-4"
-              />
-              <span className="font-medium">Activar e-commerce</span>
-            </label>
+            <div>
+              <label className="font-medium block mb-3">Modalidades de e-commerce</label>
+              <div className="space-y-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                {MODALIDADES.map((modalidad) => {
+                  const isEnabled = planInfo?.ecommerceModes?.includes(modalidad.value);
+                  const isChecked = (configForm.ecommerce_modes || []).includes(modalidad.value);
 
-            {configForm.ecommerce_mode !== "none" && (
-              <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <select
-                  value={configForm.ecommerce_mode}
-                  onChange={(e) =>
-                    setConfigForm({
-                      ...configForm,
-                      ecommerce_mode: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                >
-                  <option value="none">Ninguno (desactivado)</option>
-                  <option
-                    value="catalogo_whatsapp"
-                    disabled={!planInfo?.ecommerceModes?.includes('catalogo_whatsapp')}
-                  >
-                    🛍️ Catálogo + WhatsApp {!planInfo?.ecommerceModes?.includes('catalogo_whatsapp') ? '(requiere Pro)' : ''}
-                  </option>
-                  <option
-                    value="chatbot"
-                    disabled={!planInfo?.ecommerceModes?.includes('chatbot')}
-                  >
-                    🤖 Chatbot con pedidos {!planInfo?.ecommerceModes?.includes('chatbot') ? '(requiere Pro)' : ''}
-                  </option>
-                  <option
-                    value="tienda"
-                    disabled={!planInfo?.ecommerceModes?.includes('tienda')}
-                  >
-                    🏪 Tienda completa {!planInfo?.ecommerceModes?.includes('tienda') ? '(requiere Enterprise)' : ''}
-                  </option>
-                </select>
+                  return (
+                    <label key={modalidad.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={!isEnabled}
+                        onChange={(e) => {
+                          const modes = configForm.ecommerce_modes || [];
+                          if (e.target.checked) {
+                            setConfigForm({
+                              ...configForm,
+                              ecommerce_modes: [...modes, modalidad.value],
+                            });
+                          } else {
+                            setConfigForm({
+                              ...configForm,
+                              ecommerce_modes: modes.filter(m => m !== modalidad.value),
+                            });
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className={`flex-1 ${!isEnabled ? 'text-slate-400' : 'text-slate-900'}`}>
+                        {modalidad.label}
+                      </span>
+                      {!isEnabled && (
+                        <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">
+                          requiere {modalidad.plan.toUpperCase()}
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
 
-            {configForm.ecommerce_mode === "chatbot" && (
+            {(configForm.ecommerce_modes || []).includes("chatbot") && (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <div className="flex gap-3">
                   <div className="text-2xl flex-shrink-0">🤖</div>
@@ -2114,6 +2119,14 @@ function ConfigTab({
           </>
         )}
       </div>
+
+      {/* POS Configuration */}
+      {planInfo?.ecommerceModes?.includes('pos') && (
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-bold mb-4">🖥️ Configuración del Punto de Venta (POS)</h3>
+          <POSConfigTab clientId={clientId} planInfo={planInfo} />
+        </div>
+      )}
 
       <div className="flex gap-2 justify-end border-t pt-4">
         <button

@@ -348,6 +348,23 @@ export default function PlanForm({ plan, onSave, onCancel, loading }) {
           />
           <span className="text-slate-900 dark:text-white">🏪 Tienda completa</span>
         </label>
+
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.ecommerce_modes?.includes('pos')}
+            onChange={(e) => {
+              const modes = formData.ecommerce_modes || [];
+              if (e.target.checked) {
+                setFormData({ ...formData, ecommerce_modes: [...modes, 'pos'] });
+              } else {
+                setFormData({ ...formData, ecommerce_modes: modes.filter(m => m !== 'pos') });
+              }
+            }}
+            className="w-4 h-4"
+          />
+          <span className="text-slate-900 dark:text-white">🖥️ Punto de Venta (POS)</span>
+        </label>
       </div>
 
       {/* E-commerce limits */}

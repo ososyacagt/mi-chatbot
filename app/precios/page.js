@@ -236,6 +236,12 @@ export default function PricingPage() {
                             <span>Tienda completa con checkout</span>
                           </div>
                         )}
+                        {plan.ecommerce_modes.includes('pos') && (
+                          <div className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <span>🖥️</span>
+                            <span>Punto de Venta (POS)</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
