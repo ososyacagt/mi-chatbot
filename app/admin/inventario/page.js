@@ -30,8 +30,6 @@ function InventoryPageContent() {
   const router = useRouter();
   const clientId = searchParams.get("clientId");
 
-  console.log("[inventario] clientId from searchParams:", clientId);
-
   const [activeTab, setActiveTab] = useState(TABS.PRODUCTS);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
@@ -123,7 +121,7 @@ function InventoryPageContent() {
         setClientName(data.store_name || data.nombre || clientId);
       }
     } catch (err) {
-      console.error("[inventario] Error loading client name:", err);
+      console.error("[inventario] Error cargando nombre del cliente:", err);
     }
   };
 
@@ -135,10 +133,6 @@ function InventoryPageContent() {
         fetch(`/api/admin/inventory/categories?clientId=${clientId}`),
       ]);
 
-      console.log("[inventario] clientId:", clientId);
-      console.log("[inventario] Products response:", pRes.status);
-      console.log("[inventario] Categories response:", cRes.status);
-
       if (pRes.ok) {
         const data = await pRes.json();
         setProducts(data.products || []);
@@ -148,7 +142,7 @@ function InventoryPageContent() {
         setCategories(data.categories || []);
       }
     } catch (err) {
-      console.error("[inventario] Error loading products:", err);
+      console.error("[inventario] Error cargando productos:", err);
       setToast({ message: "✗ Error al cargar productos", type: "error" });
     } finally {
       setLoading(false);
@@ -164,7 +158,7 @@ function InventoryPageContent() {
         setCategories(data.categories || []);
       }
     } catch (err) {
-      console.error("[inventario] Error loading categories:", err);
+      console.error("[inventario] Error cargando categorías:", err);
       setToast({ message: "✗ Error al cargar categorías", type: "error" });
     } finally {
       setLoading(false);
@@ -180,7 +174,7 @@ function InventoryPageContent() {
         setRules(data.rules || []);
       }
     } catch (err) {
-      console.error("[inventario] Error loading rules:", err);
+      console.error("[inventario] Error cargando reglas:", err);
       setToast({ message: "✗ Error al cargar reglas", type: "error" });
     } finally {
       setLoading(false);
@@ -237,26 +231,23 @@ function InventoryPageContent() {
         setPlanLimits(data);
       }
     } catch (err) {
-      console.error("[inventario] Error loading plan limits:", err);
+      console.error("[inventario] Error cargando límites del plan:", err);
     }
   };
 
   const loadPlanInfo = async () => {
     try {
       const url = `/api/admin/inventory/plan-info?clientId=${clientId}`;
-      console.log("[inventario] loadPlanInfo - URL:", url, "clientId:", clientId);
       const res = await fetch(url);
-      console.log("[inventario] loadPlanInfo - Status:", res.status);
       if (res.ok) {
         const data = await res.json();
-        console.log("[inventario] loadPlanInfo - Data:", data);
         setPlanInfo(data);
       } else {
         const error = await res.json();
-        console.error("[inventario] loadPlanInfo - Error response:", error);
+        console.error("[inventario] Error al cargar información del plan:", error);
       }
     } catch (err) {
-      console.error("[inventario] loadPlanInfo - Error:", err);
+      console.error("[inventario] Error cargando plan info:", err);
     }
   };
 
@@ -282,47 +273,28 @@ function InventoryPageContent() {
       // Cargar límites del plan
       await loadPlanLimits();
     } catch (err) {
-      console.error("[inventario] Error loading config:", err);
+      console.error("[inventario] Error cargando configuración:", err);
       setToast({ message: "✗ Error al cargar configuración", type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
+  // Se ejecuta solo cuando cambia clientId
   useEffect(() => {
-    if (!clientId) {
-      console.log("[inventario] Esperando clientId...");
-      return;
-    }
-
-    console.log("[inventario] clientId está disponible, cargando tab:", activeTab);
-
-    // Cargar nombre del cliente
+    if (!clientId) return;
     loadClientName();
-
-    // Cargar información del plan para TODAS las tabs
     loadPlanInfo();
+  }, [clientId]);
 
-    if (activeTab === TABS.PRODUCTS) {
-      console.log("[inventario] → Cargando productos");
-      loadProducts();
-    }
-    if (activeTab === TABS.CATEGORIES) {
-      console.log("[inventario] → Cargando categorías");
-      loadCategories();
-    }
-    if (activeTab === TABS.RULES) {
-      console.log("[inventario] → Cargando reglas");
-      loadRules();
-    }
-    if (activeTab === TABS.CONFIG) {
-      console.log("[inventario] → Cargando configuración");
-      loadConfig();
-    }
+  // Se ejecuta cuando cambia el tab
+  useEffect(() => {
+    if (!clientId) return;
+    if (activeTab === TABS.PRODUCTS) loadProducts();
+    if (activeTab === TABS.CATEGORIES) loadCategories();
+    if (activeTab === TABS.RULES) loadRules();
+    if (activeTab === TABS.CONFIG) loadConfig();
   }, [activeTab, clientId]);
-
-
-
 
   const handleDeleteProduct = (productId) => {
     setConfirmModal({
@@ -341,6 +313,7 @@ function InventoryPageContent() {
             await loadProducts();
           }
         } catch (err) {
+          console.error("[inventario] Error eliminando producto:", err);
           setToast({ message: "✗ Error al eliminar", type: "error" });
         }
         setConfirmModal({ isOpen: false });
@@ -384,7 +357,7 @@ function InventoryPageContent() {
         setToast({ message: "✗ Error al guardar categoría", type: "error" });
       }
     } catch (err) {
-      console.error("Error saving category:", err);
+      console.error("[inventario] Error guardando categoría:", err);
       setToast({ message: "✗ Error al guardar categoría", type: "error" });
     }
   };
@@ -406,6 +379,7 @@ function InventoryPageContent() {
             await loadCategories();
           }
         } catch (err) {
+          console.error("[inventario] Error eliminando categoría:", err);
           setToast({ message: "✗ Error al eliminar", type: "error" });
         }
         setConfirmModal({ isOpen: false });
@@ -454,7 +428,7 @@ function InventoryPageContent() {
         setToast({ message: "✗ Error al guardar regla", type: "error" });
       }
     } catch (err) {
-      console.error("Error saving rule:", err);
+      console.error("[inventario] Error guardando regla:", err);
       setToast({ message: "✗ Error al guardar regla", type: "error" });
     }
   };
@@ -476,6 +450,7 @@ function InventoryPageContent() {
             await loadRules();
           }
         } catch (err) {
+          console.error("[inventario] Error eliminando regla:", err);
           setToast({ message: "✗ Error al eliminar", type: "error" });
         }
         setConfirmModal({ isOpen: false });
@@ -504,7 +479,7 @@ function InventoryPageContent() {
         });
       }
     } catch (err) {
-      console.error("Error saving config:", err);
+      console.error("[inventario] Error guardando configuración:", err);
       setToast({ message: "✗ Error al guardar configuración", type: "error" });
     }
   };
@@ -539,7 +514,6 @@ function InventoryPageContent() {
     Papa.parse(file, {
       header: true,
       complete: (results) => {
-        console.log("CSV parsed:", results.data);
         setBulkPreview(results.data.filter((row) => row.nombre));
         setBulkStep(3);
       },
@@ -578,7 +552,7 @@ function InventoryPageContent() {
         setToast({ message: "✗ Error en la importación", type: "error" });
       }
     } catch (err) {
-      console.error("Error importing:", err);
+      console.error("[inventario] Error importando productos en lote:", err);
       setToast({ message: "✗ Error en la importación", type: "error" });
     } finally {
       setBulkLoading(false);
@@ -588,7 +562,7 @@ function InventoryPageContent() {
   /* UX/UI: Header con SVG, tab bar con dark mode e íconos, spinner premium */
   const TAB_CONFIG = [
     { key: TABS.PRODUCTS, label: "Productos", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg> },
-    { key: TABS.CATEGORIES, label: "Categorías", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" /></svg> },
+    { key: TABS.CATEGORIES, label: "Categorías", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c0 .621.504 1.125 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" /></svg> },
     { key: TABS.RULES, label: "Reglas", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
     { key: TABS.CONFIG, label: "Configuración", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
   ];

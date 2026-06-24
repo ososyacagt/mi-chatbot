@@ -110,13 +110,13 @@ export default function ChatPage() {
   const [error, setError] = useState(null);
   const [limitReached, setLimitReached] = useState(false);
   const [sessionId, setSessionId] = useState(null);
-  const [lastAdminResponseTime, setLastAdminResponseTime] = useState(null);
   const [agentActive, setAgentActive] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [lastOrderCreated, setLastOrderCreated] = useState(false);
   const [lastOrderNumber, setLastOrderNumber] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const lastAdminResponseTimeRef = useRef(null);
 
   // Inicializar sessionId desde localStorage o generar uno nuevo
   useEffect(() => {
@@ -150,9 +150,6 @@ export default function ChatPage() {
         if (!res.ok) {
           throw new Error(data.error || "Chat no encontrado");
         }
-
-        console.log("[Chat] Tenant cargado:", data.tenant);
-        console.log("[Chat] Tema del tenant:", data.tenant?.theme);
 
         setTenant(data.tenant);
         setMessages([{ ...welcomeMessageFor(data.tenant), timestamp: new Date() }]);
@@ -209,12 +206,10 @@ export default function ChatPage() {
           }
         `;
         document.head.appendChild(style);
-        console.log("[Chat] Override inyectado - forzando tema claro");
       }
     } else {
       if (existingStyle) {
         existingStyle.remove();
-        console.log("[Chat] Override removido");
       }
     }
   }, [tenant?.theme]);
@@ -226,28 +221,22 @@ export default function ChatPage() {
     const root = document.documentElement;
     const theme = tenant.theme || "auto";
 
-    console.log("[Chat] Aplicando tema:", theme);
-
     root.classList.remove("dark");
 
     if (theme === "dark") {
       root.classList.add("dark");
       root.style.colorScheme = "dark";
-      console.log("[Chat] Tema oscuro aplicado");
     } else if (theme === "light") {
       root.classList.remove("dark");
       root.style.colorScheme = "light";
-      console.log("[Chat] Tema claro aplicado - color-scheme: light");
     } else {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       if (prefersDark) {
         root.classList.add("dark");
         root.style.colorScheme = "dark";
-        console.log("[Chat] Tema auto (oscuro del sistema) aplicado");
       } else {
         root.classList.remove("dark");
         root.style.colorScheme = "light";
-        console.log("[Chat] Tema auto (claro del sistema) aplicado");
       }
     }
 
@@ -266,23 +255,19 @@ export default function ChatPage() {
         const url = new URL("/api/chat/admin-responses", window.location.origin);
         url.searchParams.append("sessionId", sessionId);
         url.searchParams.append("clientId", clientId);
-        if (lastAdminResponseTime) {
-          url.searchParams.append("lastTimestamp", lastAdminResponseTime);
+        if (lastAdminResponseTimeRef.current) {
+          url.searchParams.append("lastTimestamp", lastAdminResponseTimeRef.current);
         }
-
-        console.log("[Chat] Polling admin responses, lastTimestamp:", lastAdminResponseTime);
 
         const res = await fetch(url.toString());
         if (!res.ok) {
-          console.error("[Chat] Poll failed:", res.status);
+          console.error("[chat] Error en polling de respuestas del admin:", res.status);
           return;
         }
 
         const data = await res.json();
-        console.log("[Chat] Poll response:", data.newMessages?.length, "mensajes");
 
         if (data.newMessages && data.newMessages.length > 0) {
-          console.log("[Chat] Agregando mensajes:", data.newMessages);
           setMessages((prev) => [
             ...prev,
             ...data.newMessages.map((msg) => ({
@@ -290,20 +275,18 @@ export default function ChatPage() {
               timestamp: new Date(msg.created_at),
             })),
           ]);
-          // Actualizar el timestamp de la última respuesta
           const lastMsg = data.newMessages[data.newMessages.length - 1];
           if (lastMsg.created_at) {
-            console.log("[Chat] Actualizando lastAdminResponseTime a:", lastMsg.created_at);
-            setLastAdminResponseTime(lastMsg.created_at);
+            lastAdminResponseTimeRef.current = lastMsg.created_at;
           }
         }
       } catch (err) {
-        console.error("[Chat] Error polling admin responses:", err);
+        console.error("[chat] Error haciendo polling de respuestas del admin:", err);
       }
     }, 5000);
 
     return () => clearInterval(pollInterval);
-  }, [sessionId, clientId, lastAdminResponseTime]);
+  }, [sessionId, clientId]);
 
   function handleNewConversation() {
     if (!clientId) return;

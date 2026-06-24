@@ -277,10 +277,12 @@ export default function AdminPanel() {
 
         const loadedTenants = data.tenants || [];
         setTenants(loadedTenants);
-        for (const tenant of loadedTenants) {
-          await loadEscalationsForTenant(tenant.client_id);
-          await loadPendingOrdersForTenant(tenant.client_id);
-        }
+        await Promise.all(
+          loadedTenants.map(tenant => Promise.all([
+            loadEscalationsForTenant(tenant.client_id),
+            loadPendingOrdersForTenant(tenant.client_id)
+          ]))
+        );
       } catch (err) {
         console.error("Error:", err);
         setError(err.message);
