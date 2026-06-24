@@ -1009,6 +1009,17 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
                     ¡Pedido #{createdOrder.numero_orden} confirmado!
                   </h3>
 
+                  {/* Tracking Link */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-slate-600 mb-2">📋 Haz seguimiento de tu pedido:</p>
+                    <a
+                      href={createdOrder.trackingUrl || `/orden/${createdOrder.id}`}
+                      className="text-blue-600 hover:text-blue-700 font-semibold break-all"
+                    >
+                      Ver estado del pedido
+                    </a>
+                  </div>
+
                   {/* Resumen del pedido */}
                   <div className="text-left bg-slate-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between text-sm">

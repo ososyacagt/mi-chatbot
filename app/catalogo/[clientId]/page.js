@@ -28,6 +28,7 @@ export default function CatalogPage() {
     notas: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [createdOrderForTracking, setCreatedOrderForTracking] = useState(null);
 
   useEffect(() => {
     loadStore();
@@ -200,6 +201,9 @@ export default function CatalogPage() {
 
       if (!orderRes.ok) throw new Error("Error creating order");
       const orderData = await orderRes.json();
+
+      // Guardar orden para mostrar tracking
+      setCreatedOrderForTracking(orderData.order);
 
       const message = formatWhatsAppMessage(
         orderData.order,
@@ -869,6 +873,41 @@ ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : 
           </p>
         </div>
       </footer>
+
+      {/* Tracking Modal */}
+      {createdOrderForTracking && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4">
+            <div className="text-center">
+              <p className="text-3xl mb-2">📋</p>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">
+                ¡Pedido #{createdOrderForTracking.numero_orden} creado!
+              </h2>
+              <p className="text-sm text-slate-600 mb-4">
+                Puedes hacer seguimiento de tu pedido en el siguiente link:
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <a
+                href={createdOrderForTracking.trackingUrl || `/orden/${createdOrderForTracking.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 font-semibold break-all block text-center"
+              >
+                Ver estado del pedido →
+              </a>
+            </div>
+
+            <button
+              onClick={() => setCreatedOrderForTracking(null)}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg font-medium transition"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {toast.message && (
