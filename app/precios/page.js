@@ -212,6 +212,39 @@ export default function PricingPage() {
                   </div>
                 </div>
 
+                {/* E-commerce Capabilities */}
+                {(plan.ecommerce_modes && plan.ecommerce_modes.length > 0) && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6 space-y-3 text-sm border border-blue-200 dark:border-blue-800">
+                    <p className="font-semibold text-blue-900 dark:text-blue-200">🛍️ E-commerce:</p>
+                    <div className="space-y-2">
+                      {plan.ecommerce_modes.includes('catalogo_whatsapp') && (
+                        <div className="text-slate-700 dark:text-slate-300">
+                          • Catálogo + WhatsApp
+                          {plan.max_productos > 0 && <span className="text-xs text-slate-600 dark:text-slate-400"> (hasta {plan.max_productos} productos)</span>}
+                        </div>
+                      )}
+                      {plan.ecommerce_modes.includes('chatbot') && (
+                        <div className="text-slate-700 dark:text-slate-300">
+                          • Chatbot con pedidos
+                        </div>
+                      )}
+                      {plan.ecommerce_modes.includes('tienda') && (
+                        <div className="text-slate-700 dark:text-slate-300">
+                          • Tienda completa con checkout
+                          {plan.max_productos > 0 && <span className="text-xs text-slate-600 dark:text-slate-400"> (hasta {plan.max_productos} productos)</span>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* No e-commerce for Basic plan */}
+                {(!plan.ecommerce_modes || plan.ecommerce_modes.length === 0) && (
+                  <div className="bg-slate-100 dark:bg-slate-700/30 rounded-lg p-4 mb-6 text-sm text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                    🛍️ Sin módulo de tienda
+                  </div>
+                )}
+
                 {/* Features */}
                 <div className="mb-8 space-y-3">
                   {plan.caracteristicas &&
