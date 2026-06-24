@@ -14,6 +14,7 @@ export default function CatalogPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState([]);
@@ -71,6 +72,13 @@ export default function CatalogPage() {
   const loadStore = async () => {
     try {
       const res = await fetch(`/api/store/${clientId}`);
+
+      if (res.status === 403) {
+        setError("unavailable");
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok) throw new Error("Error loading store");
       const data = await res.json();
       setStoreData(data.tenant);
@@ -78,6 +86,7 @@ export default function CatalogPage() {
       setProducts(data.products);
     } catch (err) {
       console.error("Error:", err);
+      setError("error");
       setToast({ message: "✗ Error al cargar la tienda", type: "error" });
     } finally {
       setLoading(false);
@@ -235,6 +244,18 @@ ${cartData.totalDiscount > 0 ? `🏷️ *Descuentos:* -${moneda} ${cartData.tota
 👤 *Cliente:* ${order.cliente_nombre}
 ${order.cliente_direccion ? `📍 *Dirección:* ${order.cliente_direccion}\n` : ""}${order.notas ? `📝 *Notas:* ${order.notas}` : ""}`;
   };
+
+  if (error === "unavailable") {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Tienda no disponible</h1>
+          <p className="text-slate-500">Esta tienda no está activa en este momento.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

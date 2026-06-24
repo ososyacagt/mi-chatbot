@@ -1525,25 +1525,49 @@ function CategoriesTab({
   setCategoryForm,
   handleSaveCategory,
   handleDeleteCategory,
+  planInfo,
 }) {
   return (
     <>
-      <button
-        onClick={() => {
-          setEditingCategory(null);
-          setCategoryForm({
-            nombre: "",
-            descripcion: "",
-            emoji: "",
-            orden: "0",
-            activo: true,
-          });
-          setShowCategoryModal(true);
-        }}
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-      >
-        ➕ Nueva categoría
-      </button>
+      <div className="flex gap-2 flex-wrap items-center mb-4">
+        <button
+          onClick={() => {
+            setEditingCategory(null);
+            setCategoryForm({
+              nombre: "",
+              descripcion: "",
+              emoji: "",
+              orden: "0",
+              activo: true,
+            });
+            setShowCategoryModal(true);
+          }}
+          disabled={planInfo?.atLimit?.categorias}
+          className={`px-4 py-2 rounded-lg font-medium transition ${
+            planInfo?.atLimit?.categorias
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+        >
+          ➕ Nueva categoría
+        </button>
+
+        {planInfo?.atLimit?.categorias && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-red-700 text-sm font-medium">
+              🔒 Límite alcanzado ({planInfo.currentCategorias}/{planInfo.maxCategorias})
+            </p>
+          </div>
+        )}
+
+        {planInfo?.nearLimit?.categorias && !planInfo?.atLimit?.categorias && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+            <p className="text-yellow-700 text-sm font-medium">
+              ⚠️ Límite cercano ({planInfo.currentCategorias}/{planInfo.maxCategorias})
+            </p>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-4">
         <div className="space-y-2">
@@ -1690,6 +1714,7 @@ function RulesTab({
   setRuleForm,
   handleSaveRule,
   handleDeleteRule,
+  planInfo,
 }) {
   function mapRuleFromDB(rule) {
     const base = {
@@ -1769,24 +1794,47 @@ function RulesTab({
 
   return (
     <>
-      <button
-        onClick={() => {
-          setEditingRule(null);
-          setRuleForm({
-            tipo: "cross_sell",
-            nombre: "",
-            fecha_inicio: "",
-            fecha_fin: "",
-            activo: true,
-            condiciones: {},
-            acciones: {},
-          });
-          setShowRuleModal(true);
-        }}
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-      >
-        ➕ Nueva regla
-      </button>
+      <div className="flex gap-2 flex-wrap items-center mb-4">
+        <button
+          onClick={() => {
+            setEditingRule(null);
+            setRuleForm({
+              tipo: "cross_sell",
+              nombre: "",
+              fecha_inicio: "",
+              fecha_fin: "",
+              activo: true,
+              condiciones: {},
+              acciones: {},
+            });
+            setShowRuleModal(true);
+          }}
+          disabled={planInfo?.atLimit?.reglas}
+          className={`px-4 py-2 rounded-lg font-medium transition ${
+            planInfo?.atLimit?.reglas
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+        >
+          ➕ Nueva regla
+        </button>
+
+        {planInfo?.atLimit?.reglas && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-red-700 text-sm font-medium">
+              🔒 Límite alcanzado ({planInfo.currentReglas}/{planInfo.maxReglas})
+            </p>
+          </div>
+        )}
+
+        {planInfo?.nearLimit?.reglas && !planInfo?.atLimit?.reglas && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+            <p className="text-yellow-700 text-sm font-medium">
+              ⚠️ Límite cercano ({planInfo.currentReglas}/{planInfo.maxReglas})
+            </p>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-4">
         <div className="space-y-2">
