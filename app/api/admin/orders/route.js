@@ -62,7 +62,7 @@ export async function GET(request) {
     let query = supabase
       .from("orders")
       .select(
-        "id, numero_orden, cliente_nombre, cliente_telefono, cliente_direccion, items, subtotal, total, metodo_pago, status, notas, created_at",
+        "id, numero_orden, cliente_nombre, cliente_email, cliente_telefono, cliente_direccion, cliente_ciudad, cliente_pais, items, subtotal, total, metodo_pago, status, notas, created_at",
         { count: "exact" }
       )
       .eq("tenant_id", clientId)

@@ -9,8 +9,11 @@ export async function POST(request, { params }) {
       giftItems,
       appliedRules,
       clienteNombre,
+      clienteEmail,
       clienteTelefono,
       clienteDireccion,
+      clienteCiudad,
+      clientePais,
       notas,
       metodoPago,
       subtotal,
@@ -63,8 +66,11 @@ export async function POST(request, { params }) {
     const order = await createOrder({
       tenantId: clientId,
       clienteNombre,
+      clienteEmail: clienteEmail || undefined,
       clienteTelefono,
       clienteDireccion,
+      clienteCiudad: clienteCiudad || undefined,
+      clientePais: clientePais || undefined,
       notas,
       metodoPago: metodoPago || "whatsapp",
       items: todosLosItems,
@@ -87,7 +93,13 @@ export async function POST(request, { params }) {
     console.log("[POST /api/store/[clientId]/order] ✓ Orden creada:", order.numero_orden);
 
     return Response.json({
-      order,
+      order: {
+        id: order.id,
+        numero_orden: order.numero_orden,
+        status: order.status,
+        trackingUrl: `/tienda/${clientId}/orden/${order.id}`,
+        ...order,
+      },
     }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/store/[clientId]/order] Error completo:", {
