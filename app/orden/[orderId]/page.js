@@ -281,20 +281,20 @@ export default function OrderTrackingPage() {
           <div className="space-y-3">
             <div>
               <p className="text-xs text-gray-500">Nombre</p>
-              <p className="font-medium text-gray-900">{order.clienteNombre || "No especificado"}</p>
+              <p className="font-medium text-gray-900">{order.cliente_nombre || "No especificado"}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Teléfono</p>
-              <p className="font-medium text-gray-900">{order.clienteTelefono || "No especificado"}</p>
+              <p className="font-medium text-gray-900">{order.cliente_telefono || "No especificado"}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Dirección</p>
-              <p className="font-medium text-gray-900">{order.clienteDireccion || "No especificada"}</p>
+              <p className="font-medium text-gray-900">{order.cliente_direccion || "No especificada"}</p>
             </div>
-            {order.clienteCiudad && (
+            {order.cliente_ciudad && (
               <div>
                 <p className="text-xs text-gray-500">Ciudad</p>
-                <p className="font-medium text-gray-900">{order.clienteCiudad}</p>
+                <p className="font-medium text-gray-900">{order.cliente_ciudad}</p>
               </div>
             )}
           </div>
