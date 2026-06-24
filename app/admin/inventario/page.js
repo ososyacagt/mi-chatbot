@@ -287,13 +287,20 @@ function InventoryPageContent() {
 
   const loadPlanInfo = async () => {
     try {
-      const res = await fetch(`/api/admin/inventory/plan-info?clientId=${clientId}`);
+      const url = `/api/admin/inventory/plan-info?clientId=${clientId}`;
+      console.log("[inventario] loadPlanInfo - URL:", url, "clientId:", clientId);
+      const res = await fetch(url);
+      console.log("[inventario] loadPlanInfo - Status:", res.status);
       if (res.ok) {
         const data = await res.json();
+        console.log("[inventario] loadPlanInfo - Data:", data);
         setPlanInfo(data);
+      } else {
+        const error = await res.json();
+        console.error("[inventario] loadPlanInfo - Error response:", error);
       }
     } catch (err) {
-      console.error("[inventario] Error loading plan info:", err);
+      console.error("[inventario] loadPlanInfo - Error:", err);
     }
   };
 
