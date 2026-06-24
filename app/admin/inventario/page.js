@@ -2362,53 +2362,71 @@ function ConfigTab({
       )}
 
       <div className="border-t pt-4 space-y-4">
-        <label className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={configForm.ecommerce_mode !== "none"}
-            onChange={(e) =>
-              setConfigForm({
-                ...configForm,
-                ecommerce_mode: e.target.checked ? "tienda" : "none",
-              })
-            }
-            className="w-4 h-4"
-          />
-          <span className="font-medium">Activar e-commerce</span>
-        </label>
-
-        {configForm.ecommerce_mode !== "none" && (
-          <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <select
-              value={configForm.ecommerce_mode}
-              onChange={(e) =>
-                setConfigForm({
-                  ...configForm,
-                  ecommerce_mode: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+        {!planInfo?.ecommerceModes?.length ? (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-sm text-yellow-800 dark:text-yellow-300 space-y-3">
+            <div className="flex gap-2">
+              <span className="text-lg flex-shrink-0">⚠️</span>
+              <div>
+                <p className="font-medium">Tu plan {planInfo?.planNombre || 'Basic'} no incluye módulo de e-commerce</p>
+                <p className="text-xs mt-1 opacity-90">El e-commerce está disponible a partir del plan Pro. Actualiza tu plan para acceder a catálogos, tiendas y pedidos automáticos.</p>
+              </div>
+            </div>
+            <a
+              href="/precios"
+              className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium px-3 py-1 rounded transition"
             >
-              <option value="none">Ninguno (desactivado)</option>
-              <option
-                value="catalogo_whatsapp"
-                disabled={!planInfo?.ecommerceModes?.includes('catalogo_whatsapp')}
-              >
-                Catálogo + WhatsApp {!planInfo?.ecommerceModes?.includes('catalogo_whatsapp') ? '(requiere Pro)' : ''}
-              </option>
-              <option
-                value="chatbot"
-                disabled={!planInfo?.ecommerceModes?.includes('chatbot')}
-              >
-                Chatbot con pedidos {!planInfo?.ecommerceModes?.includes('chatbot') ? '(requiere Pro)' : ''}
-              </option>
-              <option
-                value="tienda"
-                disabled={!planInfo?.ecommerceModes?.includes('tienda')}
-              >
-                Tienda completa {!planInfo?.ecommerceModes?.includes('tienda') ? '(requiere Enterprise)' : ''}
-              </option>
-            </select>
+              Ver planes →
+            </a>
+          </div>
+        ) : (
+          <>
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={configForm.ecommerce_mode !== "none"}
+                onChange={(e) =>
+                  setConfigForm({
+                    ...configForm,
+                    ecommerce_mode: e.target.checked ? "tienda" : "none",
+                  })
+                }
+                className="w-4 h-4"
+              />
+              <span className="font-medium">Activar e-commerce</span>
+            </label>
+
+            {configForm.ecommerce_mode !== "none" && (
+              <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <select
+                  value={configForm.ecommerce_mode}
+                  onChange={(e) =>
+                    setConfigForm({
+                      ...configForm,
+                      ecommerce_mode: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                >
+                  <option value="none">Ninguno (desactivado)</option>
+                  <option
+                    value="catalogo_whatsapp"
+                    disabled={!planInfo?.ecommerceModes?.includes('catalogo_whatsapp')}
+                  >
+                    🛍️ Catálogo + WhatsApp {!planInfo?.ecommerceModes?.includes('catalogo_whatsapp') ? '(requiere Pro)' : ''}
+                  </option>
+                  <option
+                    value="chatbot"
+                    disabled={!planInfo?.ecommerceModes?.includes('chatbot')}
+                  >
+                    🤖 Chatbot con pedidos {!planInfo?.ecommerceModes?.includes('chatbot') ? '(requiere Pro)' : ''}
+                  </option>
+                  <option
+                    value="tienda"
+                    disabled={!planInfo?.ecommerceModes?.includes('tienda')}
+                  >
+                    🏪 Tienda completa {!planInfo?.ecommerceModes?.includes('tienda') ? '(requiere Enterprise)' : ''}
+                  </option>
+                </select>
 
             {configForm.ecommerce_mode === "chatbot" && (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -2552,6 +2570,8 @@ function ConfigTab({
               ))}
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
 
