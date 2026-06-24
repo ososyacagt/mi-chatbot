@@ -4,6 +4,10 @@ import { supabase } from "@/lib/supabase";
 export async function POST(request, { params }) {
   try {
     const { clientId } = await params;
+    const body = await request.json();
+
+    console.log('[order] body recibido:', JSON.stringify(body, null, 2));
+
     const {
       items,
       giftItems,
@@ -19,7 +23,7 @@ export async function POST(request, { params }) {
       subtotal,
       descuentos,
       total,
-    } = await request.json();
+    } = body;
 
     if (!clientId || !items || !clienteNombre) {
       return Response.json(
@@ -78,6 +82,8 @@ export async function POST(request, { params }) {
       descuentos,
       total,
     });
+
+    console.log('[order] Resultado createOrder:', { order, hasError: !order });
 
     if (!order) {
       return Response.json(

@@ -194,6 +194,18 @@ export default function StorePage() {
 
     setSubmitting(true);
     try {
+      console.log('[tienda] Enviando orden:', JSON.stringify({
+        items: cartResult?.cartItems || cart,
+        clienteNombre: customerForm.nombre,
+        clienteEmail: customerForm.email,
+        clienteTelefono: customerForm.telefono,
+        clienteDireccion: customerForm.direccion,
+        clienteCiudad: customerForm.ciudad,
+        clientePais: customerForm.pais,
+        notas: customerForm.notas,
+        metodoPago: selectedPaymentMethod
+      }, null, 2));
+
       const orderRes = await fetch(`/api/store/${clientId}/order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,11 +227,14 @@ export default function StorePage() {
         }),
       });
 
+      console.log('[tienda] Order response status:', orderRes.status);
+      const errorData = await orderRes.json();
+      console.log('[tienda] Order response data:', JSON.stringify(errorData));
+
       if (!orderRes.ok) {
-        const errorData = await orderRes.json();
         throw new Error(errorData.error || "Error creating order");
       }
-      const orderData = await orderRes.json();
+      const orderData = errorData;
 
       setCreatedOrder(orderData.order);
       setCheckoutStep(CheckoutStep.CONFIRMATION);
