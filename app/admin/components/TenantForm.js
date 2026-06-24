@@ -377,9 +377,9 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
           <select
             value={form.plan}
             onChange={(e) => {
-              const planId = e.target.value;
-              const selectedPlan = plans.find((p) => p.id === planId);
-              handleChange("plan", planId);
+              const planSlug = e.target.value;
+              const selectedPlan = plans.find((p) => p.slug === planSlug);
+              handleChange("plan", planSlug);
               // Auto-actualizar límite según el plan seleccionado
               if (selectedPlan) {
                 handleChange("mensajeLimite", selectedPlan.mensaje_limite || 100);
@@ -389,7 +389,7 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
           >
             <option value="">Selecciona un plan</option>
             {plans.map((plan) => (
-              <option key={plan.id} value={plan.id}>
+              <option key={plan.id} value={plan.slug}>
                 {plan.nombre} - ${plan.precio} {plan.moneda}/{plan.periodo}
               </option>
             ))}
@@ -397,10 +397,10 @@ export default function TenantForm({ tenant, onSave, onCancel, loading }) {
         </div>
 
         {/* Mostrar descripción del plan seleccionado */}
-        {form.plan && plans.find((p) => p.id === form.plan) && (
+        {form.plan && plans.find((p) => p.slug === form.plan) && (
           <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              {plans.find((p) => p.id === form.plan)?.descripcion}
+              {plans.find((p) => p.slug === form.plan)?.descripcion}
             </p>
           </div>
         )}
