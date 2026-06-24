@@ -927,6 +927,28 @@ function ProductsTab({
     }));
   };
 
+  if (planInfo?.maxProductos === 0) {
+    return (
+      <div className="min-h-96 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <p className="text-6xl mb-4">🔒</p>
+          <p className="text-xl font-semibold text-gray-700 mb-2">
+            Tu plan no incluye módulo de inventario
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Actualiza a Pro o Enterprise para gestionar productos, categorías y reglas de negocio.
+          </p>
+          <a
+            href="/precios"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
+            Ver planes disponibles
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex gap-2 flex-wrap items-center">
@@ -1534,6 +1556,28 @@ function CategoriesTab({
   handleDeleteCategory,
   planInfo,
 }) {
+  if (planInfo?.maxCategorias === 0) {
+    return (
+      <div className="min-h-96 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <p className="text-6xl mb-4">🔒</p>
+          <p className="text-xl font-semibold text-gray-700 mb-2">
+            Tu plan no incluye módulo de inventario
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Actualiza a Pro o Enterprise para gestionar productos, categorías y reglas de negocio.
+          </p>
+          <a
+            href="/precios"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
+            Ver planes disponibles
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex gap-2 flex-wrap items-center mb-4">
@@ -1794,6 +1838,28 @@ function RulesTab({
       default:
         return base
     }
+  }
+
+  if (planInfo?.maxReglas === 0) {
+    return (
+      <div className="min-h-96 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <p className="text-6xl mb-4">🔒</p>
+          <p className="text-xl font-semibold text-gray-700 mb-2">
+            Tu plan no incluye módulo de inventario
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Actualiza a Pro o Enterprise para gestionar productos, categorías y reglas de negocio.
+          </p>
+          <a
+            href="/precios"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
+            Ver planes disponibles
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (
