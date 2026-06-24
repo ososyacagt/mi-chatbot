@@ -139,6 +139,9 @@ function InventoryPageContent() {
     payment_methods: [],
   });
 
+  // Plan limits
+  const [planLimits, setPlanLimits] = useState(null);
+
   if (!clientId) {
     return (
       <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
@@ -269,6 +272,18 @@ function InventoryPageContent() {
     return mapped;
   };
 
+  const loadPlanLimits = async () => {
+    try {
+      const res = await fetch(`/api/admin/plan-limits?clientId=${clientId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPlanLimits(data);
+      }
+    } catch (err) {
+      console.error("[inventario] Error loading plan limits:", err);
+    }
+  };
+
   const loadConfig = async () => {
     try {
       setLoading(true);
@@ -288,6 +303,8 @@ function InventoryPageContent() {
           payment_methods: data.config.payment_methods || [],
         });
       }
+      // Cargar límites del plan
+      await loadPlanLimits();
     } catch (err) {
       console.error("[inventario] Error loading config:", err);
       setToast({ message: "✗ Error al cargar configuración", type: "error" });
@@ -813,6 +830,7 @@ function InventoryPageContent() {
           configForm={configForm}
           setConfigForm={setConfigForm}
           handleSaveConfig={handleSaveConfig}
+          planLimits={planLimits}
         />
       )}
     </div>
@@ -2094,10 +2112,160 @@ function ConfigTab({
   configForm,
   setConfigForm,
   handleSaveConfig,
+  planLimits,
 }) {
+  const getProgressPercentage = (current, limit) => {
+    if (limit === 0) return 0;
+    return Math.min((current / limit) * 100, 100);
+  };
+
+  const getProgressColor = (current, limit) => {
+    if (limit === 0) return 'bg-gray-200';
+    const percentage = (current / limit) * 100;
+    if (percentage >= 100) return 'bg-red-500';
+    if (percentage >= 80) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  const getProgressTextColor = (current, limit) => {
+    if (limit === 0) return 'text-gray-600';
+    const percentage = (current / limit) * 100;
+    if (percentage >= 100) return 'text-red-600';
+    if (percentage >= 80) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-6">
       <h2 className="text-2xl font-bold">Configuración de la tienda</h2>
+
+      {/* Plan limits section */}
+      {planLimits && (
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg p-6">
+          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+            <span>📊</span>
+            <span>Límites de tu plan: <span className="font-bold text-blue-600">{planLimits.plan.nombre}</span></span>
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Productos */}
+            {planLimits.plan.max_productos > 0 ? (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">📦 Productos</span>
+                  <span className={`text-sm font-bold ${getProgressTextColor(planLimits.limits.productos.current, planLimits.limits.productos.limit)}`}>
+                    {planLimits.limits.productos.current}/{planLimits.limits.productos.limit}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${getProgressColor(planLimits.limits.productos.current, planLimits.limits.productos.limit)}`}
+                    style={{ width: `${getProgressPercentage(planLimits.limits.productos.current, planLimits.limits.productos.limit)}%` }}
+                  ></div>
+                </div>
+              </div>
+            ) : (
+              <div className="opacity-50">
+                <span className="font-medium text-slate-500">📦 Productos</span>
+                <p className="text-xs text-slate-500 mt-2">No disponible en tu plan</p>
+              </div>
+            )}
+
+            {/* Categorías */}
+            {planLimits.plan.max_categorias > 0 ? (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">🏷️ Categorías</span>
+                  <span className={`text-sm font-bold ${getProgressTextColor(planLimits.limits.categorias.current, planLimits.limits.categorias.limit)}`}>
+                    {planLimits.limits.categorias.current}/{planLimits.limits.categorias.limit}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${getProgressColor(planLimits.limits.categorias.current, planLimits.limits.categorias.limit)}`}
+                    style={{ width: `${getProgressPercentage(planLimits.limits.categorias.current, planLimits.limits.categorias.limit)}%` }}
+                  ></div>
+                </div>
+              </div>
+            ) : (
+              <div className="opacity-50">
+                <span className="font-medium text-slate-500">🏷️ Categorías</span>
+                <p className="text-xs text-slate-500 mt-2">No disponible en tu plan</p>
+              </div>
+            )}
+
+            {/* Reglas */}
+            {planLimits.plan.max_reglas > 0 ? (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">⚙️ Reglas</span>
+                  <span className={`text-sm font-bold ${getProgressTextColor(planLimits.limits.reglas.current, planLimits.limits.reglas.limit)}`}>
+                    {planLimits.limits.reglas.current}/{planLimits.limits.reglas.limit}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${getProgressColor(planLimits.limits.reglas.current, planLimits.limits.reglas.limit)}`}
+                    style={{ width: `${getProgressPercentage(planLimits.limits.reglas.current, planLimits.limits.reglas.limit)}%` }}
+                  ></div>
+                </div>
+              </div>
+            ) : (
+              <div className="opacity-50">
+                <span className="font-medium text-slate-500">⚙️ Reglas</span>
+                <p className="text-xs text-slate-500 mt-2">No disponible en tu plan</p>
+              </div>
+            )}
+          </div>
+
+          {/* Modalidades disponibles */}
+          <div className="mt-6 pt-4 border-t border-slate-300">
+            <p className="font-medium mb-3">Modalidades de e-commerce disponibles:</p>
+            <div className="flex flex-wrap gap-2">
+              {planLimits.plan.ecommerce_modes.length === 0 ? (
+                <span className="text-sm text-slate-600 italic">No disponible en tu plan</span>
+              ) : (
+                planLimits.plan.ecommerce_modes.map((mode) => (
+                  <span
+                    key={mode}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full"
+                  >
+                    {mode === 'catalogo_whatsapp' ? '🛍️ Catálogo + WhatsApp' :
+                     mode === 'chatbot' ? '🤖 Chatbot con pedidos' :
+                     mode === 'tienda' ? '🏪 Tienda completa' :
+                     mode}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Warning/Error messages */}
+          {(
+            (planLimits.limits.productos.current >= planLimits.limits.productos.limit && planLimits.plan.max_productos > 0) ||
+            (planLimits.limits.categorias.current >= planLimits.limits.categorias.limit && planLimits.plan.max_categorias > 0) ||
+            (planLimits.limits.reglas.current >= planLimits.limits.reglas.limit && planLimits.plan.max_reglas > 0)
+          ) && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 font-medium">⚠️ Has alcanzado el límite de tu plan. Actualiza para agregar más recursos.</p>
+            </div>
+          )}
+
+          {(
+            (planLimits.limits.productos.current >= planLimits.limits.productos.limit * 0.8 && planLimits.plan.max_productos > 0) ||
+            (planLimits.limits.categorias.current >= planLimits.limits.categorias.limit * 0.8 && planLimits.plan.max_categorias > 0) ||
+            (planLimits.limits.reglas.current >= planLimits.limits.reglas.limit * 0.8 && planLimits.plan.max_reglas > 0)
+          ) && !(
+            (planLimits.limits.productos.current >= planLimits.limits.productos.limit && planLimits.plan.max_productos > 0) ||
+            (planLimits.limits.categorias.current >= planLimits.limits.categorias.limit && planLimits.plan.max_categorias > 0) ||
+            (planLimits.limits.reglas.current >= planLimits.limits.reglas.limit && planLimits.plan.max_reglas > 0)
+          ) && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-700 font-medium">⚠️ Estás cerca del límite de tu plan. Considera actualizar.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="border-t pt-4 space-y-4">
         <label className="flex items-center gap-3">
