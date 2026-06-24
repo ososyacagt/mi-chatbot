@@ -26,7 +26,13 @@ export default function PlansPage() {
     caracteristicas: [],
     destacado: false,
     activo: true,
-    orden: 0
+    orden: 0,
+    ecommerce_modes: [],
+    max_productos: 0,
+    max_categorias: 0,
+    max_reglas: 0,
+    chatbot_pedidos: false,
+    tienda_completa: false
   });
   const [newFeature, setNewFeature] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
@@ -120,7 +126,13 @@ export default function PlansPage() {
       caracteristicas: plan.caracteristicas || [],
       destacado: plan.destacado || false,
       activo: plan.activo || true,
-      orden: plan.orden || 0
+      orden: plan.orden || 0,
+      ecommerce_modes: plan.ecommerce_modes || [],
+      max_productos: plan.max_productos || 0,
+      max_categorias: plan.max_categorias || 0,
+      max_reglas: plan.max_reglas || 0,
+      chatbot_pedidos: plan.chatbot_pedidos || false,
+      tienda_completa: plan.tienda_completa || false
     });
     setNewFeature("");
     setShowModal(true);
@@ -631,6 +643,114 @@ export default function PlansPage() {
                   }
                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 />
+              </div>
+
+              {/* E-commerce modes */}
+              <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="font-semibold text-slate-900 dark:text-white">Modalidades de e-commerce disponibles:</p>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.ecommerce_modes?.includes('catalogo_whatsapp')}
+                    onChange={(e) => {
+                      const modes = formData.ecommerce_modes || [];
+                      if (e.target.checked) {
+                        setFormData({ ...formData, ecommerce_modes: [...modes, 'catalogo_whatsapp'] });
+                      } else {
+                        setFormData({ ...formData, ecommerce_modes: modes.filter(m => m !== 'catalogo_whatsapp') });
+                      }
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-slate-900 dark:text-white">🛍️ Catálogo + WhatsApp</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.ecommerce_modes?.includes('chatbot')}
+                    onChange={(e) => {
+                      const modes = formData.ecommerce_modes || [];
+                      if (e.target.checked) {
+                        setFormData({ ...formData, ecommerce_modes: [...modes, 'chatbot'] });
+                      } else {
+                        setFormData({ ...formData, ecommerce_modes: modes.filter(m => m !== 'chatbot') });
+                      }
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-slate-900 dark:text-white">🤖 Chatbot con pedidos</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.ecommerce_modes?.includes('tienda')}
+                    onChange={(e) => {
+                      const modes = formData.ecommerce_modes || [];
+                      if (e.target.checked) {
+                        setFormData({ ...formData, ecommerce_modes: [...modes, 'tienda'] });
+                      } else {
+                        setFormData({ ...formData, ecommerce_modes: modes.filter(m => m !== 'tienda') });
+                      }
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-slate-900 dark:text-white">🏪 Tienda completa</span>
+                </label>
+              </div>
+
+              {/* E-commerce limits */}
+              <div className="space-y-4 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="font-semibold text-slate-900 dark:text-white">Límites de e-commerce (0 = sin límite):</p>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    📦 Máximo de productos
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.max_productos}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_productos: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    placeholder="ej: 50, 500, 0 para sin límite"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    🏷️ Máximo de categorías
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.max_categorias}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_categorias: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    placeholder="ej: 10, 50, 0 para sin límite"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    ⚙️ Máximo de reglas de negocio
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.max_reglas}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_reglas: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    placeholder="ej: 5, 20, 0 para sin límite"
+                  />
+                </div>
               </div>
 
               {/* Toggles */}
