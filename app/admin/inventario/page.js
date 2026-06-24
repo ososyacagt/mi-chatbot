@@ -963,20 +963,17 @@ function ProductsTab({
           📥 Carga masiva
         </button>
 
-        {planInfo?.atLimit?.productos && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-            <p className="text-red-700 text-sm font-medium">
-              🔒 Límite alcanzado ({planInfo.currentProductos}/{planInfo.maxProductos})
-            </p>
-          </div>
-        )}
-
-        {planInfo?.nearLimit?.productos && !planInfo?.atLimit?.productos && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-            <p className="text-yellow-700 text-sm font-medium">
-              ⚠️ Límite cercano ({planInfo.currentProductos}/{planInfo.maxProductos})
-            </p>
-          </div>
+        {planInfo && (
+          <span className={`text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${
+            planInfo.atLimit?.productos
+              ? 'bg-red-100 text-red-700'
+              : planInfo.nearLimit?.productos
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-100 text-gray-600'
+          }`}>
+            {planInfo.atLimit?.productos ? '🔒' : planInfo.nearLimit?.productos ? '⚠️' : '📦'}
+            {' '}{planInfo.currentProductos}/{planInfo.maxProductos} productos
+          </span>
         )}
       </div>
 
@@ -1562,20 +1559,17 @@ function CategoriesTab({
           ➕ Nueva categoría
         </button>
 
-        {planInfo?.atLimit?.categorias && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-            <p className="text-red-700 text-sm font-medium">
-              🔒 Límite alcanzado ({planInfo.currentCategorias}/{planInfo.maxCategorias})
-            </p>
-          </div>
-        )}
-
-        {planInfo?.nearLimit?.categorias && !planInfo?.atLimit?.categorias && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-            <p className="text-yellow-700 text-sm font-medium">
-              ⚠️ Límite cercano ({planInfo.currentCategorias}/{planInfo.maxCategorias})
-            </p>
-          </div>
+        {planInfo && (
+          <span className={`text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${
+            planInfo.atLimit?.categorias
+              ? 'bg-red-100 text-red-700'
+              : planInfo.nearLimit?.categorias
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-100 text-gray-600'
+          }`}>
+            {planInfo.atLimit?.categorias ? '🔒' : planInfo.nearLimit?.categorias ? '⚠️' : '🏷️'}
+            {' '}{planInfo.currentCategorias}/{planInfo.maxCategorias} categorías
+          </span>
         )}
       </div>
 
@@ -1829,20 +1823,17 @@ function RulesTab({
           ➕ Nueva regla
         </button>
 
-        {planInfo?.atLimit?.reglas && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-            <p className="text-red-700 text-sm font-medium">
-              🔒 Límite alcanzado ({planInfo.currentReglas}/{planInfo.maxReglas})
-            </p>
-          </div>
-        )}
-
-        {planInfo?.nearLimit?.reglas && !planInfo?.atLimit?.reglas && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-            <p className="text-yellow-700 text-sm font-medium">
-              ⚠️ Límite cercano ({planInfo.currentReglas}/{planInfo.maxReglas})
-            </p>
-          </div>
+        {planInfo && (
+          <span className={`text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${
+            planInfo.atLimit?.reglas
+              ? 'bg-red-100 text-red-700'
+              : planInfo.nearLimit?.reglas
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-100 text-gray-600'
+          }`}>
+            {planInfo.atLimit?.reglas ? '🔒' : planInfo.nearLimit?.reglas ? '⚠️' : '⚙️'}
+            {' '}{planInfo.currentReglas}/{planInfo.maxReglas} reglas
+          </span>
         )}
       </div>
 
