@@ -141,6 +141,7 @@ function InventoryPageContent() {
 
   // Plan limits
   const [planLimits, setPlanLimits] = useState(null);
+  const [planInfo, setPlanInfo] = useState(null);
 
   if (!clientId) {
     return (
@@ -284,6 +285,18 @@ function InventoryPageContent() {
     }
   };
 
+  const loadPlanInfo = async () => {
+    try {
+      const res = await fetch(`/api/admin/inventory/plan-info?clientId=${clientId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPlanInfo(data);
+      }
+    } catch (err) {
+      console.error("[inventario] Error loading plan info:", err);
+    }
+  };
+
   const loadConfig = async () => {
     try {
       setLoading(true);
@@ -303,8 +316,8 @@ function InventoryPageContent() {
           payment_methods: data.config.payment_methods || [],
         });
       }
-      // Cargar límites del plan
-      await loadPlanLimits();
+      // Cargar límites y info del plan
+      await Promise.all([loadPlanLimits(), loadPlanInfo()]);
     } catch (err) {
       console.error("[inventario] Error loading config:", err);
       setToast({ message: "✗ Error al cargar configuración", type: "error" });
@@ -793,6 +806,7 @@ function InventoryPageContent() {
           handleCSVUpload={handleCSVUpload}
           handleBulkImport={handleBulkImport}
           descriptionRef={descriptionRef}
+          planInfo={planInfo}
         />
       )}
 
@@ -807,6 +821,7 @@ function InventoryPageContent() {
           setCategoryForm={setCategoryForm}
           handleSaveCategory={handleSaveCategory}
           handleDeleteCategory={handleDeleteCategory}
+          planInfo={planInfo}
         />
       )}
 
@@ -822,6 +837,7 @@ function InventoryPageContent() {
           setRuleForm={setRuleForm}
           handleSaveRule={handleSaveRule}
           handleDeleteRule={handleDeleteRule}
+          planInfo={planInfo}
         />
       )}
 
@@ -831,6 +847,7 @@ function InventoryPageContent() {
           setConfigForm={setConfigForm}
           handleSaveConfig={handleSaveConfig}
           planLimits={planLimits}
+          planInfo={planInfo}
         />
       )}
     </div>
@@ -887,6 +904,7 @@ function ProductsTab({
   handleCSVUpload,
   handleBulkImport,
   descriptionRef,
+  planInfo,
 }) {
   const applyFormat = (command, value = null) => {
     const editor = document.getElementById('description-editor');
@@ -901,7 +919,7 @@ function ProductsTab({
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap items-center">
         <button
           onClick={() => {
             setEditingProduct(null);
@@ -911,7 +929,12 @@ function ProductsTab({
             setSelectedImageFile(null);
             setShowProductModal(true);
           }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+          disabled={planInfo?.atLimit?.productos}
+          className={`px-4 py-2 rounded-lg font-medium transition ${
+            planInfo?.atLimit?.productos
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
           ➕ Nuevo producto
         </button>
@@ -920,10 +943,31 @@ function ProductsTab({
             setBulkStep(1);
             setShowBulkModal(true);
           }}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+          disabled={planInfo?.atLimit?.productos}
+          className={`px-4 py-2 rounded-lg font-medium transition ${
+            planInfo?.atLimit?.productos
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
         >
           📥 Carga masiva
         </button>
+
+        {planInfo?.atLimit?.productos && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-red-700 text-sm font-medium">
+              🔒 Límite alcanzado ({planInfo.currentProductos}/{planInfo.maxProductos})
+            </p>
+          </div>
+        )}
+
+        {planInfo?.nearLimit?.productos && !planInfo?.atLimit?.productos && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+            <p className="text-yellow-700 text-sm font-medium">
+              ⚠️ Límite cercano ({planInfo.currentProductos}/{planInfo.maxProductos})
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-4">
@@ -2113,6 +2157,7 @@ function ConfigTab({
   setConfigForm,
   handleSaveConfig,
   planLimits,
+  planInfo,
 }) {
   const getProgressPercentage = (current, limit) => {
     if (limit === 0) return 0;
@@ -2296,9 +2341,24 @@ function ConfigTab({
               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
             >
               <option value="none">Ninguno (desactivado)</option>
-              <option value="catalogo_whatsapp">Catálogo + WhatsApp</option>
-              <option value="chatbot">Chatbot con pedidos</option>
-              <option value="tienda">Tienda completa</option>
+              <option
+                value="catalogo_whatsapp"
+                disabled={!planInfo?.ecommerceModes?.includes('catalogo_whatsapp')}
+              >
+                Catálogo + WhatsApp {!planInfo?.ecommerceModes?.includes('catalogo_whatsapp') ? '(requiere Pro)' : ''}
+              </option>
+              <option
+                value="chatbot"
+                disabled={!planInfo?.ecommerceModes?.includes('chatbot')}
+              >
+                Chatbot con pedidos {!planInfo?.ecommerceModes?.includes('chatbot') ? '(requiere Pro)' : ''}
+              </option>
+              <option
+                value="tienda"
+                disabled={!planInfo?.ecommerceModes?.includes('tienda')}
+              >
+                Tienda completa {!planInfo?.ecommerceModes?.includes('tienda') ? '(requiere Enterprise)' : ''}
+              </option>
             </select>
 
             {configForm.ecommerce_mode === "chatbot" && (
