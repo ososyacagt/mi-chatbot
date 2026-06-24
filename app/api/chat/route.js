@@ -9,6 +9,7 @@ import { sendPushNotification } from "@/lib/push-notifications";
 import { createSupabaseAdmin } from "@/lib/supabase-server";
 import { getCatalogContext, createChatbotOrder } from "@/lib/chatbot-store";
 import { applyBusinessRules } from "@/lib/business-rules";
+import { getPlanLimits } from "@/lib/plan-limits";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -29,8 +30,16 @@ export async function POST(request) {
     let catalogInfo = null;
     if (tenant.ecommerceMode === 'chatbot') {
       try {
-        catalogInfo = await getCatalogContext(clientId);
-        console.log("[chat] Catálogo obtenido para modo chatbot:", clientId);
+        // Verificar que el plan permite chatbot con pedidos
+        const plan = await getPlanLimits(clientId);
+        const canUseChatbotStore = plan?.chatbot_pedidos || false;
+
+        if (canUseChatbotStore) {
+          catalogInfo = await getCatalogContext(clientId);
+          console.log("[chat] Catálogo obtenido para modo chatbot:", clientId);
+        } else {
+          console.warn("[chat] Plan no incluye chatbot_pedidos para:", clientId);
+        }
       } catch (err) {
         console.error("[chat] Error obteniendo catálogo:", err);
       }

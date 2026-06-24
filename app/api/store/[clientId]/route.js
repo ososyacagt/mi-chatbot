@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { canUseEcommerceMode } from "@/lib/plan-limits";
 
 export async function GET(request, { params }) {
   try {
@@ -40,6 +41,16 @@ export async function GET(request, { params }) {
         categories: [],
         products: []
       });
+    }
+
+    // Verificar que el plan permite esta modalidad de e-commerce
+    const planAllows = await canUseEcommerceMode(clientId, tenant.ecommerce_mode);
+    if (!planAllows) {
+      console.error(`[GET /api/store/[clientId]] Plan no permite modalidad ${tenant.ecommerce_mode} para ${clientId}`);
+      return NextResponse.json({
+        error: "Esta modalidad de e-commerce no está disponible en tu plan actual",
+        code: "PLAN_LIMIT_EXCEEDED"
+      }, { status: 403 });
     }
 
     // Auto-desactivar productos con stock = 0
