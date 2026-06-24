@@ -30,8 +30,18 @@ export default function EditPlanPage({ params }) {
                 ? foundPlan.caracteristicas
                 : typeof foundPlan.caracteristicas === 'string'
                 ? JSON.parse(foundPlan.caracteristicas || '[]')
+                : [],
+              ecommerce_modes: Array.isArray(foundPlan.ecommerce_modes)
+                ? foundPlan.ecommerce_modes
+                : typeof foundPlan.ecommerce_modes === 'string'
+                ? JSON.parse(foundPlan.ecommerce_modes || '[]')
                 : []
             };
+            console.log('[EditPlanPage] Plan cargado:', {
+              id: processedPlan.id,
+              nombre: processedPlan.nombre,
+              ecommerce_modes: processedPlan.ecommerce_modes
+            });
             setPlan(processedPlan);
           } else {
             setToast({ message: "✗ Plan no encontrado", type: "error" });

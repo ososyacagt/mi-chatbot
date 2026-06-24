@@ -89,6 +89,28 @@ export async function PUT(request, { params }) {
       console.log('[PUT plans] orden:', updateData.orden);
     }
 
+    if (body.ecommerce_modes !== undefined) {
+      updateData.ecommerce_modes = Array.isArray(body.ecommerce_modes)
+        ? body.ecommerce_modes
+        : [];
+      console.log('[PUT plan] ecommerce_modes recibido:', updateData.ecommerce_modes);
+    }
+
+    if (body.max_productos !== undefined) {
+      updateData.max_productos = parseInt(body.max_productos) || 0;
+      console.log('[PUT plan] max_productos:', updateData.max_productos);
+    }
+
+    if (body.max_categorias !== undefined) {
+      updateData.max_categorias = parseInt(body.max_categorias) || 0;
+      console.log('[PUT plan] max_categorias:', updateData.max_categorias);
+    }
+
+    if (body.max_reglas !== undefined) {
+      updateData.max_reglas = parseInt(body.max_reglas) || 0;
+      console.log('[PUT plan] max_reglas:', updateData.max_reglas);
+    }
+
     console.log('[PUT plans] updateData final:', JSON.stringify(updateData, null, 2));
 
     const { data, error } = await supabase
