@@ -106,6 +106,30 @@ export default function POSConfigTab({ clientId, planInfo }) {
     }
   };
 
+  const handleDeleteMesa = async (mesaId) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta mesa?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/admin/inventory/mesas/${mesaId}?clientId=${clientId}`,
+        { method: "DELETE" }
+      );
+
+      if (res.ok) {
+        setToast({ message: "✓ Mesa eliminada", type: "success" });
+        setMesas(mesas.filter((m) => m.id !== mesaId));
+      } else {
+        const error = await res.json();
+        setToast({ message: "✗ Error: " + error.error, type: "error" });
+      }
+    } catch (err) {
+      console.error("[POSConfig] Error eliminando mesa:", err);
+      setToast({ message: "✗ Error al eliminar mesa", type: "error" });
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white border border-slate-200 rounded-lg p-6 text-center">
@@ -178,13 +202,20 @@ export default function POSConfigTab({ clientId, planInfo }) {
               mesas.map((mesa) => (
                 <div
                   key={mesa.id}
-                  className="bg-white p-3 rounded border border-slate-200 text-center hover:bg-slate-50"
+                  className="relative bg-white border rounded-lg p-4 text-center hover:bg-slate-50"
                 >
-                  <div className="font-bold">{mesa.numero}</div>
+                  <button
+                    onClick={() => handleDeleteMesa(mesa.id)}
+                    className="absolute top-1 right-1 text-red-400 hover:text-red-600 text-lg w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
+                    title="Eliminar mesa"
+                  >
+                    ×
+                  </button>
+                  <div className="font-bold text-lg">{mesa.numero}</div>
                   {mesa.nombre && (
                     <div className="text-xs text-slate-500">{mesa.nombre}</div>
                   )}
-                  <div className="text-xs text-slate-500">Cap: {mesa.capacidad}</div>
+                  <div className="text-xs text-slate-400">Cap: {mesa.capacidad}</div>
                 </div>
               ))
             )}
