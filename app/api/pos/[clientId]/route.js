@@ -97,21 +97,30 @@ export async function POST(request, { params }) {
 
     const supabase = createSupabaseAdmin();
 
-    // Crear orden
+    // Generar número de orden único
+    const numeroOrden = "POS-" + Date.now().toString(36).toUpperCase();
+
+    // Crear orden con campos correctos de la tabla orders
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         tenant_id: clientId,
-        numero_orden: `POS-${Date.now()}`,
-        tipo_orden: body.tipoOrden || "mostrador",
-        mesa_id: body.mesaId || null,
-        cliente_nombre_pos: body.clienteNombre || null,
+        numero_orden: numeroOrden,
+        cliente_nombre: body.clienteNombre || null,
+        cliente_telefono: body.clienteTelefono || null,
+        cliente_direccion: body.clienteDireccion || null,
         items: body.items || [],
         subtotal: body.subtotal || 0,
+        descuento: 0,
         total: body.total || 0,
-        status: "pendiente",
+        moneda: body.currency || "USD",
         metodo_pago: body.metodoPago || "efectivo",
-        area_comandas: {}
+        tipo_orden: body.tipoOrden || "mostrador",
+        mesa_id: body.mesaId || null,
+        mesa_numero: body.mesaNumero || null,
+        status: "pendiente",
+        notas: body.notas || "",
+        reglas_aplicadas: []
       })
       .select()
       .single();
@@ -121,39 +130,20 @@ export async function POST(request, { params }) {
       throw orderError;
     }
 
-    // Dividir items por área y crear comandas
-    const areaComandas = {};
+    console.log('[pos] ✓ Orden creada:', order.id, numeroOrden);
 
-    for (const item of body.items || []) {
-      const { data: product } = await supabase
-        .from("products")
-        .select("area_preparacion_id")
-        .eq("id", item.productId)
-        .single();
-
-      const areaId = product?.area_preparacion_id;
-      if (areaId) {
-        if (!areaComandas[areaId]) {
-          areaComandas[areaId] = [];
+    return NextResponse.json(
+      {
+        order: {
+          id: order.id,
+          numeroOrden: order.numero_orden,
+          status: order.status,
+          total: order.total,
+          moneda: order.moneda
         }
-        areaComandas[areaId].push({
-          productId: item.productId,
-          nombre: item.nombre,
-          cantidad: item.quantity,
-          notas: item.notas || "",
-          mesa: body.mesaId ? `Mesa ${body.mesaNum}` : "Para llevar",
-          status: "pendiente"
-        });
-      }
-    }
-
-    // Actualizar orden con comandas
-    await supabase
-      .from("orders")
-      .update({ area_comandas: areaComandas })
-      .eq("id", order.id);
-
-    return NextResponse.json({ order: { ...order, area_comandas: areaComandas } }, { status: 201 });
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("[POST /api/pos/[clientId]] Error:", error.message);
     console.error("[POST /api/pos/[clientId]] Stack:", error.stack);
