@@ -23,6 +23,7 @@ export default function POSPage() {
 
   const [categoryFilter, setCategoryFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [ordenConfirmada, setOrdenConfirmada] = useState(null);
 
   useEffect(() => {
     loadPOSConfig();
@@ -102,17 +103,29 @@ export default function POSPage() {
       });
 
       if (res.ok) {
+        const orderData = await res.json();
+
+        // Calcular cambio
+        const cambio = metodoPago === "efectivo" && montoRecibido > total
+          ? montoRecibido - total
+          : 0;
+
+        // Mostrar pantalla de confirmación
+        setOrdenConfirmada({
+          ...orderData.order,
+          cambio
+        });
+
         // Limpiar carrito
         setCarrito([]);
         setClienteNombre("");
         setMesaSeleccionada(null);
         setMontoRecibido("");
         setTipoOrden("mostrador");
-        alert("✓ Orden creada correctamente");
       }
     } catch (err) {
       console.error("[POS] Error creando orden:", err);
-      alert("✗ Error al crear la orden");
+      // Mostrar error en UI (implementar después)
     }
   };
 
@@ -381,6 +394,39 @@ export default function POSPage() {
           </button>
         </div>
       </div>
+
+      {/* Pantalla de confirmación de orden */}
+      {ordenConfirmada && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+            <div className="text-6xl mb-4">✅</div>
+            <h2 className="text-2xl font-bold mb-2 text-black dark:text-white">
+              ¡Orden creada!
+            </h2>
+            <p className="text-zinc-500 mb-1">
+              #{ordenConfirmada.numeroOrden}
+            </p>
+            <p className="text-3xl font-bold mb-6 text-black dark:text-white"
+              style={{ color: config?.colorPrimary }}>
+              {config?.currency} {ordenConfirmada.total?.toFixed(2)}
+            </p>
+            {ordenConfirmada.cambio > 0 && (
+              <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 mb-4">
+                <p className="text-green-700 dark:text-green-300 font-semibold">
+                  Cambio: {config?.currency} {ordenConfirmada.cambio?.toFixed(2)}
+                </p>
+              </div>
+            )}
+            <button
+              onClick={() => setOrdenConfirmada(null)}
+              className="w-full py-3 rounded-xl text-white font-bold text-lg transition-colors hover:opacity-90"
+              style={{ backgroundColor: config?.colorPrimary }}
+            >
+              Nueva orden
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
