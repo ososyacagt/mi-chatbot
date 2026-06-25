@@ -78,12 +78,13 @@ export default function POSConfigTab({ clientId, planInfo }) {
   };
 
   const handleCreateMesa = async () => {
-    if (!areaForm.numero) {
+    if (mesaForm.numero === undefined || mesaForm.numero === null || mesaForm.numero === "") {
       setToast({ message: "✗ El número de mesa es requerido", type: "error" });
       return;
     }
 
     try {
+      console.log('[POSConfig] Creando mesa:', mesaForm);
       const res = await fetch(`/api/admin/inventory/mesas?clientId=${clientId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,6 +96,9 @@ export default function POSConfigTab({ clientId, planInfo }) {
         setShowMesaModal(false);
         setMesaForm({ numero: "", nombre: "", capacidad: 4 });
         await loadPOSConfig();
+      } else {
+        const error = await res.json();
+        setToast({ message: "✗ Error: " + error.error, type: "error" });
       }
     } catch (err) {
       console.error("[POSConfig] Error creando mesa:", err);

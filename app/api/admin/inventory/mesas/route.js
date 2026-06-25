@@ -69,6 +69,9 @@ export async function POST(request) {
     const clientId = searchParams.get("clientId");
     const body = await request.json();
 
+    console.log('[POST mesas] body recibido:', JSON.stringify(body, null, 2));
+    console.log('[POST mesas] numero:', body.numero, '| numero_mesa:', body.numero_mesa);
+
     if (!clientId) {
       return NextResponse.json(
         { error: "clientId es requerido" },
@@ -77,6 +80,7 @@ export async function POST(request) {
     }
 
     if (body.numero === undefined || body.numero === null) {
+      console.log('[POST mesas] Error: numero es undefined/null');
       return NextResponse.json(
         { error: "número es requerido" },
         { status: 400 }
@@ -98,11 +102,13 @@ export async function POST(request) {
 
     if (error) throw error;
 
+    console.log('[POST mesas] ✓ Mesa creada:', mesa.id);
     return NextResponse.json({ mesa }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/admin/inventory/mesas] Error:", error.message);
+    console.error("[POST /api/admin/inventory/mesas] Stack:", error.stack);
     return NextResponse.json(
-      { error: "Error al crear mesa" },
+      { error: "Error al crear mesa: " + error.message },
       { status: 500 }
     );
   }
