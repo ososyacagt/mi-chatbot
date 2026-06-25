@@ -26,7 +26,8 @@ export default function EntregaPage() {
     setPosUser(userObj);
 
     // Verify role permissions
-    if (userObj.rol !== "entrega" && userObj.rol !== "supervisor") {
+    const rolesPermitidos = ['supervisor', 'cajero', 'mesero'];
+    if (!rolesPermitidos.includes(userObj.rol)) {
       router.push(`/pos/${clientId}`);
       return;
     }

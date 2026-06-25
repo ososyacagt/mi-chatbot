@@ -61,6 +61,29 @@ export default function POSLoginPage() {
     setError("");
   };
 
+  const redirectByRole = (user) => {
+    switch (user.rol) {
+      case 'cocina':
+        if (user.areaId) {
+          router.push(`/pos/${clientId}/area/${user.areaId}`);
+        } else {
+          router.push(`/pos/${clientId}`);
+        }
+        break;
+      case 'cajero':
+        router.push(`/pos/${clientId}/caja`);
+        break;
+      case 'supervisor':
+        router.push(`/pos/${clientId}`);
+        break;
+      case 'mesero':
+        router.push(`/pos/${clientId}`);
+        break;
+      default:
+        router.push(`/pos/${clientId}`);
+    }
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!selectedUser || !pin) return;
@@ -80,7 +103,7 @@ export default function POSLoginPage() {
       if (res.ok) {
         // Save to sessionStorage
         sessionStorage.setItem("posUser", JSON.stringify(data.user));
-        router.push(`/pos/${clientId}`);
+        redirectByRole(data.user);
       } else {
         setError(data.error || "PIN incorrecto");
         setPin("");
