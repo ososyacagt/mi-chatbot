@@ -30,9 +30,6 @@ export async function GET(request, { params }) {
 
     const { data: orders, error } = await query;
 
-    console.log('[GET completadas] query ok:', !error, 'count:', orders?.length);
-    if (error) console.log('[GET completadas] error:', error.message);
-
     if (error) throw error;
 
     // Filtrar comandas por área si se especifica

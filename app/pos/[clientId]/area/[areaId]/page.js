@@ -72,9 +72,6 @@ export default function KDSPage() {
       const res = await fetch(`/api/pos/${clientId}/comandas?areaId=${areaId}`);
       if (res.ok) {
         const data = await res.json();
-        console.log('[KDS] Primer comanda recibida:', data.comandas?.[0]);
-        console.log('[KDS] createdAt:', data.comandas?.[0]?.createdAt);
-        console.log('[KDS] tiempoTranscurrido:', data.comandas?.[0]?.tiempoTranscurrido);
         setComandas(data.comandas || []);
         setError("");
       } else {
@@ -104,10 +101,13 @@ export default function KDSPage() {
   };
 
   const getTimerLabel = (createdAt) => {
-    const now = new Date();
-    const created = new Date(createdAt);
+    const now = Date.now();
+    const created = new Date(createdAt).getTime();
     const diffMs = now - created;
-    const diffMin = Math.floor(diffMs / 60000);
+
+    // Si es negativo significa que la fecha está en el futuro
+    // (diferencia de zona horaria), usar Math.abs
+    const diffMin = Math.floor(Math.abs(diffMs) / 60000);
 
     if (diffMin < 60) return `${diffMin}m`;
     const hours = Math.floor(diffMin / 60);
@@ -116,7 +116,9 @@ export default function KDSPage() {
   };
 
   const getTimerColor = (createdAt) => {
-    const diffMin = Math.floor((new Date() - new Date(createdAt)) / 60000);
+    const diffMin = Math.floor(
+      Math.abs(Date.now() - new Date(createdAt).getTime()) / 60000
+    );
     if (diffMin < 10) return 'text-green-400';
     if (diffMin < 20) return 'text-yellow-400';
     return 'text-red-400';
