@@ -34,11 +34,12 @@ export async function GET(request) {
 
     const supabase = createSupabaseAdmin();
 
-    // Contar órdenes por status
+    // Contar órdenes por status (excluyendo POS)
     const { data: countByStatus } = await supabase
       .from("orders")
       .select("status", { count: "exact" })
-      .eq("tenant_id", clientId);
+      .eq("tenant_id", clientId)
+      .neq("origen", "pos");
 
     const statusCounts = {
       pendiente: 0,
@@ -58,7 +59,7 @@ export async function GET(request) {
     const total = Object.values(statusCounts).reduce((sum, val) => sum + val, 0);
     statusCounts.total = total;
 
-    // Obtener órdenes
+    // Obtener órdenes (excluyendo POS)
     let query = supabase
       .from("orders")
       .select(
@@ -66,6 +67,7 @@ export async function GET(request) {
         { count: "exact" }
       )
       .eq("tenant_id", clientId)
+      .neq("origen", "pos")
       .order("created_at", { ascending: false });
 
     if (status && status !== "todas") {

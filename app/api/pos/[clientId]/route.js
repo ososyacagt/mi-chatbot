@@ -120,7 +120,16 @@ export async function POST(request, { params }) {
         mesa_numero: body.mesaNumero || null,
         status: "pendiente",
         notas: body.notas || "",
-        reglas_aplicadas: []
+        reglas_aplicadas: [],
+        origen: "pos",
+        monto_recibido: body.montoRecibido || 0,
+        status_historial: [
+          {
+            status: "pendiente",
+            timestamp: new Date().toISOString(),
+            nota: "Orden creada desde POS"
+          }
+        ]
       })
       .select()
       .single();
