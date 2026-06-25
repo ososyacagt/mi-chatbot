@@ -86,6 +86,8 @@ function InventoryPageContent() {
     topbar_message: "",
     min_order_amount: "",
     payment_methods: [],
+    pos_modalidad: [],
+    pos_flujo_cobro: "entrega_inmediata",
   });
 
   const openNewProduct = () => {
@@ -2120,9 +2122,78 @@ function ConfigTab({
 
       {/* POS Configuration */}
       {planInfo?.ecommerceModes?.includes('pos') && (
-        <div className="border-t pt-6">
-          <h3 className="text-lg font-bold mb-4">🖥️ Configuración del Punto de Venta (POS)</h3>
-          <POSConfigTab clientId={clientId} planInfo={planInfo} />
+        <div className="border-t pt-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-bold mb-4">🖥️ Configuración del Punto de Venta (POS)</h3>
+
+            {/* Modalidades del POS */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <label className="font-medium block mb-3 text-slate-900">Modalidades del POS</label>
+              <div className="space-y-2">
+                {[
+                  { id: 'restaurante', label: '🍽️ Restaurante (mesas + comandas)' },
+                  { id: 'mostrador', label: '🏪 Tienda mostrador' },
+                  { id: 'autoservicio', label: '🤖 Auto-servicio' }
+                ].map(modalidad => (
+                  <label key={modalidad.id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(configForm.pos_modalidad || []).includes(modalidad.id)}
+                      onChange={(e) => {
+                        const modos = configForm.pos_modalidad || [];
+                        if (e.target.checked) {
+                          setConfigForm({
+                            ...configForm,
+                            pos_modalidad: [...modos, modalidad.id]
+                          });
+                        } else {
+                          setConfigForm({
+                            ...configForm,
+                            pos_modalidad: modos.filter(m => m !== modalidad.id)
+                          });
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-slate-900">{modalidad.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Flujo de cobro (solo si tiene mostrador) */}
+            {(configForm.pos_modalidad || []).includes('mostrador') && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                <label className="font-medium block mb-3 text-slate-900">Flujo de cobro (Tienda mostrador)</label>
+                <div className="space-y-2">
+                  {[
+                    { id: 'entrega_inmediata', label: '⚡ Entrega inmediata (cobrar y entregar)' },
+                    { id: 'caja_primero', label: '💳 Caja primero (cobrar, luego entregar)' },
+                    { id: 'area_entrega', label: '📦 Área de entrega (cobrar, enviar a área)' }
+                  ].map(opcion => (
+                    <label key={opcion.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pos_flujo_cobro"
+                        value={opcion.id}
+                        checked={configForm.pos_flujo_cobro === opcion.id}
+                        onChange={(e) => {
+                          setConfigForm({
+                            ...configForm,
+                            pos_flujo_cobro: e.target.value
+                          });
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-slate-900">{opcion.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <POSConfigTab clientId={clientId} planInfo={planInfo} />
+          </div>
         </div>
       )}
 

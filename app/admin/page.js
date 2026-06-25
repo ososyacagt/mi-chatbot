@@ -218,6 +218,14 @@ function TenantCard({ tenant, user, escalationCounts, pendingOrdersCounts, onDel
             >
               {Icon.edit} Editar
             </Link>
+            {tenant.ecommerceModes?.includes('pos') && (
+              <Link
+                href={`/admin/pos-ordenes?clientId=${tenant.id}`}
+                className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-orange-100 dark:bg-orange-950/30 hover:bg-orange-200 dark:hover:bg-orange-950/60 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-900 shadow-sm"
+              >
+                📊 Órdenes POS
+              </Link>
+            )}
             {user?.role === "superadmin" && (
               <button
                 onClick={() => onDelete(tenant.client_id, tenant.nombre)}

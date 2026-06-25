@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
     // Obtener configuración del tenant
     const { data: tenant, error: tenantError } = await supabase
       .from("tenants")
-      .select("id, store_name, color_primary, currency")
+      .select("id, store_name, color_primary, currency, pos_modalidad, pos_flujo_cobro")
       .eq("client_id", clientId)
       .single();
 
@@ -64,7 +64,9 @@ export async function GET(request, { params }) {
       config: {
         storeName: tenant.store_name,
         colorPrimary: tenant.color_primary,
-        currency: tenant.currency || "USD"
+        currency: tenant.currency || "USD",
+        posModalidad: tenant.pos_modalidad || [],
+        posFlujoCobro: tenant.pos_flujo_cobro || "entrega_inmediata"
       },
       areas: areas || [],
       mesas: mesas || [],
