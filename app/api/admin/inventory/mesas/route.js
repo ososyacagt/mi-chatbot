@@ -38,7 +38,7 @@ export async function GET(request) {
 
     const supabase = createSupabaseAdmin();
     const { data: mesas, error } = await supabase
-      .from("pos_mesas")
+      .from("pos_tables")
       .select("*")
       .eq("tenant_id", clientId)
       .order("numero", { ascending: true });
@@ -89,7 +89,7 @@ export async function POST(request) {
 
     const supabase = createSupabaseAdmin();
     const { data: mesa, error } = await supabase
-      .from("pos_mesas")
+      .from("pos_tables")
       .insert({
         tenant_id: clientId,
         numero: body.numero,

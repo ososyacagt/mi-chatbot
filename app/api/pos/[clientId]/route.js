@@ -36,7 +36,7 @@ export async function GET(request, { params }) {
 
     // Obtener mesas
     const { data: mesas } = await supabase
-      .from("pos_mesas")
+      .from("pos_tables")
       .select("*")
       .eq("tenant_id", clientId)
       .order("numero");

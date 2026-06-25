@@ -14,7 +14,7 @@ export async function GET(request, { params }) {
 
     const supabase = createSupabaseAdmin();
     const { data: mesas, error } = await supabase
-      .from("pos_mesas")
+      .from("pos_tables")
       .select("*")
       .eq("tenant_id", clientId)
       .order("numero");
@@ -46,7 +46,7 @@ export async function PUT(request, { params }) {
 
     const supabase = createSupabaseAdmin();
     const { data: mesa, error } = await supabase
-      .from("pos_mesas")
+      .from("pos_tables")
       .update({ estado })
       .eq("id", mesaId)
       .eq("tenant_id", clientId)
