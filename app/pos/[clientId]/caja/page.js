@@ -240,6 +240,11 @@ export default function CajaPage() {
                         </span>
                         <h3 className="font-black text-lg text-slate-200 mt-2">
                           {order.tipo_orden === "mesa" ? `Mesa ${order.mesa_numero}` : "Mostrador"}
+                          {order.cliente_nombre && (
+                            <span className="text-sm font-normal text-slate-400 ml-2">
+                              — {order.cliente_nombre}
+                            </span>
+                          )}
                         </h3>
                       </div>
                       <span className={`text-xs font-bold px-2 py-1 rounded-lg ${

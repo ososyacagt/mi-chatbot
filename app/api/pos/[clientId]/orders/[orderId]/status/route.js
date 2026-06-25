@@ -42,12 +42,22 @@ export async function PUT(request, { params }) {
     let statusHistorial = [];
     if (order.pos_historial) {
       try {
-        statusHistorial = typeof order.pos_historial === "string" 
-          ? JSON.parse(order.pos_historial) 
+        statusHistorial = typeof order.pos_historial === "string"
+          ? JSON.parse(order.pos_historial)
           : order.pos_historial;
       } catch (e) {
         statusHistorial = [];
       }
+    }
+
+    // Log cuando se cobra una orden
+    if (nuevoStatus === "facturado_finalizado") {
+      console.log('[caja] Actualizando orden a facturado_finalizado:', {
+        orderId,
+        numeroOrden: order.numero_orden,
+        posUserId,
+        montoRecibido
+      });
     }
 
     // 2. Determine fields to update
