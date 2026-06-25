@@ -24,11 +24,14 @@ export async function GET(request, { params }) {
       .select("*")
       .eq("tenant_id", clientId)
       .eq("origen", "pos")
-      .or(`pos_status.eq.facturado_finalizado,status.eq.entregada`)
+      .in('pos_status', ['facturado_finalizado', 'entregado', 'cerrado'])
       .gte("created_at", `${today}T00:00:00`)
       .order("updated_at", { ascending: false });
 
     const { data: orders, error } = await query;
+
+    console.log('[GET completadas] query ok:', !error, 'count:', orders?.length);
+    if (error) console.log('[GET completadas] error:', error.message);
 
     if (error) throw error;
 

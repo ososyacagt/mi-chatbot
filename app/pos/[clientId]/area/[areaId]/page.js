@@ -72,6 +72,9 @@ export default function KDSPage() {
       const res = await fetch(`/api/pos/${clientId}/comandas?areaId=${areaId}`);
       if (res.ok) {
         const data = await res.json();
+        console.log('[KDS] Primer comanda recibida:', data.comandas?.[0]);
+        console.log('[KDS] createdAt:', data.comandas?.[0]?.createdAt);
+        console.log('[KDS] tiempoTranscurrido:', data.comandas?.[0]?.tiempoTranscurrido);
         setComandas(data.comandas || []);
         setError("");
       } else {

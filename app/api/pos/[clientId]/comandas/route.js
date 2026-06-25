@@ -22,8 +22,8 @@ export async function GET(request, { params }) {
       .select("*")
       .eq("tenant_id", clientId)
       .eq("origen", "pos")
-      .not('pos_status', 'eq', 'facturado_finalizado')
-      .not('status', 'eq', 'entregada')
+      .filter('pos_status', 'not.in', '("facturado_finalizado","entregado","cerrado")')
+      .filter('status', 'not.in', '("entregada","cerrada","cancelada")')
       .order("created_at", { ascending: false });
 
     if (status) {
