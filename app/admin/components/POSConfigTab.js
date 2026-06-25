@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ConfirmModal from "./ConfirmModal";
 
 export default function POSConfigTab({ clientId, planInfo }) {
   const [areas, setAreas] = useState([]);
   const [mesas, setMesas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
 
   // Formulario de área
   const [showAreaModal, setShowAreaModal] = useState(false);
@@ -130,6 +137,42 @@ export default function POSConfigTab({ clientId, planInfo }) {
     }
   };
 
+  const handleDeleteArea = async (areaId) => {
+    try {
+      const res = await fetch(
+        `/api/admin/inventory/areas/${areaId}?clientId=${clientId}`,
+        { method: "DELETE" }
+      );
+
+      if (res.ok) {
+        setToast({ message: "✓ Área eliminada", type: "success" });
+        setAreas(areas.filter((a) => a.id !== areaId));
+      } else {
+        const error = await res.json();
+        setToast({ message: "✗ Error: " + error.error, type: "error" });
+      }
+    } catch (err) {
+      console.error("[POSConfig] Error eliminando área:", err);
+      setToast({ message: "✗ Error al eliminar área", type: "error" });
+    }
+  };
+
+  const openConfirmDelete = (tipo, id, nombre) => {
+    setConfirmModal({
+      isOpen: true,
+      title: tipo === "area" ? "¿Eliminar área?" : "¿Eliminar mesa?",
+      message: `Se eliminará "${nombre}". Esta acción no se puede deshacer.`,
+      onConfirm: () => {
+        if (tipo === "area") {
+          handleDeleteArea(id);
+        } else {
+          handleDeleteMesa(id);
+        }
+        setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null });
+      },
+    });
+  };
+
   if (loading) {
     return (
       <div className="bg-white border border-slate-200 rounded-lg p-6 text-center">
@@ -169,9 +212,7 @@ export default function POSConfigTab({ clientId, planInfo }) {
                   </div>
                 </div>
                 <button
-                  onClick={() => {
-                    // Implementar delete después si es necesario
-                  }}
+                  onClick={() => openConfirmDelete("area", area.id, area.nombre)}
                   className="text-red-600 hover:text-red-700 text-sm"
                 >
                   ✕
@@ -205,7 +246,7 @@ export default function POSConfigTab({ clientId, planInfo }) {
                   className="relative bg-white border rounded-lg p-4 text-center hover:bg-slate-50"
                 >
                   <button
-                    onClick={() => handleDeleteMesa(mesa.id)}
+                    onClick={() => openConfirmDelete("mesa", mesa.id, `Mesa ${mesa.numero}`)}
                     className="absolute top-1 right-1 text-red-400 hover:text-red-600 text-lg w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
                     title="Eliminar mesa"
                   >
@@ -367,6 +408,14 @@ export default function POSConfigTab({ clientId, planInfo }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: null })}
+      />
 
       {toast.message && (
         <div
