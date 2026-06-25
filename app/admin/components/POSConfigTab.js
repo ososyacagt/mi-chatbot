@@ -114,10 +114,6 @@ export default function POSConfigTab({ clientId, planInfo }) {
   };
 
   const handleDeleteMesa = async (mesaId) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar esta mesa?")) {
-      return;
-    }
-
     try {
       const res = await fetch(
         `/api/admin/inventory/mesas/${mesaId}?clientId=${clientId}`,
