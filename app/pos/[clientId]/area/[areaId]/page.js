@@ -290,7 +290,7 @@ export default function KDSPage() {
       </header>
 
       {/* Kanban Grid */}
-      <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-4 gap-4 overflow-hidden h-[calc(100vh-80px)]">
+      <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-4 gap-4 h-[calc(100vh-80px)]">
         {columns.map(col => {
           const colComandas = getComandasByState(col.id);
           
@@ -305,7 +305,7 @@ export default function KDSPage() {
               </div>
 
               {/* Column Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[calc(100vh-200px)]">
                 {colComandas.map(comanda => {
                   const timerLabel = getTimerLabel(comanda.createdAt);
                   const timerColor = getTimerColor(comanda.createdAt);

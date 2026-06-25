@@ -32,6 +32,14 @@ export async function GET(request, { params }) {
 
     if (error) throw error;
 
+    console.log('[comandas] órdenes antes de filtrar:',
+      orders?.map(o => ({
+        id: o.numero_orden,
+        pos_status: o.pos_status,
+        status: o.status
+      }))
+    );
+
     // Filtrar en JavaScript los estados finales
     const estadosFinalesPOS = [
       'facturado_finalizado', 'entregado', 'cerrado'
@@ -40,9 +48,18 @@ export async function GET(request, { params }) {
       'entregada', 'cerrada', 'cancelada'
     ];
 
-    const ordenesActivas = (orders || []).filter(o =>
-      !estadosFinalesPOS.includes(o.pos_status) &&
-      !estadosFinalesStatus.includes(o.status)
+    const ordenesActivas = (orders || []).filter(o => {
+      const posStatusFinal = estadosFinalesPOS.includes(o.pos_status);
+      const statusFinal = estadosFinalesStatus.includes(o.status);
+      return !posStatusFinal && !statusFinal;
+    });
+
+    console.log('[comandas] órdenes después de filtrar:',
+      ordenesActivas?.map(o => ({
+        id: o.numero_orden,
+        pos_status: o.pos_status,
+        status: o.status
+      }))
     );
 
     // Filtrar comandas por área si se especifica
