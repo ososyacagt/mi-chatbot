@@ -100,15 +100,22 @@ export default function KDSPage() {
     }
   };
 
+  const parseDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    // Si no tiene Z o +, asumir que es UTC y agregar Z
+    if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+      return new Date(dateStr + 'Z');
+    }
+    return new Date(dateStr);
+  };
+
   const getTimerLabel = (createdAt) => {
     const now = Date.now();
-    const created = new Date(createdAt).getTime();
+    const created = parseDate(createdAt).getTime();
     const diffMs = now - created;
+    const diffMin = Math.floor(diffMs / 60000);
 
-    // Si es negativo significa que la fecha está en el futuro
-    // (diferencia de zona horaria), usar Math.abs
-    const diffMin = Math.floor(Math.abs(diffMs) / 60000);
-
+    if (diffMin < 0) return '0m';
     if (diffMin < 60) return `${diffMin}m`;
     const hours = Math.floor(diffMin / 60);
     const mins = diffMin % 60;
@@ -117,7 +124,7 @@ export default function KDSPage() {
 
   const getTimerColor = (createdAt) => {
     const diffMin = Math.floor(
-      Math.abs(Date.now() - new Date(createdAt).getTime()) / 60000
+      (Date.now() - parseDate(createdAt).getTime()) / 60000
     );
     if (diffMin < 10) return 'text-green-400';
     if (diffMin < 20) return 'text-yellow-400';
