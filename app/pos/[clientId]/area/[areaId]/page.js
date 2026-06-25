@@ -16,6 +16,9 @@ export default function KDSPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshInterval, setRefreshInterval] = useState(15000); // 15s default
+  const [showHistorial, setShowHistorial] = useState(false);
+  const [historialComandas, setHistorialComandas] = useState([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
 
   // Authentication check
   useEffect(() => {
@@ -80,6 +83,40 @@ export default function KDSPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadHistorial = async () => {
+    try {
+      setLoadingHistorial(true);
+      const res = await fetch(`/api/pos/${clientId}/comandas/completed?areaId=${areaId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistorialComandas(data.comandas || []);
+      }
+    } catch (err) {
+      console.error("[KDS] Error fetching historial:", err);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const getTimerLabel = (createdAt) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const diffMs = now - created;
+    const diffMin = Math.floor(diffMs / 60000);
+
+    if (diffMin < 60) return `${diffMin}m`;
+    const hours = Math.floor(diffMin / 60);
+    const mins = diffMin % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const getTimerColor = (createdAt) => {
+    const diffMin = Math.floor((new Date() - new Date(createdAt)) / 60000);
+    if (diffMin < 10) return 'text-green-400';
+    if (diffMin < 20) return 'text-yellow-400';
+    return 'text-red-400';
   };
 
   const updateItemStatus = async (orderId, itemIndex, nextStatus) => {
@@ -195,7 +232,17 @@ export default function KDSPage() {
 
         <div className="flex items-center gap-4">
           {error && <span className="text-xs text-red-400 font-bold bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg">{error}</span>}
-          
+
+          <button
+            onClick={() => {
+              setShowHistorial(true);
+              loadHistorial();
+            }}
+            className="p-2.5 rounded-xl bg-amber-800/40 hover:bg-amber-800/60 border border-amber-700/50 text-amber-300 font-bold transition flex items-center gap-2 text-sm"
+          >
+            📋 Ver completadas
+          </button>
+
           <button
             onClick={loadComandas}
             className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition flex items-center gap-2 text-sm border border-slate-750"
@@ -248,7 +295,9 @@ export default function KDSPage() {
               {/* Column Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {colComandas.map(comanda => {
-                  const minutesElapsed = Math.floor(comanda.tiempoTranscurrido / 60);
+                  const timerLabel = getTimerLabel(comanda.createdAt);
+                  const timerColor = getTimerColor(comanda.createdAt);
+                  const minutesElapsed = Math.floor((new Date() - new Date(comanda.createdAt)) / 60000);
                   const isUrgent = minutesElapsed >= 15 && col.id !== "lista";
                   
                   return (
@@ -272,10 +321,8 @@ export default function KDSPage() {
                           </h4>
                         </div>
                         <div className="text-right">
-                          <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
-                            isUrgent ? "bg-red-500/10 text-red-400" : "bg-slate-850 text-slate-400"
-                          }`}>
-                            ⏱️ {minutesElapsed}m
+                          <span className={`text-xs font-bold px-2 py-1 rounded-lg bg-slate-850 ${timerColor}`}>
+                            ⏱️ {timerLabel}
                           </span>
                         </div>
                       </div>
@@ -345,6 +392,83 @@ export default function KDSPage() {
           );
         })}
       </div>
+
+      {/* Historial Modal */}
+      {showHistorial && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl border border-slate-800 max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-slate-800/80 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📋</span>
+                <div>
+                  <h2 className="text-lg font-black text-white">Órdenes Completadas</h2>
+                  <p className="text-xs text-slate-400 font-semibold">Hoy - {area?.nombre || "Área"}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHistorial(false)}
+                className="text-slate-400 hover:text-slate-300 text-2xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto">
+              {loadingHistorial ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="text-slate-400">Cargando historial...</div>
+                </div>
+              ) : historialComandas.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-slate-500">
+                  <span className="text-4xl mb-2">📭</span>
+                  <p className="text-sm font-semibold">Sin órdenes completadas hoy</p>
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  {historialComandas.map(comanda => (
+                    <div key={comanda.orderId} className="bg-slate-850 border border-slate-700 rounded-xl p-4 hover:border-slate-600 transition">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <p className="text-xs font-black text-slate-500 tracking-wider">#{comanda.numeroOrden}</p>
+                          <h4 className="font-bold text-base text-slate-100 mt-1">
+                            {comanda.mesa ? `Mesa ${comanda.mesa}` : "Para Llevar"}
+                          </h4>
+                          {comanda.clienteNombre && comanda.clienteNombre !== "Mostrador" && (
+                            <p className="text-xs text-blue-400 font-bold mt-1">👤 {comanda.clienteNombre}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-bold px-2 py-1 rounded-lg bg-green-500/10 text-green-400">
+                            ✓ Completada
+                          </span>
+                          <p className="text-xs text-slate-500 font-semibold mt-2">
+                            {new Date(comanda.updatedAt).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Items */}
+                      <div className="border-t border-slate-700 pt-3 space-y-2">
+                        {comanda.items.map((item, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-sm">
+                            <span className="bg-slate-700 text-slate-300 font-bold text-xs px-1.5 py-0.5 rounded flex-shrink-0">
+                              {item.cantidad}x
+                            </span>
+                            <span className="text-slate-300 line-through">{item.nombre}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

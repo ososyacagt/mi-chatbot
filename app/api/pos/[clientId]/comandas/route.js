@@ -21,6 +21,9 @@ export async function GET(request, { params }) {
       .from("orders")
       .select("*")
       .eq("tenant_id", clientId)
+      .eq("origen", "pos")
+      .not('pos_status', 'eq', 'facturado_finalizado')
+      .not('status', 'eq', 'entregada')
       .order("created_at", { ascending: false });
 
     if (status) {
