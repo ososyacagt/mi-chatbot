@@ -92,10 +92,10 @@ export async function POST(request) {
       .from("pos_tables")
       .insert({
         tenant_id: clientId,
-        numero: body.numero,
+        numero: String(body.numero),
         nombre: body.nombre || null,
-        capacidad: body.capacidad || 4,
-        estado: "libre"
+        capacidad: parseInt(body.capacidad) || 4,
+        activo: true
       })
       .select()
       .single();
