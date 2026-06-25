@@ -42,7 +42,7 @@ export async function GET(request) {
     const { data: tenant } = await supabase
       .from("tenants")
       .select(
-        "id, ecommerce_mode, ecommerce_modes, whatsapp_number, currency, store_name, store_logo, store_banner, topbar_message, min_order_amount, payment_methods, nombre"
+        "id, ecommerce_mode, ecommerce_modes, whatsapp_number, currency, store_name, store_logo, store_banner, topbar_message, min_order_amount, payment_methods, nombre, pos_modalidad, pos_flujo_cobro"
       )
       .eq("client_id", clientId)
       .single();
@@ -53,6 +53,10 @@ export async function GET(request) {
         { status: 404 }
       );
     }
+
+    console.log('[GET config] Configuración cargada para:', clientId);
+    console.log('[GET config] pos_modalidad:', tenant.pos_modalidad);
+    console.log('[GET config] pos_flujo_cobro:', tenant.pos_flujo_cobro);
 
     return NextResponse.json({ config: tenant });
   } catch (error) {
@@ -99,6 +103,11 @@ export async function PUT(request) {
     }
 
     const supabase = createSupabaseAdmin();
+
+    console.log('[PUT config] Guardando configuración para:', clientId);
+    console.log('[PUT config] pos_modalidad:', body.pos_modalidad);
+    console.log('[PUT config] pos_flujo_cobro:', body.pos_flujo_cobro);
+
     const { data: config, error } = await supabase
       .from("tenants")
       .update({
@@ -113,6 +122,8 @@ export async function PUT(request) {
         min_order_amount: body.min_order_amount !== '' && body.min_order_amount != null
           ? parseFloat(body.min_order_amount) : null,
         payment_methods: body.payment_methods || [],
+        pos_modalidad: body.pos_modalidad || [],
+        pos_flujo_cobro: body.pos_flujo_cobro || 'entrega_inmediata',
       })
       .eq("client_id", clientId)
       .select()
@@ -120,6 +131,7 @@ export async function PUT(request) {
 
     if (error) throw error;
 
+    console.log('[PUT config] ✓ Configuración guardada:', { pos_modalidad: config.pos_modalidad, pos_flujo_cobro: config.pos_flujo_cobro });
 
     return NextResponse.json({ config });
   } catch (error) {
