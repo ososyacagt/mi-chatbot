@@ -24,7 +24,12 @@ export async function GET(request, { params }) {
       .select("*")
       .eq("tenant_id", clientId)
       .eq("origen", "pos")
-      .in('pos_status', ['facturado_finalizado', 'entregado', 'cerrado'])
+      .in('pos_status', [
+        'facturado_finalizado',
+        'facturado_pendiente_entrega',
+        'entregado',
+        'cerrado'
+      ])
       .gte("created_at", `${today}T00:00:00`)
       .order("created_at", { ascending: false });
 

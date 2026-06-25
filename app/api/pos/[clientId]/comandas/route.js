@@ -42,7 +42,10 @@ export async function GET(request, { params }) {
 
     // Filtrar en JavaScript los estados finales
     const estadosFinalesPOS = [
-      'facturado_finalizado', 'entregado', 'cerrado'
+      'facturado_finalizado',
+      'facturado_pendiente_entrega',
+      'entregado',
+      'cerrado'
     ];
     const estadosFinalesStatus = [
       'entregada', 'cerrada', 'cancelada'

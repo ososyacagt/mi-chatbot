@@ -101,9 +101,16 @@ export default function CajaPage() {
       setProcessingPayment(true);
 
       // Determine next status based on flow config
+      const posModalidad = config?.posModalidad || [];
       const posFlujoCobro = config?.posFlujoCobro || "entrega_inmediata";
-      const nextStatus = posFlujoCobro === "area_entrega" 
-        ? "facturado_pendiente_entrega" 
+
+      // Restaurante siempre finaliza directo al cobrar
+      // Solo tienda mostrador con flujo area_entrega usa pendiente_entrega
+      const esRestaurante = posModalidad.includes("restaurante") &&
+        !posModalidad.includes("mostrador");
+
+      const nextStatus = (!esRestaurante && posFlujoCobro === "area_entrega")
+        ? "facturado_pendiente_entrega"
         : "facturado_finalizado";
 
       const res = await fetch(`/api/pos/${clientId}/orders/${selectedOrder.id}/status`, {
