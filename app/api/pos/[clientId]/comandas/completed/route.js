@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
       .eq("origen", "pos")
       .in('pos_status', ['facturado_finalizado', 'entregado', 'cerrado'])
       .gte("created_at", `${today}T00:00:00`)
-      .order("updated_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     const { data: orders, error } = await query;
 
@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
       clienteNombre: order.cliente_nombre || "Mostrador",
       items: order.items || [],
       createdAt: order.created_at,
-      updatedAt: order.updated_at,
+      updatedAt: order.updated_at || order.created_at,
       status: order.status,
       posStatus: order.pos_status
     }));
