@@ -22,8 +22,6 @@ export async function GET(request, { params }) {
       .select("*")
       .eq("tenant_id", clientId)
       .eq("origen", "pos")
-      .filter('pos_status', 'not.in', '("facturado_finalizado","entregado","cerrado")')
-      .filter('status', 'not.in', '("entregada","cerrada","cancelada")')
       .order("created_at", { ascending: false });
 
     if (status) {
@@ -34,9 +32,22 @@ export async function GET(request, { params }) {
 
     if (error) throw error;
 
+    // Filtrar en JavaScript los estados finales
+    const estadosFinalesPOS = [
+      'facturado_finalizado', 'entregado', 'cerrado'
+    ];
+    const estadosFinalesStatus = [
+      'entregada', 'cerrada', 'cancelada'
+    ];
+
+    const ordenesActivas = (orders || []).filter(o =>
+      !estadosFinalesPOS.includes(o.pos_status) &&
+      !estadosFinalesStatus.includes(o.status)
+    );
+
     // Filtrar comandas por área si se especifica
     const comandas = [];
-    for (const order of orders || []) {
+    for (const order of ordenesActivas) {
       const areaComandas = order.area_comandas || {};
 
       if (areaId && areaComandas[areaId]) {

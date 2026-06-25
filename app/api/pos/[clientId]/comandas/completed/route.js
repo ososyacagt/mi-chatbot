@@ -30,42 +30,27 @@ export async function GET(request, { params }) {
 
     const { data: orders, error } = await query;
 
-    if (error) throw error;
-
-    // Filtrar comandas por área si se especifica
-    const comandas = [];
-    for (const order of orders || []) {
-      const areaComandas = order.area_comandas || {};
-
-      if (areaId && areaComandas[areaId]) {
-        comandas.push({
-          orderId: order.id,
-          numeroOrden: order.numero_orden,
-          mesa: order.tipo_orden === "mesa" ? (order.mesa_numero || order.mesa_id) : null,
-          items: areaComandas[areaId],
-          createdAt: order.created_at,
-          updatedAt: order.updated_at,
-          clienteNombre: order.cliente_nombre || "Mostrador",
-          status: order.status,
-          posStatus: order.pos_status
-        });
-      } else if (!areaId) {
-        Object.keys(areaComandas).forEach((aid) => {
-          comandas.push({
-            orderId: order.id,
-            numeroOrden: order.numero_orden,
-            areaId: aid,
-            mesa: order.tipo_orden === "mesa" ? (order.mesa_numero || order.mesa_id) : null,
-            items: areaComandas[aid],
-            createdAt: order.created_at,
-            updatedAt: order.updated_at,
-            clienteNombre: order.cliente_nombre || "Mostrador",
-            status: order.status,
-            posStatus: order.pos_status
-          });
-        });
-      }
+    if (error) {
+      console.error('[completed] Error detallado:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      });
+      throw error;
     }
+
+    // Mapear órdenes completadas directamente sin filtrar por area_comandas
+    const comandas = (orders || []).map(order => ({
+      orderId: order.id,
+      numeroOrden: order.numero_orden,
+      mesa: order.mesa_numero || (order.tipo_orden === "mesa" ? "Mesa" : "Mostrador"),
+      clienteNombre: order.cliente_nombre || "Mostrador",
+      items: order.items || [],
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      status: order.status,
+      posStatus: order.pos_status
+    }));
 
     return NextResponse.json({ comandas });
   } catch (error) {
