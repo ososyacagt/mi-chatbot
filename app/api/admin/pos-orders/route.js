@@ -23,6 +23,7 @@ export async function GET(request) {
     const fechaFin = searchParams.get("fecha_fin");
     const cliente = searchParams.get("cliente");
     const status = searchParams.get("status");
+    const posStatusFilter = searchParams.get("pos_status");
     const tipoOrden = searchParams.get("tipo_orden");
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
@@ -42,7 +43,7 @@ export async function GET(request) {
     let query = supabase
       .from("orders")
       .select(
-        "id, numero_orden, cliente_nombre, cliente_telefono, cliente_direccion, items, subtotal, descuento, total, moneda, metodo_pago, tipo_orden, mesa_id, mesa_numero, status, monto_recibido, notas, created_at",
+        "id, numero_orden, cliente_nombre, cliente_telefono, cliente_direccion, items, subtotal, descuento, total, moneda, metodo_pago, tipo_orden, mesa_id, mesa_numero, status, monto_recibido, notas, created_at, pos_status, pos_substatus, pos_user_id, cajero_id, entrega_user_id, pos_historial",
         { count: "exact" }
       )
       .eq("tenant_id", clientId)
@@ -66,14 +67,38 @@ export async function GET(request) {
       query = query.eq("status", status);
     }
 
+    if (posStatusFilter && posStatusFilter !== "todas") {
+      query = query.eq("pos_status", posStatusFilter);
+    }
+
     if (tipoOrden && tipoOrden !== "todos") {
       query = query.eq("tipo_orden", tipoOrden);
     }
 
     // Ejecutar query con paginación
-    const { data: orders, count, error } = await query.range(offset, offset + limit - 1);
+    const { data: rawOrders, count, error } = await query.range(offset, offset + limit - 1);
 
     if (error) throw error;
+
+    // Fetch POS users for mapping names
+    const { data: posUsers } = await supabase
+      .from("pos_users")
+      .select("id, nombre")
+      .eq("tenant_id", clientId);
+
+    const posUsersMap = {};
+    if (posUsers) {
+      posUsers.forEach((u) => {
+        posUsersMap[u.id] = u.nombre;
+      });
+    }
+
+    const orders = (rawOrders || []).map((order) => ({
+      ...order,
+      operador_nombre: posUsersMap[order.pos_user_id] || null,
+      cajero_nombre: posUsersMap[order.cajero_id] || null,
+      entrega_nombre: posUsersMap[order.entrega_user_id] || null
+    }));
 
     // Calcular totales
     const totales = {
@@ -113,8 +138,9 @@ export async function GET(request) {
 
         // Por método de pago
         if (order.metodo_pago) {
-          if (totales.por_metodo_pago[order.metodo_pago] !== undefined) {
-            totales.por_metodo_pago[order.metodo_pago]++;
+          const m = order.metodo_pago.toLowerCase();
+          if (totales.por_metodo_pago[m] !== undefined) {
+            totales.por_metodo_pago[m]++;
           } else {
             totales.por_metodo_pago.otros++;
           }

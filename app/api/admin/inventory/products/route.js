@@ -101,7 +101,8 @@ export async function POST(request) {
       imagenes: body.imagen ? [body.imagen] : [],
       precio: parseFloat(body.precio) || 0,
       precio_original: body.precioOriginal ? parseFloat(body.precioOriginal) : null,
-      category_id: body.category_id,
+      category_id: body.category_id || null,
+      area_preparacion_id: body.area_preparacion_id || null,
       stock: parseInt(body.stock) || 0,
       stock_minimo: parseInt(body.stockMinimo) || 0,
       stock_maximo: body.stockMaximo ? parseInt(body.stockMaximo) : null,
@@ -110,6 +111,7 @@ export async function POST(request) {
       fecha_expiracion: body.fechaExpiracion || null,
       destacado: body.destacado,
       activo: body.activo !== false,
+      customization_options: body.customization_options || [],
     };
 
     console.log('[POST products] insert data que se enviará:', JSON.stringify(insertData, null, 2));

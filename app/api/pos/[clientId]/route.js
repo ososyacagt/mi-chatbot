@@ -55,7 +55,7 @@ export async function GET(request, { params }) {
     // Obtener productos
     const { data: products } = await supabase
       .from("products")
-      .select("id, nombre, precio, imagenes, area_preparacion_id, category_id")
+      .select("id, nombre, precio, imagenes, area_preparacion_id, category_id, customization_options")
       .eq("tenant_id", clientId)
       .eq("activo", true)
       .order("nombre");
@@ -99,8 +99,63 @@ export async function POST(request, { params }) {
 
     const supabase = createSupabaseAdmin();
 
+    // Fetch tenant pos configuration to know the flow
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("pos_flujo_cobro")
+      .eq("client_id", clientId)
+      .single();
+
+    const posFlujoCobro = tenant?.pos_flujo_cobro || "entrega_inmediata";
+    const tipoOrden = body.tipoOrden || "mostrador"; // 'mostrador', 'restaurante', 'auto_servicio'
+
+    // Determine initial pos_status
+    let posStatus = "pendiente_cobro";
+    if (tipoOrden === "auto_servicio") {
+      posStatus = "facturado_finalizado";
+    } else if (tipoOrden === "restaurante") {
+      posStatus = "enviada";
+    } else if (tipoOrden === "mostrador") {
+      if (posFlujoCobro === "entrega_inmediata") {
+        posStatus = "facturado_finalizado";
+      } else {
+        posStatus = "pendiente_cobro";
+      }
+    }
+
+    const mainStatus = posStatus === "facturado_finalizado" ? "completada" : "pendiente";
+
     // Generar número de orden único
     const numeroOrden = "POS-" + Date.now().toString(36).toUpperCase();
+
+    // Group items by preparation area to populate area_comandas
+    const areaComandas = {};
+    const items = body.items || [];
+    items.forEach((item) => {
+      // Use area_preparacion_id if available, otherwise 'sin_area'
+      const areaId = item.area_preparacion_id || "sin_area";
+      if (!areaComandas[areaId]) {
+        areaComandas[areaId] = [];
+      }
+      areaComandas[areaId].push({
+        id: item.id || null,
+        nombre: item.nombre || "",
+        cantidad: item.cantidad || 1,
+        notas: item.notas || "",
+        status: "ingresada"
+      });
+    });
+
+    // Create history record
+    const posHistorial = [
+      {
+        de: null,
+        a: posStatus,
+        posUserId: body.posUserId || null,
+        timestamp: new Date().toISOString(),
+        nota: "Orden creada desde POS"
+      }
+    ];
 
     // Crear orden con campos correctos de la tabla orders
     const { data: order, error: orderError } = await supabase
@@ -111,23 +166,30 @@ export async function POST(request, { params }) {
         cliente_nombre: body.clienteNombre || null,
         cliente_telefono: body.clienteTelefono || null,
         cliente_direccion: body.clienteDireccion || null,
-        items: body.items || [],
+        items: items,
         subtotal: body.subtotal || 0,
         descuento: 0,
         total: body.total || 0,
         moneda: body.currency || "USD",
         metodo_pago: body.metodoPago || "efectivo",
-        tipo_orden: body.tipoOrden || "mostrador",
+        tipo_orden: tipoOrden,
         mesa_id: body.mesaId || null,
         mesa_numero: body.mesaNumero || null,
-        status: "pendiente",
+        status: mainStatus,
         notas: body.notas || "",
         reglas_aplicadas: [],
         origen: "pos",
         monto_recibido: body.montoRecibido || 0,
+        cobrado_at: posStatus === "facturado_finalizado" ? new Date().toISOString() : null,
+        pos_status: posStatus,
+        pos_substatus: null,
+        pos_user_id: body.posUserId || null,
+        cajero_id: (posStatus === "facturado_finalizado" && body.posUserId) ? body.posUserId : null,
+        pos_historial: posHistorial,
+        area_comandas: areaComandas,
         status_historial: [
           {
-            status: "pendiente",
+            status: mainStatus,
             timestamp: new Date().toISOString(),
             nota: "Orden creada desde POS"
           }
@@ -149,6 +211,7 @@ export async function POST(request, { params }) {
           id: order.id,
           numeroOrden: order.numero_orden,
           status: order.status,
+          pos_status: order.pos_status,
           total: order.total,
           moneda: order.moneda
         }

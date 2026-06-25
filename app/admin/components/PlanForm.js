@@ -318,6 +318,23 @@ export default function PlanForm({ plan, onSave, onCancel, loading }) {
         <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
+            checked={formData.ecommerce_modes?.includes('chatbot_simple')}
+            onChange={(e) => {
+              const modes = formData.ecommerce_modes || [];
+              if (e.target.checked) {
+                setFormData({ ...formData, ecommerce_modes: [...modes, 'chatbot_simple'] });
+              } else {
+                setFormData({ ...formData, ecommerce_modes: modes.filter(m => m !== 'chatbot_simple') });
+              }
+            }}
+            className="w-4 h-4"
+          />
+          <span className="text-slate-900 dark:text-white">💬 Solo Chatbot (sin pedidos)</span>
+        </label>
+
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
             checked={formData.ecommerce_modes?.includes('chatbot')}
             onChange={(e) => {
               const modes = formData.ecommerce_modes || [];

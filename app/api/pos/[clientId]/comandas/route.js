@@ -3,7 +3,7 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(request, { params }) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
     const { searchParams } = new URL(request.url);
     const areaId = searchParams.get("areaId");
     const status = searchParams.get("status") || "pendiente";
@@ -40,13 +40,13 @@ export async function GET(request, { params }) {
         comandas.push({
           orderId: order.id,
           numeroOrden: order.numero_orden,
-          mesa: order.tipo_orden === "mesa" ? order.mesa_id : null,
+          mesa: order.tipo_orden === "mesa" ? (order.mesa_numero || order.mesa_id) : null,
           items: areaComandas[areaId],
           createdAt: order.created_at,
           tiempoTranscurrido: Math.floor(
             (Date.now() - new Date(order.created_at).getTime()) / 1000
           ),
-          clienteNombre: order.cliente_nombre_pos || "Mostrador"
+          clienteNombre: order.cliente_nombre || "Mostrador"
         });
       } else if (!areaId) {
         // Si no especifica área, retornar todas las comandas
@@ -55,13 +55,13 @@ export async function GET(request, { params }) {
             orderId: order.id,
             numeroOrden: order.numero_orden,
             areaId: aid,
-            mesa: order.tipo_orden === "mesa" ? order.mesa_id : null,
+            mesa: order.tipo_orden === "mesa" ? (order.mesa_numero || order.mesa_id) : null,
             items: areaComandas[aid],
             createdAt: order.created_at,
             tiempoTranscurrido: Math.floor(
               (Date.now() - new Date(order.created_at).getTime()) / 1000
             ),
-            clienteNombre: order.cliente_nombre_pos || "Mostrador"
+            clienteNombre: order.cliente_nombre || "Mostrador"
           });
         });
       }
@@ -79,7 +79,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
     const body = await request.json();
     const { orderId, areaId, itemIndex, status } = body;
 
@@ -95,7 +95,7 @@ export async function PUT(request, { params }) {
     // Obtener orden actual
     const { data: order, error: getError } = await supabase
       .from("orders")
-      .select("area_comandas")
+      .select("*")
       .eq("id", orderId)
       .eq("tenant_id", clientId)
       .single();
@@ -111,22 +111,75 @@ export async function PUT(request, { params }) {
 
     // Actualizar estado del item
     if (areaComandas[areaId] && areaComandas[areaId][itemIndex]) {
-      areaComandas[areaId][itemIndex].status = status || "listo";
+      areaComandas[areaId][itemIndex].status = status || "lista";
     }
 
-    // Actualizar orden
+    // Calcular próximo pos_status del pedido general
+    const allStatuses = [];
+    Object.keys(areaComandas).forEach((aid) => {
+      if (Array.isArray(areaComandas[aid])) {
+        areaComandas[aid].forEach((item) => {
+          allStatuses.push(item.status || "ingresada");
+        });
+      }
+    });
+
+    let nextPosStatus = order.pos_status || "enviada";
+    const oldStatus = order.pos_status || "enviada";
+
+    if (allStatuses.length > 0) {
+      if (allStatuses.every(s => s === "lista" || s === "listo")) {
+        nextPosStatus = "lista";
+      } else if (allStatuses.some(s => s === "en_proceso" || s === "recibida")) {
+        if (oldStatus === "enviada") {
+          nextPosStatus = "en_preparacion";
+        }
+      }
+    }
+
+    const updateData = {
+      area_comandas: areaComandas
+    };
+
+    if (nextPosStatus !== oldStatus) {
+      updateData.pos_status = nextPosStatus;
+      
+      let statusHistorial = [];
+      if (order.pos_historial) {
+        try {
+          statusHistorial = typeof order.pos_historial === "string"
+            ? JSON.parse(order.pos_historial)
+            : order.pos_historial;
+        } catch (e) {
+          statusHistorial = [];
+        }
+      }
+
+      updateData.pos_historial = [
+        ...statusHistorial,
+        {
+          de: oldStatus,
+          a: nextPosStatus,
+          posUserId: null,
+          timestamp: new Date().toISOString(),
+          nota: `Estado general del pedido actualizado automáticamente por Cocina a: ${nextPosStatus}`
+        }
+      ];
+    }
+
+    // Actualizar orden en Supabase
     const { error: updateError } = await supabase
       .from("orders")
-      .update({ area_comandas: areaComandas })
+      .update(updateData)
       .eq("id", orderId);
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, pos_status: nextPosStatus });
   } catch (error) {
     console.error("[PUT /api/pos/[clientId]/comandas] Error:", error.message);
     return NextResponse.json(
-      { error: "Error al actualizar comanda" },
+      { error: "Error al actualizar comanda: " + error.message },
       { status: 500 }
     );
   }

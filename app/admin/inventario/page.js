@@ -271,9 +271,25 @@ function InventoryPageContent() {
           topbar_message: data.config.topbar_message || "",
           min_order_amount: data.config.min_order_amount || "",
           payment_methods: data.config.payment_methods || [],
-          pos_modalidad: Array.isArray(data.config.pos_modalidad)
-            ? data.config.pos_modalidad
-            : (data.config.pos_modalidad ? [data.config.pos_modalidad] : []),
+          pos_modalidad: (() => {
+            const raw = data.config.pos_modalidad;
+            if (Array.isArray(raw)) return raw;
+            if (typeof raw === 'string') {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed;
+              } catch (e) {
+                if (raw.startsWith('{') && raw.endsWith('}')) {
+                  return raw.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean);
+                }
+                if (raw.includes(',')) {
+                  return raw.split(',').map(s => s.trim()).filter(Boolean);
+                }
+              }
+              return raw ? [raw.trim()] : [];
+            }
+            return [];
+          })(),
           pos_flujo_cobro: data.config.pos_flujo_cobro || "entrega_inmediata",
         });
       }
@@ -467,12 +483,20 @@ function InventoryPageContent() {
 
   const handleSaveConfig = async () => {
     try {
+      // Asegurar que pos_modalidad sea un array limpio de strings
+      const cleanConfig = {
+        ...configForm,
+        pos_modalidad: Array.isArray(configForm.pos_modalidad)
+          ? configForm.pos_modalidad.filter(m => typeof m === 'string' && !m.startsWith('[') && !m.startsWith('{'))
+          : []
+      };
+
       const res = await fetch(
         `/api/admin/inventory/config?clientId=${clientId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(configForm),
+          body: JSON.stringify(cleanConfig),
         }
       );
 
@@ -1751,6 +1775,7 @@ function RuleModal({
 
 const MODALIDADES = [
   { value: 'catalogo_whatsapp', label: '🛍️ Catálogo + WhatsApp', plan: 'pro' },
+  { value: 'chatbot_simple', label: '💬 Solo Chatbot', plan: 'pro' },
   { value: 'chatbot', label: '🤖 Chatbot con pedidos', plan: 'pro' },
   { value: 'tienda', label: '🏪 Tienda completa', plan: 'enterprise' },
   { value: 'pos', label: '🖥️ Punto de Venta (POS)', plan: 'enterprise' }
@@ -1881,6 +1906,7 @@ function ConfigTab({
                     className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full"
                   >
                     {mode === 'catalogo_whatsapp' ? '🛍️ Catálogo + WhatsApp' :
+                     mode === 'chatbot_simple' ? '💬 Solo Chatbot' :
                      mode === 'chatbot' ? '🤖 Chatbot con pedidos' :
                      mode === 'tienda' ? '🏪 Tienda completa' :
                      mode}

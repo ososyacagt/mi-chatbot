@@ -224,6 +224,12 @@ export default function PricingPage() {
                             <span>Catálogo + WhatsApp</span>
                           </div>
                         )}
+                        {plan.ecommerce_modes.includes('chatbot_simple') && (
+                          <div className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <span>💬</span>
+                            <span>Solo Chatbot (sin pedidos)</span>
+                          </div>
+                        )}
                         {plan.ecommerce_modes.includes('chatbot') && (
                           <div className="text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             <span>🤖</span>

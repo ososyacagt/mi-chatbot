@@ -53,7 +53,8 @@ export async function PUT(request, { params }) {
         imagenes: body.imagen ? [body.imagen] : [],
         precio: body.precio,
         precio_original: body.precioOriginal ? parseFloat(body.precioOriginal) : null,
-        category_id: body.category_id,
+        category_id: body.category_id || null,
+        area_preparacion_id: body.area_preparacion_id || null,
         stock: body.stock,
         stock_minimo: body.stockMinimo,
         stock_maximo: body.stockMaximo ? parseInt(body.stockMaximo) : null,
@@ -62,6 +63,7 @@ export async function PUT(request, { params }) {
         fecha_expiracion: body.fechaExpiracion || null,
         destacado: body.destacado,
         activo: body.activo !== false,
+        customization_options: body.customization_options || [],
       })
       .eq("id", id)
       .select()

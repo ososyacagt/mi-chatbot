@@ -109,24 +109,15 @@ function TenantCard({ tenant, user, escalationCounts, pendingOrdersCounts, onDel
 
         {/* Acciones — separadas en grupos semánticos */}
         <div className="mt-auto space-y-2">
-          {/* Grupo primario: Ver y explorar */}
-          <div className="grid grid-cols-2 gap-2">
-            <Link
-              href={`/chat/${tenant.id}`}
-              className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm"
-            >
-              {Icon.chat} Chat
-            </Link>
+          {/* Grupo secundario: Gestión */}
+          <div className="grid grid-cols-4 gap-2">
             <Link
               href={`/admin/conversaciones?clientId=${tenant.id}`}
-              className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700"
+              className="flex items-center justify-center gap-1 h-8 px-2 rounded-lg text-xs font-semibold bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700"
+              title="Historial"
             >
-              {Icon.history} Historial
+              {Icon.history} <span className="hidden sm:inline">Historial</span>
             </Link>
-          </div>
-
-          {/* Grupo secundario: Gestión */}
-          <div className="grid grid-cols-3 gap-2">
             <Link
               href={`/admin/metricas?clientId=${tenant.client_id}`}
               className="flex items-center justify-center gap-1 h-8 px-2 rounded-lg text-xs font-semibold bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700"
@@ -182,6 +173,12 @@ function TenantCard({ tenant, user, escalationCounts, pendingOrdersCounts, onDel
               <a href={`/catalogo/${tenant.id}`} target="_blank" rel="noopener noreferrer"
                 className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-cyan-600 hover:bg-cyan-700 text-white whitespace-nowrap">
                 🛍️ Catálogo
+              </a>
+            )}
+            {tenant.ecommerceModes?.includes('chatbot_simple') && (
+              <a href={`/chat/${tenant.id}`} target="_blank" rel="noopener noreferrer"
+                className="h-9 inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium text-xs transition-colors bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap">
+                💬 Chatbot
               </a>
             )}
             {tenant.ecommerceModes?.includes('chatbot') && (

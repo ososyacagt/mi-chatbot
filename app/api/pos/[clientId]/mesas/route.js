@@ -3,7 +3,7 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(request, { params }) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
 
     if (!clientId) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
     const body = await request.json();
     const { mesaId, estado } = body;
 

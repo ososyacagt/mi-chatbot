@@ -9,7 +9,6 @@ import { sendPushNotification } from "@/lib/push-notifications";
 import { createSupabaseAdmin } from "@/lib/supabase-server";
 import { getCatalogContext, createChatbotOrder } from "@/lib/chatbot-store";
 import { applyBusinessRules } from "@/lib/business-rules";
-import { getPlanLimits } from "@/lib/plan-limits";
 import { randomUUID } from "crypto";
 
 export async function POST(request) {
@@ -26,23 +25,18 @@ export async function POST(request) {
     const tenant = await getTenant(clientId);
     const sessionId = providedSessionId || randomUUID();
 
-    // Obtener contexto de catálogo si el modo es chatbot
+    // Cargar catálogo si el tenant tiene modalidad 'chatbot' (con pedidos)
     let catalogInfo = null;
-    if (tenant.ecommerceMode === 'chatbot') {
+    const hasChatbotOrders = tenant.ecommerceModes?.includes('chatbot');
+    if (hasChatbotOrders) {
       try {
-        // Verificar que el plan permite chatbot con pedidos
-        const plan = await getPlanLimits(clientId);
-        const canUseChatbotStore = plan?.chatbot_pedidos || false;
-
-        if (canUseChatbotStore) {
-          catalogInfo = await getCatalogContext(clientId);
-          console.log("[chat] Catálogo obtenido para modo chatbot:", clientId);
-        } else {
-          console.warn("[chat] Plan no incluye chatbot_pedidos para:", clientId);
-        }
+        catalogInfo = await getCatalogContext(clientId);
+        console.log("[chat] ✓ Catálogo cargado para modo chatbot con pedidos:", clientId);
       } catch (err) {
         console.error("[chat] Error obteniendo catálogo:", err);
       }
+    } else {
+      console.log("[chat] Modo sin pedidos para:", clientId, "| ecommerceModes:", tenant.ecommerceModes);
     }
 
     // PASO 1: Detectar escalación ANTES de cualquier otra operación

@@ -11,6 +11,7 @@ const INITIAL_PRODUCT_FORM = {
   precio: "",
   precioOriginal: "",
   category_id: "",
+  area_preparacion_id: "",
   stock: "0",
   stockMinimo: "0",
   stockMaximo: "",
@@ -29,6 +30,8 @@ export default function ProductForm({
   const [productForm, setProductForm] = useState(INITIAL_PRODUCT_FORM);
   const [variantes, setVariantes] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [customizationOptions, setCustomizationOptions] = useState([]);
   const [newVariante, setNewVariante] = useState({
     nombre: "",
     valor: "",
@@ -55,6 +58,13 @@ export default function ProductForm({
           setCategories(catData.categories || []);
         }
 
+        // Load areas
+        const areasRes = await fetch(`/api/admin/inventory/areas?clientId=${clientId}`);
+        if (areasRes.ok) {
+          const areasData = await areasRes.json();
+          setAreas(areasData.areas || []);
+        }
+
         // If editing, load product
         if (productId) {
           const prodRes = await fetch(`/api/admin/inventory/products?clientId=${clientId}`);
@@ -69,6 +79,7 @@ export default function ProductForm({
                 precio: foundProduct.precio?.toString() || "",
                 precioOriginal: foundProduct.precio_original?.toString() || "",
                 category_id: foundProduct.category_id || "",
+                area_preparacion_id: foundProduct.area_preparacion_id || "",
                 stock: foundProduct.stock?.toString() || "0",
                 stockMinimo: foundProduct.stock_minimo?.toString() || "0",
                 stockMaximo: foundProduct.stock_maximo?.toString() || "",
@@ -79,6 +90,7 @@ export default function ProductForm({
                 activo: foundProduct.activo !== false,
               });
               setVariantes(foundProduct.variantes || []);
+              setCustomizationOptions(foundProduct.customization_options || []);
               
               if (descriptionRef.current && foundProduct.descripcion) {
                 descriptionRef.current.innerHTML = foundProduct.descripcion;
@@ -173,6 +185,7 @@ export default function ProductForm({
           ...productForm,
           precio: parseFloat(productForm.precio) || 0,
           precio_original: productForm.precioOriginal ? parseFloat(productForm.precioOriginal) : null,
+          area_preparacion_id: productForm.area_preparacion_id || null,
           stock: parseInt(productForm.stock) || 0,
           stock_minimo: parseInt(productForm.stockMinimo) || 0,
           stock_maximo: productForm.stockMaximo ? parseInt(productForm.stockMaximo) : null,
@@ -181,6 +194,11 @@ export default function ProductForm({
           variantes: variantes,
           imagen: imageUrl,
           imagenes: imageUrl ? [imageUrl] : [],
+          customization_options: (customizationOptions || []).map(opt => ({
+            nombre: opt.nombre || "",
+            tipo: opt.tipo || "seleccion_unica",
+            opciones: opt.opciones || []
+          })),
         }),
       });
 
@@ -309,7 +327,7 @@ export default function ProductForm({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">Precio *</label>
           <input
@@ -353,6 +371,26 @@ export default function ProductForm({
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.emoji} {cat.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1">Área Preparación (POS)</label>
+          <select
+            value={productForm.area_preparacion_id}
+            onChange={(e) =>
+              setProductForm({
+                ...productForm,
+                area_preparacion_id: e.target.value,
+              })
+            }
+            className="w-full px-4 py-2 border border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-sans"
+          >
+            <option value="">Ninguna (Mostrador directo)</option>
+            {areas.map((a) => (
+              <option key={a.id} value={a.id}>
+                🍳 {a.nombre}
               </option>
             ))}
           </select>
@@ -504,6 +542,144 @@ export default function ProductForm({
             Agregar Variante
           </button>
         </div>
+      </div>
+
+      {/* Modificadores / Opciones de Personalización */}
+      <div className="border-t border-slate-200 dark:border-zinc-800 pt-6 mt-6">
+        <h3 className="font-bold mb-1 text-lg text-slate-800 dark:text-white">Modificadores e Ingredientes (POS)</h3>
+        <p className="text-xs text-slate-500 mb-4">Configura opciones y personalizaciones que el mesero podrá seleccionar al tomar la orden (ej: tipo de cocción, adiciones o ingredientes opcionales).</p>
+        
+        {customizationOptions.length > 0 && (
+          <div className="space-y-4 mb-4">
+            {customizationOptions.map((opt, idx) => (
+              <div key={idx} className="bg-slate-50 dark:bg-zinc-850 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col gap-3 relative">
+                <button
+                  type="button"
+                  onClick={() => setCustomizationOptions(customizationOptions.filter((_, i) => i !== idx))}
+                  className="absolute top-3 right-3 text-red-500 hover:text-red-700 font-bold text-xs bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1.5 rounded-lg transition"
+                >
+                  Quitar Grupo
+                </button>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nombre del Grupo</span>
+                    <input
+                      type="text"
+                      value={opt.nombre}
+                      onChange={(e) => {
+                        const updated = [...customizationOptions];
+                        updated[idx].nombre = e.target.value;
+                        setCustomizationOptions(updated);
+                      }}
+                      className="w-full px-3.5 py-2 border border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                      placeholder="ej: Lácteo, Tipo de Huevo"
+                    />
+                  </div>
+                  
+                  <div className="w-full sm:w-64">
+                    <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo Selección</span>
+                    <select
+                      value={opt.tipo}
+                      onChange={(e) => {
+                        const updated = [...customizationOptions];
+                        updated[idx].tipo = e.target.value;
+                        setCustomizationOptions(updated);
+                      }}
+                      className="w-full px-3.5 py-2 border border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
+                    >
+                      <option value="seleccion_unica">Selección Única (Radio)</option>
+                      <option value="seleccion_multiple">Selección Múltiple (Checkbox)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Opciones / Ingredientes configurados</span>
+                  
+                  {opt.opciones && opt.opciones.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 p-3 bg-slate-100 dark:bg-zinc-950 rounded-lg border border-slate-200 dark:border-zinc-800">
+                      {opt.opciones.map((o, oIdx) => (
+                        <div key={oIdx} className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/25 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-xs font-semibold">
+                          <span>{o}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...customizationOptions];
+                              updated[idx].opciones = updated[idx].opciones.filter((_, i) => i !== oIdx);
+                              setCustomizationOptions(updated);
+                            }}
+                            className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-350 font-bold text-[10px] bg-blue-500/10 hover:bg-blue-500/20 w-4 h-4 flex items-center justify-center rounded-full transition"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic p-2 bg-slate-100/50 dark:bg-zinc-950/50 rounded-lg border border-slate-200/50 dark:border-zinc-800/50">
+                      No hay opciones agregadas todavía. Usa el campo de abajo para agregarlas.
+                    </p>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={opt.tempOption || ""}
+                      onChange={(e) => {
+                        const updated = [...customizationOptions];
+                        updated[idx].tempOption = e.target.value;
+                        setCustomizationOptions(updated);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = (opt.tempOption || "").trim();
+                          if (val) {
+                            const updated = [...customizationOptions];
+                            updated[idx].opciones = [...(updated[idx].opciones || []), val];
+                            updated[idx].tempOption = "";
+                            setCustomizationOptions(updated);
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3.5 py-2 border border-slate-350 dark:border-zinc-700 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-xs font-semibold"
+                      placeholder="Escribe una opción (ej: Huevos fritos, Frijoles volteados)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = (opt.tempOption || "").trim();
+                        if (val) {
+                          const updated = [...customizationOptions];
+                          updated[idx].opciones = [...(updated[idx].opciones || []), val];
+                          updated[idx].tempOption = "";
+                          setCustomizationOptions(updated);
+                        }
+                      }}
+                      className="px-4 py-2 bg-zinc-850 hover:bg-zinc-900 dark:bg-zinc-750 dark:hover:bg-zinc-700 text-white font-bold text-xs rounded-lg transition whitespace-nowrap"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <button
+          type="button"
+          onClick={() => {
+            setCustomizationOptions([
+              ...customizationOptions,
+              { nombre: "", tipo: "seleccion_unica", opciones: [] }
+            ]);
+          }}
+          className="w-full py-3 bg-blue-50 dark:bg-zinc-800 hover:bg-blue-100/50 dark:hover:bg-zinc-750 border border-blue-200 dark:border-zinc-700 text-blue-600 dark:text-blue-400 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+        >
+          + Agregar Grupo de Modificadores
+        </button>
       </div>
 
       <div className="flex gap-3 justify-end border-t border-slate-200 dark:border-zinc-800 pt-6 mt-8">

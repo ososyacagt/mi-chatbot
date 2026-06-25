@@ -65,6 +65,7 @@ export async function POST(request) {
             precio: parseFloat(p.precio),
             precio_original: p.precio_original ? parseFloat(p.precio_original) : null,
             category_id: p.category_id || null,
+            area_preparacion_id: p.area_preparacion_id || null,
             stock: parseInt(p.stock || 0),
             stock_minimo: p.stock_minimo ? parseInt(p.stock_minimo) : 0,
             stock_maximo: p.stock_maximo ? parseInt(p.stock_maximo) : null,
