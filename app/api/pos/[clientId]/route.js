@@ -3,7 +3,9 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(request, { params }) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
+    console.log('[pos] GET clientId:', clientId);
+
     if (!clientId) {
       return NextResponse.json(
         { error: "clientId es requerido" },
@@ -21,6 +23,7 @@ export async function GET(request, { params }) {
       .single();
 
     if (tenantError || !tenant) {
+      console.log('[pos] Error tenant:', tenantError, 'tenant:', tenant);
       return NextResponse.json(
         { error: "Cliente no encontrado" },
         { status: 404 }
@@ -70,8 +73,9 @@ export async function GET(request, { params }) {
     });
   } catch (error) {
     console.error("[GET /api/pos/[clientId]] Error:", error.message);
+    console.error("[GET /api/pos/[clientId]] Stack:", error.stack);
     return NextResponse.json(
-      { error: "Error al obtener configuración del POS" },
+      { error: "Error al obtener configuración del POS: " + error.message },
       { status: 500 }
     );
   }
@@ -79,8 +83,10 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
     const body = await request.json();
+    console.log('[pos] POST clientId:', clientId);
+    console.log('[pos] POST body:', JSON.stringify(body, null, 2));
 
     if (!clientId) {
       return NextResponse.json(
@@ -110,7 +116,10 @@ export async function POST(request, { params }) {
       .select()
       .single();
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      console.log('[pos] Error creating order:', orderError);
+      throw orderError;
+    }
 
     // Dividir items por área y crear comandas
     const areaComandas = {};
@@ -147,8 +156,9 @@ export async function POST(request, { params }) {
     return NextResponse.json({ order: { ...order, area_comandas: areaComandas } }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/pos/[clientId]] Error:", error.message);
+    console.error("[POST /api/pos/[clientId]] Stack:", error.stack);
     return NextResponse.json(
-      { error: "Error al crear orden" },
+      { error: "Error al crear orden: " + error.message },
       { status: 500 }
     );
   }
