@@ -290,6 +290,8 @@ export default function AdminPanel() {
 
         const loadedTenants = data.tenants || [];
         setTenants(loadedTenants);
+        console.log('[admin] tenant bava ecommerceModes:', loadedTenants.find(t => t.id === 'bava')?.ecommerceModes);
+        console.log('[admin] tenant bava raw:', loadedTenants.find(t => t.id === 'bava'));
         await Promise.all(
           loadedTenants.map(tenant => Promise.all([
             loadEscalationsForTenant(tenant.client_id),

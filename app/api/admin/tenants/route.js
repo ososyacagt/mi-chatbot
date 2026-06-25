@@ -109,9 +109,18 @@ export async function GET(request) {
       );
     }
 
-    const mappedData = (data || []).map(mapFromDbFields);
+    const mappedData = (data || []).map((dbRecord) => {
+      if (dbRecord.client_id === 'bava') {
+        console.log('[tenants] mapeo bava ecommerce_modes:', dbRecord.ecommerce_modes, '→', dbRecord.ecommerce_modes || []);
+      }
+      return mapFromDbFields(dbRecord);
+    });
     console.log(`[GET /api/admin/tenants] ✓ ${mappedData.length} tenants`);
     console.log("[GET /api/admin/tenants] Raw data from Supabase:", JSON.stringify(data?.[0], null, 2));
+    const bavaFromDb = data?.find(d => d.client_id === 'bava');
+    if (bavaFromDb) {
+      console.log('[GET /api/admin/tenants] bava raw from DB:', { client_id: bavaFromDb.client_id, ecommerce_mode: bavaFromDb.ecommerce_mode, ecommerce_modes: bavaFromDb.ecommerce_modes });
+    }
     console.log("[GET /api/admin/tenants] Mapped data sample:", JSON.stringify(mappedData?.[0], null, 2));
 
     return Response.json({ tenants: mappedData });

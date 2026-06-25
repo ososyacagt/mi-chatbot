@@ -2114,8 +2114,6 @@ function ConfigTab({
                 </label>
               ))}
             </div>
-          </div>
-        )}
           </>
         )}
       </div>
