@@ -271,7 +271,9 @@ function InventoryPageContent() {
           topbar_message: data.config.topbar_message || "",
           min_order_amount: data.config.min_order_amount || "",
           payment_methods: data.config.payment_methods || [],
-          pos_modalidad: data.config.pos_modalidad || [],
+          pos_modalidad: Array.isArray(data.config.pos_modalidad)
+            ? data.config.pos_modalidad
+            : (data.config.pos_modalidad ? [data.config.pos_modalidad] : []),
           pos_flujo_cobro: data.config.pos_flujo_cobro || "entrega_inmediata",
         });
       }
@@ -2142,7 +2144,9 @@ function ConfigTab({
                       type="checkbox"
                       checked={(configForm.pos_modalidad || []).includes(modalidad.id)}
                       onChange={(e) => {
-                        const modos = configForm.pos_modalidad || [];
+                        const modos = Array.isArray(configForm.pos_modalidad)
+                          ? configForm.pos_modalidad
+                          : [];
                         if (e.target.checked) {
                           setConfigForm({
                             ...configForm,
