@@ -271,6 +271,8 @@ function InventoryPageContent() {
           topbar_message: data.config.topbar_message || "",
           min_order_amount: data.config.min_order_amount || "",
           payment_methods: data.config.payment_methods || [],
+          pos_modalidad: data.config.pos_modalidad || [],
+          pos_flujo_cobro: data.config.pos_flujo_cobro || "entrega_inmediata",
         });
       }
       // Cargar límites del plan
