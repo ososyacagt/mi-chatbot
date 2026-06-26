@@ -4,6 +4,44 @@ Historial completo de desarrollo de la plataforma SaaS de Chatbot Multi-tenant.
 
 ---
 
+## [2026-06-26] — Componentes de Producto, Bloqueo de Cobro y UX Mejoras
+
+### ✅ Agregado
+
+#### Eliminación de Componentes en Productos de Servicio
+- **Mesero y roles autorizados** pueden eliminar ingredientes, modificadores y opciones de selección de un producto antes de enviarlo al área
+- Aplica a todos los tipos de componente: simples (checkbox), selección única y selección múltiple
+- Se muestra checkbox "Incluir/Excluir" por cada componente en el modal de producto (`/pos/[clientId]`)
+- Los componentes eliminados se guardan en el campo `componentes_eliminados` (JSONB) del item en la orden
+- **Sección de Observaciones**: campo de texto libre por producto para que el mesero ingrese notas especiales
+- Observaciones y componentes eliminados se muestran en el área KDS (`/pos/[clientId]/area/[areaId]`) en secciones destacadas y visibles
+
+#### Bloqueo de Cobro si Productos no están Listos (Modalidad Restaurante)
+- En **modalidad Restaurante**, el cajero o supervisor NO puede finalizar/cobrar una orden si algún producto aún no está en estado `lista` en su área correspondiente
+- Botón "Cobrar" se deshabilita y muestra tooltip explicando cuántos productos faltan
+- La validación consulta la tabla `order_item_status` cruzando los items de la orden con sus estados por área
+- En modalidades **Mostrador** y otras: el bloqueo no aplica (flujo libre)
+- **Roles afectados**: cajero, supervisor
+
+#### Scroll en Pantalla de Caja
+- Agregado scroll vertical en la grilla de órdenes de `/pos/[clientId]/caja`
+- Evita que órdenes fuera de pantalla queden inaccesibles al acumularse múltiples órdenes activas
+
+### APIs Modificadas
+- `GET /api/pos/[clientId]/orders/[orderId]/items-status` — **NUEVA**: devuelve estado de cada item por área para validar si todos están listos antes de cobrar
+- `POST /api/pos/[clientId]/orders` — Guarda `componentes_eliminados` y `observacion` por item en el JSONB de la orden
+
+### Páginas Modificadas
+- `app/pos/[clientId]/page.js` — Modal de producto con eliminación de componentes y campo de observación
+- `app/pos/[clientId]/caja/page.js` — Validación de items listos + scroll en grilla de órdenes
+- `app/pos/[clientId]/area/[areaId]/page.js` — Muestra componentes eliminados y observaciones en tarjetas KDS
+
+### Bugs Resueltos
+- Componentes de tipo selección única/múltiple que no mostraban opciones eliminables
+- Scroll bloqueado en grilla de órdenes en pantalla de caja
+
+---
+
 ## [2026-06-26] — Optimizaciones POS y Documentación
 
 ### ✅ Completado

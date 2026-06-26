@@ -480,7 +480,7 @@ pos_user_id (UUID) FK → pos_users (quien creó)
 cajero_id (UUID) FK → pos_users (quien cobró)
 entrega_user_id (UUID) FK → pos_users (quien entregó)
 pos_historial (JSONB) — [{de, a, timestamp, posUserId, nota}]
-area_comandas (JSONB) — {area_id: [{id, nombre, cantidad, notas, status}]}
+area_comandas (JSONB) — {area_id: [{id, nombre, cantidad, notas, status, componentes_eliminados, observacion}]}
 notas (TEXT)
 origen (TEXT) — 'tienda', 'chat', 'pos'
 cobrado_at (TIMESTAMP)
@@ -559,6 +559,19 @@ created_at (TIMESTAMP)
 updated_at (TIMESTAMP)
 ```
 
+### Tabla: `order_item_status` *(nueva — 2026-06-26)*
+```sql
+id (UUID) PRIMARY KEY
+order_id (UUID) FK → orders
+item_index (INTEGER) — posición del item en orders.items JSONB
+area_id (UUID) FK → pos_areas
+status (TEXT) — 'enviada', 'recibida', 'en_proceso', 'lista'
+tenant_id (TEXT) FK → tenants.client_id
+created_at (TIMESTAMP)
+updated_at (TIMESTAMP)
+```
+*Propósito: rastrear el estado individual de cada item por área; usado por la validación de cobro en modalidad restaurante para bloquear el cobro si algún ítem no está en estado `lista`.*
+
 ## 7. Sistema de Autenticación
 
 ### Admin (Supabase Auth)
@@ -579,6 +592,9 @@ updated_at (TIMESTAMP)
 
 | Fecha | Bug | Causa | Solución |
 |-------|-----|-------|----------|
+| 2026-06-26 | Componentes no visibles para eliminar en modal | Tipos seleccion_unica/multiple no manejados en render | Render unificado para todos los tipos de componente con checkbox |
+| 2026-06-26 | Cobro posible aunque productos no listos | Sin validación cruzada items-status vs área | Bloqueo de botón Cobrar consultando order_item_status |
+| 2026-06-26 | Scroll bloqueado en caja al acumular órdenes | Contenedor sin overflow-y-auto | Agregado overflow-y-auto y max-height al grid de órdenes |
 | 2026-06-25 | Timer negativo en KDS | Fecha sin Z interpretada como local | parseDate() con 'Z' automático |
 | 2026-06-24 | ecommerce_modes no persiste en planes | API no mapeaba body.ecommerce_modes | Mapeo explícito en PUT /plans |
 | 2026-06-23 | Órdenes completadas en KDS activo | falta estadoFinalizado en filtro | Agregado facturado_finalizado al filtro |

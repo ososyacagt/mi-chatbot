@@ -737,4 +737,98 @@ setPosConfigForm({
 
 ---
 
-**Última actualización:** 2026-06-26
+**Última actualización:** 2026-06-26 (v2)
+
+---
+
+## 7. Patrones Nuevos — 2026-06-26
+
+### 7.1 Componentes Eliminados en Productos (Modal POS)
+
+Los productos con `customization_options` pueden tener sus componentes eliminados antes de agregar a la orden. El estado de cada componente se guarda en `customSelections` y los eliminados en `removedComponents`:
+
+```javascript
+// Inicializar removedComponents al abrir modal:
+const initialRemoved = {};
+product.customization_options?.forEach((group) => {
+  if (group.tipo === 'ingrediente' || group.tipo === 'modificador') {
+    initialRemoved[group.nombre] = false; // false = incluido
+  } else if (group.tipo === 'seleccion_unica' || group.tipo === 'seleccion_multiple') {
+    group.opciones?.forEach((op) => {
+      initialRemoved[`${group.nombre}::${op.nombre}`] = false;
+    });
+  }
+});
+setRemovedComponents(initialRemoved);
+
+// Al guardar el item, filtrar los eliminados:
+const componentesEliminados = Object.entries(removedComponents)
+  .filter(([_, removed]) => removed)
+  .map(([key]) => key);
+```
+
+**Dónde se guarda:** en el campo `area_comandas` de la orden, dentro del objeto del item:
+```json
+{ "id": "uuid", "nombre": "Producto X", "cantidad": 1,
+  "componentes_eliminados": ["Crema", "Huevos::Revueltos"],
+  "observacion": "Sin sal por favor" }
+```
+
+**Dónde se muestra:** en el KDS (`/pos/[clientId]/area`) en secciones destacadas debajo del nombre del producto:
+```jsx
+{item.componentes_eliminados?.length > 0 && (
+  <div className="text-red-400 text-xs">
+    ❌ Sin: {item.componentes_eliminados.join(', ')}
+  </div>
+)}
+{item.observacion && (
+  <div className="text-yellow-300 text-xs">
+    📝 {item.observacion}
+  </div>
+)}
+```
+
+---
+
+### 7.2 Bloqueo de Cobro en Modalidad Restaurante
+
+En **modalidad restaurante**, el botón de cobrar DEBE validar que todos los items estén en estado `lista` antes de permitir el cobro:
+
+```javascript
+// Validar antes de mostrar modal de cobro:
+const validarItemsListos = async (orden) => {
+  if (!esRestaurante) return true; // Solo aplica en restaurante
+  
+  const { data: itemsStatus } = await fetch(
+    `/api/pos/${clientId}/orders/${orden.id}/items-status`
+  ).then(r => r.json());
+  
+  const todosListos = itemsStatus?.every(item => item.status === 'lista');
+  return todosListos;
+};
+
+// En el botón de Cobrar:
+const handleCobrar = async (orden) => {
+  const listos = await validarItemsListos(orden);
+  if (!listos) {
+    toast.error('Hay productos que aún no están listos en cocina');
+    return;
+  }
+  // Abrir modal de cobro...
+};
+```
+
+**API nueva:** `GET /api/pos/[clientId]/orders/[orderId]/items-status`
+- Requiere: `posUser` en sessionStorage con rol `cajero` o `supervisor`
+- Retorna: array de `{item_index, area_id, area_nombre, status, nombre_producto}`
+
+---
+
+### 7.3 Errores Comunes con Componentes
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| Componentes no visibles en modal | `customization_options` no parseado (viene como string JSON) | `JSON.parse()` si `typeof === 'string'` |
+| `removedComponents` no inicializa seleccion_unica | Solo se inicializaban tipos `ingrediente`/`modificador` | Iterar también `seleccion_unica` y `seleccion_multiple` |
+| `observacion` no llega al área | No incluida en `area_comandas` al crear la orden | Agregar `observacion` explícitamente al mapear items |
+
