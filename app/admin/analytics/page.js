@@ -193,7 +193,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Custom range inputs */}
-        {periodo === 'custom' && (
+        {console.log('[Analytics Render] periodo:', periodo, 'custom?:', periodo === 'custom')}
+        {periodo === 'custom' ? (
           <>
             <div className="flex gap-2 items-center flex-wrap">
               <input
@@ -228,7 +229,7 @@ export default function AnalyticsPage() {
               </div>
             ) : null}
           </>
-        )}
+        ) : null}
 
         {/* Tipo */}
         <div className="flex gap-2 flex-wrap">
