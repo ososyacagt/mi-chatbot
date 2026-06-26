@@ -39,13 +39,40 @@ export async function PUT(request, { params }) {
     }
 
     const oldStatus = order.pos_status || "ingresando";
+
+    // Validar que no se cobre una orden de restaurante si hay productos pendientes en cocina
+    if (nuevoStatus === "facturado_finalizado" && order.tipo_orden === "mesa") {
+      const areaComandas = order.area_comandas || {};
+      let tienePendientes = false;
+      
+      for (const areaId in areaComandas) {
+        const items = areaComandas[areaId];
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            const itemStatus = (item.status || "").toLowerCase();
+            if (itemStatus !== "lista" && itemStatus !== "listo") {
+              tienePendientes = true;
+              break;
+            }
+          }
+        }
+        if (tienePendientes) break;
+      }
+      
+      if (tienePendientes) {
+        return NextResponse.json(
+          { error: "No se puede cobrar la orden: hay productos pendientes de preparación en cocina" },
+          { status: 400 }
+        );
+      }
+    }
     let statusHistorial = [];
     if (order.pos_historial) {
       try {
         statusHistorial = typeof order.pos_historial === "string"
           ? JSON.parse(order.pos_historial)
           : order.pos_historial;
-      } catch (e) {
+      } catch {
         statusHistorial = [];
       }
     }

@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function CajaPage() {
@@ -8,11 +7,18 @@ export default function CajaPage() {
   const router = useRouter();
   const clientId = params.clientId;
 
-  const [posUser, setPosUser] = useState(null);
+  const [posUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      const userStr = sessionStorage.getItem("posUser");
+      return userStr ? JSON.parse(userStr) : null;
+    }
+    return null;
+  });
   const [config, setConfig] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState({ message: "", type: "success" });
 
   // Modal checkout states
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -20,35 +26,33 @@ export default function CajaPage() {
   const [montoRecibido, setMontoRecibido] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  // Authentication check
   useEffect(() => {
-    const userStr = sessionStorage.getItem("posUser");
-    if (!userStr) {
-      router.push(`/pos/${clientId}/login`);
-      return;
+    if (toast.message) {
+      const timer = setTimeout(() => {
+        setToast({ message: "", type: "success" });
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-    const userObj = JSON.parse(userStr);
-    setPosUser(userObj);
+  }, [toast.message]);
 
-    // Verify role permissions
-    if (userObj.rol !== "cajero" && userObj.rol !== "supervisor") {
-      router.push(`/pos/${clientId}`);
-      return;
+  const tieneProductosPendientes = useCallback((order) => {
+    if (!order || !order.area_comandas) return false;
+    
+    for (const areaId in order.area_comandas) {
+      const items = order.area_comandas[areaId];
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          const itemStatus = (item.status || "").toLowerCase();
+          if (itemStatus !== "lista" && itemStatus !== "listo") {
+            return true;
+          }
+        }
+      }
     }
+    return false;
+  }, []);
 
-    loadCajaConfig();
-  }, [clientId]);
-
-  // Load orders continuously
-  useEffect(() => {
-    if (!clientId || !posUser) return;
-
-    loadOrders();
-    const interval = setInterval(loadOrders, 10000); // refresh every 10s
-    return () => clearInterval(interval);
-  }, [clientId, posUser]);
-
-  const loadCajaConfig = async () => {
+  const loadCajaConfig = useCallback(async () => {
     try {
       const res = await fetch(`/api/pos/${clientId}`);
       if (res.ok) {
@@ -58,13 +62,13 @@ export default function CajaPage() {
     } catch (err) {
       console.error("[Caja] Error cargando configuración:", err);
     }
-  };
+  }, [clientId]);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
-      // Cashier sees orders in 'pendiente_cobro' or 'lista' (Restaurante orders which are ready to pay)
+      // Cashier sees orders in 'pendiente_cobro', 'lista', 'en_preparacion', or 'enviada' to monitor and cash them
       const res = await fetch(
-        `/api/pos/${clientId}/orders/active?posStatus=pendiente_cobro&posStatus=lista`
+        `/api/pos/${clientId}/orders/active?posStatus=pendiente_cobro&posStatus=lista&posStatus=en_preparacion&posStatus=enviada`
       );
       if (res.ok) {
         const data = await res.json();
@@ -78,9 +82,49 @@ export default function CajaPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clientId]);
+
+  // Authentication check
+  useEffect(() => {
+    if (!posUser) {
+      router.push(`/pos/${clientId}/login`);
+      return;
+    }
+
+    // Verify role permissions
+    if (posUser.rol !== "cajero" && posUser.rol !== "supervisor") {
+      router.push(`/pos/${clientId}`);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      loadCajaConfig();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [clientId, posUser, router, loadCajaConfig]);
+
+  // Load orders continuously
+  useEffect(() => {
+    if (!clientId || !posUser) return;
+
+    const timer = setTimeout(() => {
+      loadOrders();
+    }, 0);
+    const interval = setInterval(loadOrders, 10000); // refresh every 10s
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [clientId, posUser, loadOrders]);
 
   const openPaymentModal = (order) => {
+    if (order.tipo_orden === "mesa" && tieneProductosPendientes(order)) {
+      setToast({
+        message: "No se puede cobrar la orden: hay productos pendientes de preparación en cocina",
+        type: "error"
+      });
+      return;
+    }
     setSelectedOrder(order);
     setMetodoPago("efectivo");
     setMontoRecibido("");
@@ -89,11 +133,24 @@ export default function CajaPage() {
   const processPayment = async () => {
     if (!selectedOrder) return;
     
+    // Doble verificación: si es una orden de restaurante y tiene productos pendientes, abortar
+    if (selectedOrder.tipo_orden === "mesa" && tieneProductosPendientes(selectedOrder)) {
+      setToast({
+        message: "No se puede cobrar la orden: hay productos pendientes de preparación en cocina",
+        type: "error"
+      });
+      setSelectedOrder(null);
+      return;
+    }
+
     const totalAmount = selectedOrder.total;
     const received = parseFloat(montoRecibido) || 0;
     
     if (metodoPago === "efectivo" && received < totalAmount) {
-      alert("El monto recibido debe ser igual o mayor al total del pedido");
+      setToast({
+        message: "El monto recibido debe ser igual o mayor al total del pedido",
+        type: "error"
+      });
       return;
     }
 
@@ -125,14 +182,25 @@ export default function CajaPage() {
       });
 
       if (res.ok) {
+        setToast({
+          message: `Pago de orden ${selectedOrder.numero_orden} procesado con éxito`,
+          type: "success"
+        });
         setSelectedOrder(null);
         loadOrders();
       } else {
-        alert("Error al guardar el pago");
+        const errorData = await res.json();
+        setToast({
+          message: errorData.error || "Error al guardar el pago",
+          type: "error"
+        });
       }
     } catch (err) {
       console.error("[Caja] Error saving payment:", err);
-      alert("Error de conexión");
+      setToast({
+        message: "Error de conexión",
+        type: "error"
+      });
     } finally {
       setProcessingPayment(false);
     }
@@ -232,8 +300,6 @@ export default function CajaPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {orders.map((order) => {
-              const minutes = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
-              
               return (
                 <div
                   key={order.id}
@@ -255,12 +321,20 @@ export default function CajaPage() {
                         </h3>
                       </div>
                       <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
-                        order.pos_status === "lista" ? "bg-green-500/10 text-green-400" : "bg-amber-500/10 text-amber-400"
+                        order.pos_status === "lista" 
+                          ? "bg-green-500/10 text-green-400" 
+                          : (order.tipo_orden === "mesa" && tieneProductosPendientes(order))
+                            ? "bg-blue-500/10 text-blue-400"
+                            : "bg-amber-500/10 text-amber-400"
                       }`}>
-                        {order.pos_status === "lista" ? "🍳 Cocina Lista" : "⏳ Por Cobrar"}
+                        {order.pos_status === "lista" 
+                          ? "🍳 Cocina Lista" 
+                          : (order.tipo_orden === "mesa" && tieneProductosPendientes(order))
+                            ? "⏳ En Cocina" 
+                            : "⏳ Por Cobrar"}
                       </span>
                     </div>
-
+ 
                     {/* Items brief */}
                     <div className="space-y-1 my-4">
                       {order.items?.map((item, idx) => (
@@ -271,7 +345,7 @@ export default function CajaPage() {
                       ))}
                     </div>
                   </div>
-
+ 
                   <div className="border-t border-slate-850 pt-4 mt-4 flex items-center justify-between">
                     <div>
                       <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total a Cobrar</p>
@@ -279,13 +353,22 @@ export default function CajaPage() {
                         {config.currency} {order.total?.toFixed(2)}
                       </p>
                     </div>
-
-                    <button
-                      onClick={() => openPaymentModal(order)}
-                      className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm transition shadow-lg shadow-emerald-500/10"
-                    >
-                      💵 Cobrar
-                    </button>
+ 
+                    {order.tipo_orden === "mesa" && tieneProductosPendientes(order) ? (
+                      <button
+                        onClick={() => openPaymentModal(order)}
+                        className="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-750 text-slate-500 font-extrabold text-sm transition cursor-not-allowed border border-slate-700/60"
+                      >
+                        ⏳ Pendiente
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openPaymentModal(order)}
+                        className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm transition shadow-lg shadow-emerald-500/10"
+                      >
+                        💵 Cobrar
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -359,6 +442,13 @@ export default function CajaPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {toast.message && (
+        <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl z-50 transition duration-300 animate-fadeIn ${
+          toast.type === "error" ? "bg-red-500 text-white" : "bg-emerald-500 text-slate-950"
+        }`}>
+          {toast.type === "error" ? "❌" : "✅"} {toast.message}
         </div>
       )}
     </div>

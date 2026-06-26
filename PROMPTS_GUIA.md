@@ -152,6 +152,8 @@ pantalla de caja /pos/[clientId]/caja
 CONTEXTO ADICIONAL:
 Solo cajero y supervisor pueden aplicarlo.
 Debe quedar registrado en el historial de la orden.
+
+si tienes alguna duda haz las consultas que consideres y sigue las reglas definidas del proyecto
 ---
 
 ---
