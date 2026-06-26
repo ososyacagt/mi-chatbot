@@ -96,6 +96,13 @@ export default function AnalyticsPage() {
     console.log('[Analytics] Cambiando período a:', newPeriodo)
     setError(null)
     setPeriodo(newPeriodo)
+
+    // Si selecciona "Rango personalizado", llenar con fecha de hoy
+    if (newPeriodo === 'custom') {
+      const today = new Date().toISOString().substring(0, 10)
+      setCustomStart(today)
+      setCustomEnd(today)
+    }
   }
 
   if (loading) {
