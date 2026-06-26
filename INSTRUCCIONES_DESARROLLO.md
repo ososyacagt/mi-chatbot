@@ -1,270 +1,500 @@
-# Guía de Desarrollo — Plataforma SaaS Chatbot
+# Guía de Desarrollo — Plataforma SaaS Chatbot Multi-tenant
 
-Este archivo contiene todo lo necesario para continuar
-el desarrollo del proyecto usando Claude como asistente.
-Léelo completo antes de iniciar cualquier sesión.
-
----
-
-## ¿Qué archivos existen y para qué sirven?
-
-| Archivo | Propósito |
-|---------|-----------|
-| INSTRUCCIONES_DESARROLLO.md | Este archivo. Léelo primero siempre |
-| SYSTEM_CONTEXT.md | Arquitectura completa, tablas, APIs, módulos |
-| CHANGELOG.md | Historial de todo lo construido y corregido |
-| .claude/SKILL.md | Reglas y patrones de código del proyecto |
+Este archivo es el punto de entrada para cualquier
+desarrollador o agente IA que trabaje en este proyecto.
+Léelo completo antes de iniciar cualquier trabajo.
 
 ---
 
-## PASO 1 — Cómo iniciar una nueva sesión con Claude
+## Archivos de Documentación del Proyecto
 
-Al abrir un chat nuevo con Claude, copia y pega 
-este prompt exactamente:
+Antes de comenzar, lee estos archivos en orden:
 
-═══════════════════════════════════════════════════
-Eres mi asistente de desarrollo para una plataforma 
-SaaS de chatbot multi-tenant construida en 
-Next.js 16 + Supabase + Vercel.
-
-Lee estos archivos del proyecto en orden antes de 
-responder cualquier cosa:
-
-1. cat SYSTEM_CONTEXT.md
-2. cat .claude/SKILL.md
-3. cat CHANGELOG.md
-
-Cuando termines de leer, confirma que entendiste:
-- El stack tecnológico y arquitectura del proyecto
-- Las convenciones y reglas críticas de código
-- Los módulos que ya están implementados
-- El último trabajo realizado (último entry de CHANGELOG)
-- Los bugs históricos y sus soluciones
-
-No escribas código ni hagas sugerencias hasta que 
-hayas confirmado todo lo anterior.
-═══════════════════════════════════════════════════
+| Archivo | Propósito | Cuándo leer |
+|---------|-----------|-------------|
+| INSTRUCCIONES_DESARROLLO.md | Este archivo. Siempre primero | Inicio de cada sesión |
+| SYSTEM_CONTEXT.md | Arquitectura, tablas, APIs, módulos, bugs históricos | Inicio de sesión o ante dudas |
+| CHANGELOG.md | Historial completo de cambios y pendientes | Para saber dónde se quedó |
+| .claude/SKILL.md | Reglas, patrones y restricciones de código | Antes de escribir cualquier código |
 
 ---
 
-## PASO 2 — Cómo pedir trabajo según el tipo de tarea
+## PASO 1 — Lectura Obligatoria al Iniciar
 
-### Para CORREGIR un BUG:
-═══════════════════════════════════════════════════
-Tengo un bug. Antes de proponer solución:
-1. Revisa si este error ya está documentado en 
-   SYSTEM_CONTEXT.md sección "Bugs Históricos"
-2. Muéstrame el código actual del archivo afectado
-3. Propón la solución mínima necesaria sin romper 
-   nada más
+Al comenzar cualquier sesión de trabajo, el desarrollador
+o agente IA debe leer y confirmar que entendió:
 
-El error es:
-[PEGA AQUÍ EL ERROR COMPLETO DEL TERMINAL]
+### Prompt de arranque (copiar y pegar):
 
-El error aparece en:
-[PEGA AQUÍ EL ERROR DEL BROWSER/CONSOLA]
+```
+Lee los siguientes archivos del proyecto en este orden
+y confirma que entendiste su contenido antes de 
+escribir cualquier código o hacer cualquier sugerencia:
 
-El archivo afectado es:
-[NOMBRE DEL ARCHIVO]
-═══════════════════════════════════════════════════
+1. SYSTEM_CONTEXT.md
+   - Stack: Next.js 16, React 19, Supabase, TailwindCSS 4
+   - Arquitectura: client_id (TEXT), plan (slug), await params
+   - 5 módulos: Chat, E-commerce (3 opciones), POS
+   - 10 tablas de BD principales
+   - 66 rutas API documentadas
+   - Bugs históricos y soluciones
 
-### Para IMPLEMENTAR una FEATURE NUEVA:
-═══════════════════════════════════════════════════
-Quiero implementar: [DESCRIBE LA FEATURE]
+2. .claude/SKILL.md (o .claude/SKILL.md en cualquier editor)
+   - 10 reglas obligatorias
+   - 12 patrones de código con ejemplos
+   - 10 cosas prohibidas
+   - 7 errores comunes y soluciones
+   - Checklist QA de 13 puntos
 
-Antes de escribir código:
-1. Verifica que no existe algo similar ya en el sistema
-2. Confirma si necesita cambios en la BD (SQL)
-3. Lista los archivos que vas a crear o modificar
-4. Confirma compatibilidad con los planes 
-   (basic/pro/enterprise)
-5. Muéstrame el plan paso a paso
+3. CHANGELOG.md
+   - Último entry: qué se implementó recientemente
+   - Qué está pendiente de terminar
+   - Bugs conocidos por fecha
 
-Solo implementa cuando yo apruebe el plan.
-Sigue todas las reglas de .claude/SKILL.md.
-═══════════════════════════════════════════════════
-
-### Para CONTINUAR trabajo de una sesión anterior:
-═══════════════════════════════════════════════════
-Continúa donde quedamos en la última sesión.
-Lee el último entry de CHANGELOG.md para ver 
-qué se hizo y cuáles eran los pendientes.
-═══════════════════════════════════════════════════
-
-### Para REVISAR o OPTIMIZAR código existente:
-═══════════════════════════════════════════════════
-Revisa [ARCHIVO O MÓDULO] y:
-1. Identifica problemas según las reglas de 
-   .claude/SKILL.md
-2. Lista todos los cambios propuestos antes de aplicar
-3. Ordénalos por prioridad/impacto
-4. Aplica uno por uno con mi aprobación
-═══════════════════════════════════════════════════
-
----
-
-## PASO 3 — Reglas que Claude debe seguir siempre
-
-Recuérdale a Claude estas reglas si las olvida:
-
-### Antes de modificar cualquier archivo:
-- Mostrar el código actual primero
-- Proponer el cambio mínimo necesario
-- No tocar archivos que no sean necesarios
-
-### Código prohibido en este proyecto:
-- ❌ window.confirm() o alert() → usar ConfirmModal
-- ❌ console.log() de debug → solo console.error
-- ❌ Valores hardcodeados (emails, URLs, colores)
-- ❌ UUID de plan como referencia → usar slug
-- ❌ .not() encadenado en Supabase → filtrar en JS
-- ❌ new Date(timestamp) sin 'Z' → agregar siempre
-
-### Código obligatorio en este proyecto:
-- ✅ const { param } = await params en route handlers
-- ✅ createSupabaseAdmin() para queries de admin
-- ✅ Array.isArray() al cargar campos jsonb
-- ✅ RLS policy en tablas nuevas de Supabase
-- ✅ Promise.all() para fetches paralelos
-
-### Si algo da error inexplicable:
-```bash
-rm -rf .next && npm run dev
+Confirma que entendiste:
+- El stack completo y por qué se eligió
+- Las convenciones críticas (client_id, plan.slug, await params)
+- El estado actual del proyecto (últimas 2 semanas)
+- Las restricciones de código que no se pueden violar
+- Qué módulos ya existen y están funcionales
 ```
 
 ---
 
-## PASO 4 — Cómo cerrar una sesión correctamente
+## PASO 2 — Tipos de Trabajo y Cómo Pedirlos
 
-Antes de cerrar el chat, pega este prompt:
+### 2.1 Corregir un Bug
 
-═══════════════════════════════════════════════════
-Antes de terminar, actualiza la documentación 
-con todo lo que trabajamos en esta sesión:
+Cuando pidas que se corrija un bug, proporciona:
 
-1. SYSTEM_CONTEXT.md:
-   - Agrega cualquier módulo, API o tabla nueva
-   - Actualiza secciones que hayan cambiado
-   - Agrega bugs nuevos a la sección de históricos
+```
+TENGO UN BUG:
 
-2. CHANGELOG.md, agrega al inicio:
-   ## [FECHA DE HOY]
-   ### Agregado
-   - (lo nuevo que se implementó)
-   ### Corregido
-   - (bugs resueltos con su causa y solución)
-   ### Modificado
-   - (cambios importantes en código existente)
-   ### Pendientes
-   - (lo que quedó sin terminar)
+Error exacto:
+[PEGA AQUÍ EL MENSAJE DE ERROR COMPLETO]
 
-3. .claude/SKILL.md:
-   - Agrega errores nuevos encontrados y soluciones
-   - Agrega patrones nuevos que se usaron
+Dónde aparece:
+[BROWSER CONSOLE / TERMINAL / SUPABASE DASHBOARD / OTRO]
 
-Cuando termines ejecuta:
-git add .
-git commit -m "docs: actualizar documentación [FECHA]"
-git push
-═══════════════════════════════════════════════════
+Archivo afectado:
+[RUTA EXACTA DEL ARCHIVO]
+
+Pasos para reproducir:
+1. ...
+2. ...
+3. ...
+
+Comportamiento esperado:
+[QUÉ DEBERÍA PASAR]
+
+Comportamiento actual:
+[QUÉ SÍ PASA]
+```
+
+**Lo que el desarrollador/IA debe hacer:**
+1. Verificar si el bug ya está documentado en SYSTEM_CONTEXT.md sección "Bugs Históricos"
+2. Leer el archivo afectado completo
+3. Mostrar el código actual ANTES de proponer cambio
+4. Proponer la solución MÍNIMA necesaria
+5. No tocar archivos que no sean estrictamente necesarios
 
 ---
 
-## PASO 5 — Actualización automática al hacer git push
+### 2.2 Implementar una Feature Nueva
 
-Cada vez que hagas push, los archivos de 
-documentación deben estar actualizados.
+Cuando pidas que se implemente una feature:
 
-### Checklist antes de cada push:
-- [ ] CHANGELOG.md tiene entry con la fecha de hoy
-- [ ] SYSTEM_CONTEXT.md refleja el estado actual
-- [ ] .claude/SKILL.md tiene nuevos aprendizajes
-- [ ] No hay console.log de debug en el código
-- [ ] No hay alert() ni confirm() en el código
-- [ ] No hay valores hardcodeados nuevos
-- [ ] Se probó el flujo completo de lo que se cambió
+```
+QUIERO IMPLEMENTAR:
 
-### Comandos para el push:
+Descripción:
+[QUÉ SE VA A AGREGAR]
+
+Ubicación:
+[DÓNDE VA A VIVIR: URL, API, BD, etc]
+
+Requisitos:
+- [REQUISITO 1]
+- [REQUISITO 2]
+- ...
+
+Restricciones:
+- [RESTRICCIÓN 1]
+- [RESTRICCIÓN 2]
+- ...
+```
+
+**Lo que el desarrollador/IA debe hacer ANTES de escribir código:**
+1. Buscar si algo similar ya existe en el sistema (en SYSTEM_CONTEXT.md)
+2. Identificar si necesita cambios en BD (nueva tabla, nuevos campos)
+3. Listar TODOS los archivos que se van a crear o modificar
+4. Verificar si es compatible con los planes (basic/pro/enterprise)
+5. Mostrar el plan paso a paso y esperar aprobación
+6. Crear solo cuando esté aprobado
+
+---
+
+### 2.3 Continuar Trabajo Anterior
+
+Cuando se retoma el trabajo:
+
+```
+CONTINUAR DESARROLLO:
+
+Última sesión terminó en:
+[LINK O DESCRIPCIÓN]
+
+Pendientes a terminar:
+- [TAREA 1]
+- [TAREA 2]
+- ...
+```
+
+**Lo que el desarrollador/IA debe hacer:**
+1. Leer el último entry de CHANGELOG.md
+2. Revisar qué está marcado como "Pendientes"
+3. Reanudar desde donde se quedó
+4. Actualizar CHANGELOG.md con el progreso
+
+---
+
+### 2.4 Revisar o Refactorizar Código
+
+Cuando se audita código existente:
+
+```
+REVISAR:
+
+Archivo/Módulo a revisar:
+[RUTA O NOMBRE DEL MÓDULO]
+
+Objetivo:
+- [OBJETIVO 1: e.g., encontrar memory leaks]
+- [OBJETIVO 2: e.g., optimizar performance]
+```
+
+**Lo que el desarrollador/IA debe hacer:**
+1. Leer el archivo completo
+2. Revisar contra las reglas de .claude/SKILL.md
+3. Listar TODOS los problemas encontrados
+4. Ordenar por prioridad/impacto
+5. Proponer cambios uno por uno
+6. Esperar aprobación de cada cambio
+
+---
+
+## PASO 3 — Reglas que SIEMPRE Deben Cumplirse
+
+### Código PROHIBIDO en este proyecto:
+
+```javascript
+❌ window.confirm() o alert()              → Usar ConfirmModal
+❌ console.log() de debug                  → Usar solo console.error
+❌ Valores hardcodeados (emails, URLs)    → Usar variables de entorno o constants.js
+❌ UUID de plan como referencia           → Usar plan.slug (TEXT)
+❌ UUID de tenant como referencia         → Usar client_id (TEXT)
+❌ .not() encadenado en Supabase         → Filtrar en JavaScript
+❌ new Date(timestamp) sin 'Z'            → Siempre agregar 'Z'
+❌ Double serialization de JSON           → cleanConfig filter
+❌ Importar cliente regular de Supabase   → Usar createSupabaseAdmin()
+❌ Componentes con alert/confirm          → Usar ConfirmModal siempre
+```
+
+### Código OBLIGATORIO en este proyecto:
+
+```javascript
+✅ const { param } = await params           (en route handlers)
+✅ createSupabaseAdmin()                    (para queries admin)
+✅ Array.isArray() check                    (antes de usar JSONB array)
+✅ RLS policy                               (en tablas nuevas)
+✅ Promise.all()                            (para fetches paralelos)
+✅ Error handling con try/catch             (en toda API)
+✅ Validación de entrada                    (en endpoints)
+✅ Timestamps con 'Z'                       (al parsear BD)
+✅ Mapeo snake_case ↔ camelCase            (API responses)
+✅ Tests o verificación manual              (antes de push)
+```
+
+### Si algo falla inexplicablemente:
+
 ```bash
-# 1. Verificar qué cambió
+rm -rf .next
+npm run dev
+```
+
+---
+
+## PASO 4 — Antes de Hacer Push (Checklist)
+
+Antes de hacer commit y push, verificar:
+
+```
+[ ] CHANGELOG.md tiene entry con la fecha de hoy
+[ ] SYSTEM_CONTEXT.md actualizado con cambios BD o APIs
+[ ] .claude/SKILL.md incluye nuevos errores/patrones
+[ ] Sin console.log() de debug en código
+[ ] Sin alert() ni confirm() en código
+[ ] Sin valores hardcodeados nuevos
+[ ] Sin .not() encadenado en Supabase
+[ ] Timestamps de BD con 'Z' al parsear
+[ ] Test manual del flujo completo
+[ ] Commit message descriptivo (feat/fix/docs)
+[ ] Verificar que no rompe otras funcionalidades
+[ ] Revisar diff antes de push (git diff)
+```
+
+---
+
+## PASO 5 — Estructura de Commit y Push
+
+### Comandos estándar:
+
+```bash
+# Ver qué cambió
 git diff --name-only
 
-# 2. Agregar todo
+# Ver diferencias en detalle
+git diff
+
+# Agregar cambios
 git add .
 
-# 3. Commit descriptivo
-git commit -m "feat: descripción de lo nuevo"
+# Commit con mensaje descriptivo
+git commit -m "feat: descripción de la feature"
 # o
 git commit -m "fix: descripción del bug corregido"
-# o  
+# o
 git commit -m "docs: actualizar documentación"
 
-# 4. Push
+# Push
 git push
+```
+
+### Formato de commit message:
+
+```
+feat: descripción breve (si es nueva feature)
+fix: descripción breve (si es corrección de bug)
+docs: qué documentación se actualizó
+refactor: qué se limpió o reorganizó
+
+Cuerpo (opcional):
+- Describe el cambio más en detalle
+- Explica el por qué del cambio
+- Referencia a issues o bugs relacionados
 ```
 
 ---
 
-## Referencia rápida — URLs del sistema
+## PASO 6 — Actualizar Documentación Después de Cambios
+
+Cuando se termina una tarea importante:
+
+### Actualizar SYSTEM_CONTEXT.md:
+- Si hay tabla nueva → documenta en sección "Esquema de BD"
+- Si hay API nueva → documenta en sección "Estructura de Directorios"
+- Si hay módulo nuevo → agrega sección completa
+- Si hay bug corregido → agrega a "Bugs Históricos Resueltos"
+
+### Actualizar CHANGELOG.md:
+Agrega al inicio un nuevo entry:
+
+```markdown
+## [2026-06-27] — Descripción de lo que se hizo
+
+### ✅ Completado
+- Feature 1 implementada
+- Bug 2 corregido
+- API 3 creada
+
+### APIs Creadas
+- POST /api/nuevo/endpoint
+
+### Bugs Corregidos
+- Bug 1: causa → solución aplicada
+
+### Modificaciones
+- Archivo X: cambio importante
+
+### Pendientes
+- Tarea 1 sin terminar
+- Tarea 2 para próxima sesión
+```
+
+### Actualizar .claude/SKILL.md:
+- Si encontraste un error nuevo → agrega a "Errores Comunes"
+- Si usaste un patrón nuevo → documenta el patrón
+- Si hay restricción nueva → agrega a las listas
+
+---
+
+## Referencia Rápida — URLs del Sistema
 
 | URL | Descripción |
 |-----|-------------|
-| /admin | Panel de administración |
-| /admin/inventario?clientId=X | Inventario del cliente |
-| /admin/ordenes | Órdenes e-commerce |
-| /admin/pos-ordenes | Órdenes POS |
-| /admin/planes | Gestión de planes |
-| /chat/[clientId] | Chat público |
-| /catalogo/[clientId] | Catálogo + WhatsApp |
-| /tienda/[clientId] | Tienda completa |
-| /pos/[clientId] | Punto de Venta |
-| /pos/[clientId]/login | Login POS por PIN |
-| /pos/[clientId]/caja | Pantalla cajero |
-| /pos/[clientId]/area/[id] | KDS / Cocina |
-| /pos/[clientId]/entrega | Pantalla entrega |
-| /orden/[orderId] | Seguimiento público |
-| /precios | Página de precios |
+| `/admin` | Panel de administración |
+| `/admin/inventario` | Gestión de productos y categorías |
+| `/admin/pos-ordenes` | Historial de órdenes POS |
+| `/admin/planes` | Gestión de planes |
+| `/chat/[clientId]` | Chat inteligente público |
+| `/catalogo/[clientId]` | Catálogo + WhatsApp |
+| `/tienda/[clientId]` | Tienda e-commerce completa |
+| `/pos/[clientId]` | Punto de Venta |
+| `/pos/[clientId]/login` | Login POS por PIN |
+| `/pos/[clientId]/caja` | Pantalla de cobro |
+| `/pos/[clientId]/area/[id]` | Kitchen Display System (KDS) |
+| `/pos/[clientId]/entrega` | Gestión de entregas |
+| `/orden/[orderId]` | Seguimiento público de orden |
 
 ---
 
-## Referencia rápida — Comandos frecuentes
+## Referencia Rápida — Comandos Frecuentes
 
 ```bash
-# Iniciar desarrollo
+# Iniciar servidor de desarrollo
 npm run dev
 
-# Fix cuando rutas API dan 404
+# Build para producción
+npm run build
+
+# Linter
+npm run lint
+
+# Fix cuando rutas API dan 404 (caché corrupto)
 rm -rf .next && npm run dev
 
-# Ver últimos cambios
+# Ver últimos commits
 git log --oneline -10
 
 # Ver archivos modificados en último commit
 git diff --name-only HEAD~1
 
-# Push completo con docs actualizadas
-git add . && git commit -m "descripción" && git push
+# Ver cambios en un archivo
+git diff HEAD~ archivo.js
+
+# Deshacer cambios locales (DESTRUCTIVO)
+git checkout archivo.js
+
+# Crear rama nueva
+git checkout -b nombre-rama
+
+# Cambiar de rama
+git checkout nombre-rama
 ```
 
 ---
 
-## Para desarrolladores nuevos en el equipo
+## Para Desarrolladores Nuevos en el Equipo
 
 Si es tu primera vez en el proyecto:
 
-1. Clona el repositorio
-2. Copia .env.example a .env.local y llena las variables
-3. Ejecuta npm install
-4. Lee SYSTEM_CONTEXT.md completo
-5. Lee .claude/SKILL.md completo
-6. Ejecuta npm run dev
-7. Inicia una sesión con Claude usando el 
-   prompt del PASO 1 de esta guía
+### Setup inicial (5 minutos):
 
-Las variables de entorno necesarias están 
-documentadas en SYSTEM_CONTEXT.md sección 
-"Variables de Entorno".
+```bash
+# 1. Clonar
+git clone https://github.com/ososyacagt/mi-chatbot.git
+cd mi-chatbot
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Variables de entorno
+cp .env.example .env.local
+# Editar .env.local con credenciales reales
+# (disponibles en SYSTEM_CONTEXT.md o en el team)
+
+# 4. Iniciar
+npm run dev
+
+# 5. Abrir en navegador
+# http://localhost:3000
+```
+
+### Onboarding (1 hora):
+
+1. Leer este archivo (INSTRUCCIONES_DESARROLLO.md) — 15 min
+2. Leer SYSTEM_CONTEXT.md completo — 20 min
+3. Leer .claude/SKILL.md completo — 15 min
+4. Abrir el dev server y explorar las URLs del sistema — 10 min
+
+### Primer cambio:
+
+1. Escoger un bug pequeño de CHANGELOG.md "Pendientes"
+2. Crear rama: `git checkout -b fix/nombre-del-bug`
+3. Hacer el cambio (máximo 1-2 archivos)
+4. Actualizar CHANGELOG.md
+5. Push con commit descriptivo
 
 ---
 
-*Última actualización: ver CHANGELOG.md*
+## Variables de Entorno Necesarias
+
+Todas documentadas en SYSTEM_CONTEXT.md sección "Variables de Entorno".
+
+Resumen:
+- `NEXT_PUBLIC_SUPABASE_URL` — Base de datos
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Autenticación pública
+- `SUPABASE_SERVICE_ROLE_KEY` — Operaciones admin
+- `NEXT_PUBLIC_VAPID_KEY` — Notificaciones push
+- Múltiples IA provider keys (Anthropic, OpenAI, Gemini, etc.)
+- Email key (Resend)
+- URLs y configuración de marca
+
+Ver SYSTEM_CONTEXT.md para detalles exactos.
+
+---
+
+## Estructura de Carpetas Clave
+
+```
+mi-chatbot/
+├── app/                          # Páginas y APIs (Next.js App Router)
+│   ├── admin/                    # Panel de administración
+│   ├── chat/                     # Chat inteligente
+│   ├── catalogo/                 # Catálogo + WhatsApp
+│   ├── tienda/                   # Tienda e-commerce
+│   ├── pos/                      # Punto de Venta
+│   ├── api/                      # Endpoints REST
+│   └── layout.js                 # Layout global
+├── lib/                          # Librerías y utilidades
+│   ├── auth.js                   # Autenticación
+│   ├── supabase-admin.js         # Cliente admin
+│   ├── constants.js              # Constantes
+│   ├── business-rules.js         # Motor de reglas
+│   └── ... (23 archivos)
+├── public/                       # Archivos estáticos
+├── .claude/SKILL.md              # Reglas de código (este proyecto)
+├── SYSTEM_CONTEXT.md             # Documentación técnica
+├── CHANGELOG.md                  # Historial de cambios
+├── INSTRUCCIONES_DESARROLLO.md   # Este archivo
+├── package.json                  # Dependencias
+├── next.config.mjs               # Configuración Next.js
+└── middleware.ts                 # Middleware de autenticación
+```
+
+---
+
+## Contacto y Escalación
+
+**Mantenedor principal:** Oscar Yache (ososyaca@gmail.com)
+
+Si algo no está documentado o hay confusión:
+1. Buscar en SYSTEM_CONTEXT.md
+2. Buscar en .claude/SKILL.md
+3. Buscar en CHANGELOG.md (bugs históricos)
+4. Contactar al mantenedor
+
+---
+
+## Versión y Última Actualización
+
+**Versión del proyecto:** 0.1.0 (alpha)  
+**Stack:** Next.js 16 + React 19 + Supabase + Vercel  
+**Última documentación:** Ver CHANGELOG.md  
+**Última sesión:** 2026-06-26  
+
+Última línea de este archivo: recuerda leer SYSTEM_CONTEXT.md antes de empezar.
+
+---
+
+*Documento agnóstico a cualquier herramienta IA o desarrollador.*
