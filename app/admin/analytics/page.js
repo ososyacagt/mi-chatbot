@@ -36,6 +36,15 @@ export default function AnalyticsPage() {
         return
       }
 
+      // Validar que si el período es custom, ambas fechas estén completas
+      if (periodo === 'custom' && (!customStart || !customEnd)) {
+        setError('Por favor ingresa fecha de inicio y fin para el rango personalizado')
+        setLoading(false)
+        setData(null)
+        setTenant(null)
+        return
+      }
+
       try {
         setLoading(true)
         setError(null)
@@ -86,13 +95,8 @@ export default function AnalyticsPage() {
   }, [clientId, periodo, tipo, customStart, customEnd])
 
   const handlePeriodChange = (newPeriodo) => {
+    setError(null)
     setPeriodo(newPeriodo)
-  }
-
-  const handleCustomRangeChange = () => {
-    if (customStart && customEnd && customStart <= customEnd) {
-      setPeriodo('custom')
-    }
   }
 
   if (loading) {
@@ -191,26 +195,29 @@ export default function AnalyticsPage() {
 
         {/* Custom range inputs */}
         {periodo === 'custom' && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <input
               type="date"
               value={customStart || ''}
-              onChange={(e) => {
-                setCustomStart(e.target.value)
-                setTimeout(handleCustomRangeChange, 100)
-              }}
+              onChange={(e) => setCustomStart(e.target.value)}
               className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
             />
-            <span className="flex items-center text-zinc-600 dark:text-zinc-400">a</span>
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">a</span>
             <input
               type="date"
               value={customEnd || ''}
-              onChange={(e) => {
-                setCustomEnd(e.target.value)
-                setTimeout(handleCustomRangeChange, 100)
-              }}
+              onChange={(e) => setCustomEnd(e.target.value)}
               className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
             />
+            {!customStart || !customEnd ? (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                Completa ambas fechas
+              </span>
+            ) : customStart > customEnd ? (
+              <span className="text-xs text-red-600 dark:text-red-400">
+                Fecha inicio debe ser menor
+              </span>
+            ) : null}
           </div>
         )}
 
