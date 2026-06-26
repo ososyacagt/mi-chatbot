@@ -40,8 +40,6 @@ export default function AnalyticsPage() {
       if (periodo === 'custom' && (!customStart || !customEnd)) {
         setError('Por favor ingresa fecha de inicio y fin para el rango personalizado')
         setLoading(false)
-        setData(null)
-        setTenant(null)
         return
       }
 
@@ -182,7 +180,7 @@ export default function AnalyticsPage() {
             </button>
           ))}
           <button
-            onClick={() => setPeriodo('custom')}
+            onClick={() => handlePeriodChange('custom')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               periodo === 'custom'
                 ? 'bg-blue-600 text-white'
