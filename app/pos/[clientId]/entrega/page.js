@@ -14,6 +14,16 @@ export default function EntregaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [processingDelivery, setProcessingDelivery] = useState(null);
+  const [toast, setToast] = useState({ message: "", type: "success" });
+
+  useEffect(() => {
+    if (toast.message) {
+      const timer = setTimeout(() => {
+        setToast({ message: "", type: "success" });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.message]);
 
   // Authentication check
   useEffect(() => {
@@ -91,13 +101,14 @@ export default function EntregaPage() {
       });
 
       if (res.ok) {
+        setToast({ message: "Orden marcada como entregada", type: "success" });
         loadOrders();
       } else {
-        alert("Error al marcar como entregado");
+        setToast({ message: "Error al marcar como entregado", type: "error" });
       }
     } catch (err) {
       console.error("[Entrega] Error marking delivered:", err);
-      alert("Error de conexión");
+      setToast({ message: "Error de conexión", type: "error" });
     } finally {
       setProcessingDelivery(null);
     }
@@ -256,6 +267,14 @@ export default function EntregaPage() {
           </div>
         )}
       </div>
+
+      {toast.message && (
+        <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl z-50 transition duration-300 animate-fadeIn ${
+          toast.type === "error" ? "bg-red-500 text-white" : "bg-teal-500 text-slate-950"
+        }`}>
+          {toast.type === "error" ? "❌" : "✅"} {toast.message}
+        </div>
+      )}
     </div>
   );
 }

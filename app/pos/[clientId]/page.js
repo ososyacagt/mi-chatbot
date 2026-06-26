@@ -37,6 +37,8 @@ export default function POSPage() {
   const [selectedOrderIdForMesa, setSelectedOrderIdForMesa] = useState(null);
   const [customizingProduct, setCustomizingProduct] = useState(null);
   const [customSelections, setCustomSelections] = useState({});
+  const [excludedGroups, setExcludedGroups] = useState({});
+  const [observation, setObservation] = useState("");
   const [showNewAccountModal, setShowNewAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
   const [showSplitModal, setShowSplitModal] = useState(false);
@@ -144,10 +146,17 @@ export default function POSPage() {
   const handleProductClick = (producto) => {
     if (producto.customization_options && Array.isArray(producto.customization_options) && producto.customization_options.length > 0) {
       setCustomizingProduct(producto);
+      setObservation("");
       
       const initialSelections = {};
+      const initialExcluded = {};
+      
       producto.customization_options.forEach(group => {
-        if (group.tipo === "seleccion_unica") {
+        initialExcluded[group.nombre] = false;
+        
+        if (!group.opciones || group.opciones.length === 0) {
+          initialSelections[group.nombre] = true;
+        } else if (group.tipo === "seleccion_unica") {
           initialSelections[group.nombre] = group.opciones?.[0] || "";
         } else if (group.tipo === "seleccion_multiple") {
           const groupSelections = {};
@@ -158,6 +167,7 @@ export default function POSPage() {
         }
       });
       setCustomSelections(initialSelections);
+      setExcludedGroups(initialExcluded);
     } else {
       agregarAlCarrito(producto, "");
     }
@@ -168,29 +178,43 @@ export default function POSPage() {
     const notesParts = [];
     
     (customizingProduct.customization_options || []).forEach(group => {
-      if (group.tipo === "seleccion_unica") {
-        const selected = customSelections[group.nombre];
-        if (selected) {
-          notesParts.push(`[${group.nombre}: ${selected}]`);
-        }
-      } else if (group.tipo === "seleccion_multiple") {
-        const selectionsForGroup = customSelections[group.nombre] || {};
-        const removed = [];
-        (group.opciones || []).forEach(opt => {
-          if (selectionsForGroup[opt] === false) {
-            removed.push(opt);
+      const isExcluded = !!excludedGroups[group.nombre];
+      
+      if (isExcluded) {
+        notesParts.push(`[Sin: ${group.nombre}]`);
+      } else {
+        if (!group.opciones || group.opciones.length === 0) {
+          // Si está incluido y no tiene opciones, no requiere nota especial
+        } else if (group.tipo === "seleccion_unica") {
+          const selected = customSelections[group.nombre];
+          if (selected) {
+            notesParts.push(`[${group.nombre}: ${selected}]`);
           }
-        });
-        if (removed.length > 0) {
-          notesParts.push(`[Sin: ${removed.join(", ")}]`);
+        } else if (group.tipo === "seleccion_multiple") {
+          const selectionsForGroup = customSelections[group.nombre] || {};
+          const removed = [];
+          (group.opciones || []).forEach(opt => {
+            if (selectionsForGroup[opt] === false) {
+              removed.push(opt);
+            }
+          });
+          if (removed.length > 0) {
+            notesParts.push(`[Sin: ${removed.join(", ")}]`);
+          }
         }
       }
     });
+
+    if (observation.trim()) {
+      notesParts.push(`[Obs: ${observation.trim()}]`);
+    }
 
     const finalNotes = notesParts.join(" | ");
     agregarAlCarrito(customizingProduct, finalNotes);
     setCustomizingProduct(null);
     setCustomSelections({});
+    setExcludedGroups({});
+    setObservation("");
   };
 
   const startSplit = (order) => {
@@ -592,7 +616,7 @@ export default function POSPage() {
             </div>
           )}
           {/* Order Mode Selector */}
-          <div className="p-4 border-b border-slate-800 space-y-4">
+          <div className="p-4 border-b border-slate-800 space-y-4 overflow-y-auto max-h-[45vh] shrink-0">
             <div className="flex gap-2">
               {/* If user is public, force autoservicio. Otherwise allow options based on config/role */}
               {posUser?.isPublic ? (
@@ -1066,7 +1090,7 @@ export default function POSPage() {
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
-                        Cliente: {order.cliente_nombre || "Mostrador"} • Creada: {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        Cliente: {order.cliente_nombre || "Mostrador"} • Creada: {new Date(order.created_at?.endsWith('Z') ? order.created_at : (order.created_at + 'Z')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <div className="text-[11px] text-slate-400 mt-1.5 max-h-16 overflow-y-auto pr-1 line-clamp-2">
                         {order.items?.map((it, idx) => `${it.cantidad}x ${it.nombre}`).join(", ")}
@@ -1166,6 +1190,8 @@ export default function POSPage() {
                 onClick={() => {
                   setCustomizingProduct(null);
                   setCustomSelections({});
+                  setExcludedGroups({});
+                  setObservation("");
                 }}
                 className="text-slate-400 hover:text-white font-bold text-xl px-2 py-1 rounded"
               >
@@ -1174,59 +1200,115 @@ export default function POSPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-5 pr-1 py-2">
-              {(customizingProduct.customization_options || []).map((group, idx) => (
-                <div key={idx} className="space-y-2 border-b border-slate-850 pb-4 last:border-b-0 last:pb-0">
-                  <h4 className="text-sm font-bold text-slate-350">{group.nombre}</h4>
-                  
-                  {group.tipo === "seleccion_unica" ? (
-                    <div className="flex flex-col gap-2">
-                      {(group.opciones || []).map((opt, oIdx) => (
-                        <label key={oIdx} className="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl bg-slate-950/45 border border-slate-850 hover:border-slate-800 transition">
-                          <input
-                            type="radio"
-                            name={`group-${idx}`}
-                            checked={customSelections[group.nombre] === opt}
-                            onChange={() => {
-                              setCustomSelections({
-                                ...customSelections,
-                                [group.nombre]: opt
-                              });
-                            }}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-800"
-                          />
-                          <span className="text-xs text-slate-200">{opt}</span>
-                        </label>
-                      ))}
+              {(customizingProduct.customization_options || []).map((group, idx) => {
+                const isExcluded = !!excludedGroups[group.nombre];
+                const hasOptions = group.opciones && group.opciones.length > 0;
+
+                return (
+                  <div key={idx} className="space-y-2 border-b border-slate-850 pb-4 last:border-b-0 last:pb-0">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-bold text-slate-300">{group.nombre}</h4>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs bg-slate-950/40 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-slate-700 transition select-none">
+                        <input
+                          type="checkbox"
+                          checked={!isExcluded}
+                          onChange={(e) => {
+                            setExcludedGroups({
+                              ...excludedGroups,
+                              [group.nombre]: !e.target.checked
+                            });
+                          }}
+                          className="w-3.5 h-3.5 text-blue-600 rounded bg-slate-900 border-slate-800"
+                        />
+                        <span className={`font-bold ${!isExcluded ? "text-green-400" : "text-red-400"}`}>
+                          {!isExcluded ? "Incluido" : "Eliminado"}
+                        </span>
+                      </label>
                     </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {(group.opciones || []).map((opt, oIdx) => {
-                        const isChecked = !!(customSelections[group.nombre] && customSelections[group.nombre][opt]);
-                        return (
-                          <label key={oIdx} className="flex items-center justify-between cursor-pointer p-2.5 rounded-xl bg-slate-950/45 border border-slate-850 hover:border-slate-800 transition">
-                            <span className="text-xs text-slate-200">{opt}</span>
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const currentGroup = customSelections[group.nombre] || {};
-                                setCustomSelections({
-                                  ...customSelections,
-                                  [group.nombre]: {
-                                    ...currentGroup,
-                                    [opt]: e.target.checked
-                                  }
-                                });
-                              }}
-                              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 bg-slate-900 border-slate-800"
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
+
+                    {isExcluded ? (
+                      <div className="p-3 bg-red-950/10 border border-red-900/20 rounded-xl text-center animate-fadeIn">
+                        <p className="text-xs font-bold text-red-400 line-through">
+                          ❌ {group.nombre} (Excluido de la orden)
+                        </p>
+                      </div>
+                    ) : hasOptions ? (
+                      <div className="animate-fadeIn">
+                        {group.tipo === "seleccion_unica" ? (
+                          <div className="flex flex-col gap-2">
+                            {(group.opciones || []).map((opt, oIdx) => (
+                              <label key={oIdx} className="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl bg-slate-950/45 border border-slate-850 hover:border-slate-800 transition">
+                                <input
+                                  type="radio"
+                                  name={`group-${idx}`}
+                                  checked={customSelections[group.nombre] === opt}
+                                  onChange={() => {
+                                    setCustomSelections({
+                                      ...customSelections,
+                                      [group.nombre]: opt
+                                    });
+                                  }}
+                                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-800"
+                                />
+                                <span className="text-xs text-slate-200">{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {(group.opciones || []).map((opt, oIdx) => {
+                              const isChecked = !!(customSelections[group.nombre] && customSelections[group.nombre][opt]);
+                              return (
+                                <label 
+                                  key={oIdx} 
+                                  className={`flex items-center justify-between cursor-pointer p-2.5 rounded-xl border transition ${
+                                    isChecked 
+                                      ? "bg-slate-950/45 border-slate-850 hover:border-slate-800" 
+                                      : "bg-red-950/15 border-red-900/30 text-slate-500 hover:border-red-900/40 shadow-inner"
+                                  }`}
+                                >
+                                  <span className={`text-xs font-semibold ${isChecked ? "text-slate-200" : "line-through text-slate-500"}`}>
+                                    {opt}
+                                  </span>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const currentGroup = customSelections[group.nombre] || {};
+                                      setCustomSelections({
+                                        ...customSelections,
+                                        [group.nombre]: {
+                                          ...currentGroup,
+                                          [opt]: e.target.checked
+                                        }
+                                      });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 bg-slate-900 border-slate-800"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              {/* Observaciones Section */}
+              <div className="space-y-2 border-t border-slate-850 pt-4 mt-2">
+                <h4 className="text-sm font-bold text-slate-350 flex items-center gap-1.5">
+                  <span>📝</span> Observaciones del Producto
+                </h4>
+                <textarea
+                  placeholder="Ej: Bien tostado, huevos término medio, salsa aparte..."
+                  value={observation}
+                  onChange={(e) => setObservation(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-850 focus:border-blue-500 focus:outline-none placeholder-slate-650 text-xs text-slate-200 font-semibold"
+                  rows={2}
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 justify-end border-t border-slate-850 pt-4 mt-4">
@@ -1235,6 +1317,8 @@ export default function POSPage() {
                 onClick={() => {
                   setCustomizingProduct(null);
                   setCustomSelections({});
+                  setExcludedGroups({});
+                  setObservation("");
                 }}
                 className="px-5 py-2.5 border border-slate-850 rounded-xl text-slate-400 hover:bg-slate-800 transition text-xs font-bold"
               >

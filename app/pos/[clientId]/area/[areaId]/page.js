@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function KDSPage() {
@@ -9,50 +8,33 @@ export default function KDSPage() {
   const clientId = params.clientId;
   const areaId = params.areaId;
 
-  const [posUser, setPosUser] = useState(null);
+  const [posUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      const userStr = sessionStorage.getItem("posUser");
+      return userStr ? JSON.parse(userStr) : null;
+    }
+    return null;
+  });
   const [config, setConfig] = useState(null);
   const [area, setArea] = useState(null);
   const [comandas, setComandas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [refreshInterval, setRefreshInterval] = useState(15000); // 15s default
+  const [refreshInterval] = useState(15000); // 15s default
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialComandas, setHistorialComandas] = useState([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
-  // Authentication check
+  // Update time for timers periodically
   useEffect(() => {
-    const userStr = sessionStorage.getItem("posUser");
-    if (!userStr) {
-      router.push(`/pos/${clientId}/login`);
-      return;
-    }
-    const userObj = JSON.parse(userStr);
-    setPosUser(userObj);
-
-    // Verify role permissions
-    if (userObj.rol !== "cocina" && userObj.rol !== "supervisor") {
-      router.push(`/pos/${clientId}`);
-      return;
-    }
-
-    loadKDSConfig();
-  }, [clientId, areaId]);
-
-  // Polling for active orders
-  useEffect(() => {
-    if (!clientId || !areaId || !posUser) return;
-    
-    loadComandas();
-
     const interval = setInterval(() => {
-      loadComandas();
-    }, refreshInterval);
-
+      setNow(Date.now());
+    }, 15000);
     return () => clearInterval(interval);
-  }, [clientId, areaId, posUser, refreshInterval]);
+  }, []);
 
-  const loadKDSConfig = async () => {
+  const loadKDSConfig = useCallback(async () => {
     try {
       const res = await fetch(`/api/pos/${clientId}`);
       if (res.ok) {
@@ -64,9 +46,9 @@ export default function KDSPage() {
     } catch (err) {
       console.error("[KDS] Error cargando configuración:", err);
     }
-  };
+  }, [clientId, areaId]);
 
-  const loadComandas = async () => {
+  const loadComandas = useCallback(async () => {
     try {
       // Fetch comandas for this area
       const res = await fetch(`/api/pos/${clientId}/comandas?areaId=${areaId}`);
@@ -83,9 +65,9 @@ export default function KDSPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clientId, areaId]);
 
-  const loadHistorial = async () => {
+  const loadHistorial = useCallback(async () => {
     try {
       setLoadingHistorial(true);
       const res = await fetch(`/api/pos/${clientId}/comandas/completed?areaId=${areaId}`);
@@ -98,7 +80,44 @@ export default function KDSPage() {
     } finally {
       setLoadingHistorial(false);
     }
-  };
+  }, [clientId, areaId]);
+
+  // Authentication check
+  useEffect(() => {
+    if (!posUser) {
+      router.push(`/pos/${clientId}/login`);
+      return;
+    }
+
+    // Verify role permissions
+    if (posUser.rol !== "cocina" && posUser.rol !== "supervisor") {
+      router.push(`/pos/${clientId}`);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      loadKDSConfig();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [clientId, posUser, router, loadKDSConfig]);
+
+  // Polling for active orders
+  useEffect(() => {
+    if (!clientId || !areaId || !posUser) return;
+    
+    const timer = setTimeout(() => {
+      loadComandas();
+    }, 0);
+
+    const interval = setInterval(() => {
+      loadComandas();
+    }, refreshInterval);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [clientId, areaId, posUser, refreshInterval, loadComandas]);
 
   const parseDate = (dateStr) => {
     if (!dateStr) return new Date();
@@ -109,10 +128,34 @@ export default function KDSPage() {
     return new Date(dateStr);
   };
 
-  const getTimerLabel = (createdAt) => {
-    const now = Date.now();
+  const parseNotas = (notasStr) => {
+    if (!notasStr) return { normales: [], eliminados: [], observaciones: [] };
+    
+    const partes = notasStr.split(" | ");
+    const normales = [];
+    const eliminados = [];
+    const observaciones = [];
+    
+    partes.forEach(parte => {
+      const sinMatch = parte.match(/^\[[Ss]in:\s*(.+)\]$/);
+      const obsMatch = parte.match(/^\[[Oo]bs:\s*(.+)\]$/);
+      if (sinMatch) {
+        const ingredientes = sinMatch[1].split(",").map(i => i.trim());
+        eliminados.push(...ingredientes);
+      } else if (obsMatch) {
+        observaciones.push(obsMatch[1]);
+      } else {
+        const limpio = parte.replace(/^\[(.+)\]$/, "$1");
+        normales.push(limpio);
+      }
+    });
+    
+    return { normales, eliminados, observaciones };
+  };
+
+  const getTimerLabel = (createdAt, currentNow) => {
     const created = parseDate(createdAt).getTime();
-    const diffMs = now - created;
+    const diffMs = currentNow - created;
     const diffMin = Math.floor(diffMs / 60000);
 
     if (diffMin < 0) return '0m';
@@ -122,9 +165,9 @@ export default function KDSPage() {
     return `${hours}h ${mins}m`;
   };
 
-  const getTimerColor = (createdAt) => {
+  const getTimerColor = (createdAt, currentNow) => {
     const diffMin = Math.floor(
-      (Date.now() - parseDate(createdAt).getTime()) / 60000
+      (currentNow - parseDate(createdAt).getTime()) / 60000
     );
     if (diffMin < 10) return 'text-green-400';
     if (diffMin < 20) return 'text-yellow-400';
@@ -307,9 +350,9 @@ export default function KDSPage() {
               {/* Column Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[calc(100vh-200px)]">
                 {colComandas.map(comanda => {
-                  const timerLabel = getTimerLabel(comanda.createdAt);
-                  const timerColor = getTimerColor(comanda.createdAt);
-                  const minutesElapsed = Math.floor((new Date() - new Date(comanda.createdAt)) / 60000);
+                  const timerLabel = getTimerLabel(comanda.createdAt, now);
+                  const timerColor = getTimerColor(comanda.createdAt, now);
+                  const minutesElapsed = Math.floor((now - parseDate(comanda.createdAt).getTime()) / 60000);
                   const isUrgent = minutesElapsed >= 15 && col.id !== "lista";
                   
                   return (
@@ -338,7 +381,7 @@ export default function KDSPage() {
                           </span>
                         </div>
                       </div>
-
+ 
                       {/* Items List */}
                       <div className="space-y-3 border-t border-b border-slate-850 py-3 my-3">
                         {comanda.items.map((item, idx) => {
@@ -367,14 +410,33 @@ export default function KDSPage() {
                                   </button>
                                 )}
                               </div>
-
-                              {/* Observations (Notes) rendered fully underneath */}
-                              {item.notas && (
-                                <div className="mt-2 ml-8 bg-amber-500/5 border border-amber-500/20 px-3 py-2 rounded-xl text-xs text-amber-300 leading-normal break-words font-semibold shadow-inner">
-                                  <span className="font-extrabold text-amber-450/90 text-[9px] block uppercase tracking-widest mb-1">📝 Observaciones:</span>
-                                  {item.notas}
-                                </div>
-                              )}
+ 
+                              {/* Observations (Notes) rendered fully underneath with highlighted exclusions */}
+                              {item.notas && (() => {
+                                const { normales, eliminados, observaciones } = parseNotas(item.notas);
+                                return (
+                                  <div className="mt-2 ml-8 space-y-1.5 text-xs">
+                                    {normales.length > 0 && (
+                                      <div className="bg-amber-500/5 border border-amber-500/20 px-3 py-2 rounded-xl text-amber-300 font-semibold shadow-inner animate-fadeIn">
+                                        <span className="font-extrabold text-amber-450/90 text-[9px] block uppercase tracking-widest mb-0.5">📋 Opciones:</span>
+                                        {normales.join(" | ")}
+                                      </div>
+                                    )}
+                                    {eliminados.length > 0 && (
+                                      <div className="bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl text-red-400 font-semibold shadow-inner animate-fadeIn">
+                                        <span className="font-extrabold text-red-450 text-[9px] block uppercase tracking-widest mb-0.5">❌ Sin (Eliminados):</span>
+                                        <span className="line-through">{eliminados.join(", ")}</span>
+                                      </div>
+                                    )}
+                                    {observaciones.length > 0 && (
+                                      <div className="bg-blue-500/10 border border-blue-500/30 px-3 py-2 rounded-xl text-blue-300 font-black shadow-inner animate-fadeIn">
+                                        <span className="font-extrabold text-blue-400 text-[9px] block uppercase tracking-widest mb-0.5">⚠️ Observaciones:</span>
+                                        {observaciones.join(" | ")}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })}
@@ -457,7 +519,7 @@ export default function KDSPage() {
                             ✓ Completada
                           </span>
                           <p className="text-xs text-slate-500 font-semibold mt-2">
-                            {new Date(comanda.updatedAt).toLocaleTimeString()}
+                            {new Date(comanda.updatedAt?.endsWith('Z') ? comanda.updatedAt : (comanda.updatedAt + 'Z')).toLocaleTimeString()}
                           </p>
                         </div>
                       </div>
