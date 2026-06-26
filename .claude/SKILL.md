@@ -832,3 +832,19 @@ const handleCobrar = async (orden) => {
 | `removedComponents` no inicializa seleccion_unica | Solo se inicializaban tipos `ingrediente`/`modificador` | Iterar también `seleccion_unica` y `seleccion_multiple` |
 | `observacion` no llega al área | No incluida en `area_comandas` al crear la orden | Agregar `observacion` explícitamente al mapear items |
 
+---
+
+### 7.4 Errores Comunes con Rango Personalizado en Analíticas (2026-06-26)
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| Inputs de fecha no visibles en "Rango personalizado" | Condicional `{periodo === 'custom' && ...}` dentro de divs anidados complejos, inputs ocultados visualmente | Simplificar estructura JSX: sacar selectores de div anidado, poner inputs en contenedor propio con border-2 azul y padding generoso |
+| Error "Por favor ingresa fecha de inicio y fin" al seleccionar "Rango personalizado" | Inputs vacíos (null) al cargar página, useEffect reclama fechas incompletas | Auto-llenar ambos campos con fecha de hoy en `handlePeriodChange` cuando `newPeriodo === 'custom'` |
+| Fechas inválidas: desde > hasta | Sin sincronización entre inputs | En onChange: si desde > hasta → copiar desde a hasta; si hasta < desde → copiar hasta a desde |
+| Rango personalizado no recalcula al cambiar fechas | Estado `customStart`/`customEnd` en dependencias de useEffect pero sin trigger adecuado | Asegurar que useEffect tenga `[clientId, periodo, tipo, customStart, customEnd]` como dependencias |
+
+**Patrón aprendido - Componentes con condicionales complejos:**
+- Estructura plana > anidamiento profundo para visibilidad
+- Si condicional no funciona: verificar manualmente con `{true && ...}` para confirmar que el JSX renderiza
+- Auto-llenar valores por defecto evita estados vacíos que causan errores de validación
+

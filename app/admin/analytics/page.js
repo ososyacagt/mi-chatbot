@@ -93,7 +93,6 @@ export default function AnalyticsPage() {
   }, [clientId, periodo, tipo, customStart, customEnd])
 
   const handlePeriodChange = (newPeriodo) => {
-    console.log('[Analytics] Cambiando período a:', newPeriodo)
     setError(null)
     setPeriodo(newPeriodo)
 

@@ -55,6 +55,15 @@ Historial completo de desarrollo de la plataforma SaaS de Chatbot Multi-tenant.
 ### Páginas Modificadas
 - `app/admin/page.js` — Grid gestión 5 cols + botón Analíticas + ícono analytics
 
+### Bugs Resueltos (Debugging 2026-06-26)
+
+| Bug | Causa | Solución |
+|-----|-------|----------|
+| Inputs de "Rango personalizado" no visibles | JSX con condicional `{periodo === 'custom' && ...}` dentro de divs anidados complejos ocultaba visualmente los inputs | Simplificar estructura: sacar selectores de div anidado, poner inputs en contenedor propio con `border-2` azul y `padding` generoso |
+| Error "Por favor ingresa fecha de inicio y fin" al seleccionar "Rango personalizado" | Inputs vacíos (null) → useEffect reclama fechas incompletas | Auto-llenar ambos campos con fecha de hoy en `handlePeriodChange('custom')` |
+| Fechas inválidas: desde > hasta | Sin sincronización automática | En onChange: si desde > hasta → copiar desde a hasta; si hasta < desde → copiar hasta a desde |
+| `console.log` de debug en producción | Console statements para debugging dejadas en código | Remover todos los console.log de debug (mantener solo console.error) |
+
 ### Reglas Aplicadas
 - ✅ Timestamps con 'Z': `new Date(ts + 'Z')` para parsear created_at
 - ✅ Nunca `.not()` encadenado: filtrar origen en JS
