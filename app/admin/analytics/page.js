@@ -191,7 +191,7 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      {/* Inputs de Rango Personalizado - SIEMPRE VISIBLES CUANDO SE SELECCIONA */}
+      {/* Inputs de Rango Personalizado - Solo cuando se selecciona Rango personalizado */}
       {periodo === 'custom' && (
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-400 dark:border-blue-600 rounded-lg">
           <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-4">
@@ -205,7 +205,14 @@ export default function AnalyticsPage() {
               <input
                 type="date"
                 value={customStart || ''}
-                onChange={(e) => setCustomStart(e.target.value)}
+                onChange={(e) => {
+                  const newStart = e.target.value
+                  setCustomStart(newStart)
+                  // Si desde es mayor que hasta, copiar desde a hasta
+                  if (customEnd && newStart > customEnd) {
+                    setCustomEnd(newStart)
+                  }
+                }}
                 className="w-full px-3 py-2 rounded-lg border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-medium"
               />
             </div>
@@ -216,7 +223,14 @@ export default function AnalyticsPage() {
               <input
                 type="date"
                 value={customEnd || ''}
-                onChange={(e) => setCustomEnd(e.target.value)}
+                onChange={(e) => {
+                  const newEnd = e.target.value
+                  setCustomEnd(newEnd)
+                  // Si hasta es menor que desde, copiar hasta a desde
+                  if (customStart && newEnd < customStart) {
+                    setCustomStart(newEnd)
+                  }
+                }}
                 className="w-full px-3 py-2 rounded-lg border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-medium"
               />
             </div>
@@ -224,10 +238,6 @@ export default function AnalyticsPage() {
           {!customStart || !customEnd ? (
             <div className="p-3 bg-blue-100 dark:bg-blue-900/50 border border-blue-400 dark:border-blue-700 rounded text-blue-800 dark:text-blue-200 text-sm font-medium">
               ℹ️ Completa ambas fechas para ver los datos
-            </div>
-          ) : customStart > customEnd ? (
-            <div className="p-3 bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-700 rounded text-red-800 dark:text-red-200 text-sm font-medium">
-              ❌ La fecha "Desde" debe ser menor que "Hasta"
             </div>
           ) : null}
         </div>
