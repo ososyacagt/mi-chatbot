@@ -93,6 +93,7 @@ export default function AnalyticsPage() {
   }, [clientId, periodo, tipo, customStart, customEnd])
 
   const handlePeriodChange = (newPeriodo) => {
+    console.log('[Analytics] Cambiando período a:', newPeriodo)
     setError(null)
     setPeriodo(newPeriodo)
   }
@@ -192,6 +193,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Custom range inputs */}
+        {console.log('[Analytics] periodo:', periodo, 'customStart:', customStart, 'customEnd:', customEnd) || null}
         {periodo === 'custom' && (
           <div className="flex gap-2 items-center">
             <input
