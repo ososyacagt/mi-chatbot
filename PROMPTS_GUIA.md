@@ -1,595 +1,399 @@
-# Guía de Prompts — Plataforma SaaS Chatbot
+# Guía de Prompts
+## Plataforma SaaS Chatbot Multi-tenant
 
-## Estructuras listas para copiar y pegar
-
-Usa este archivo como referencia para todas las 
-interacciones con el agente IA. Copia la estructura
-correspondiente, rellena los campos marcados con
-[CORCHETES] y pégala en el chat.
-
----
-
-## 1. INICIO DE SESIÓN
-*Usar siempre al abrir un chat nuevo*
-
-```
-Lee estos archivos del proyecto en este orden:
-
-1. SYSTEM_CONTEXT.md
-   - Stack: Next.js 16.2.9, React 19.2.4, Supabase, TailwindCSS 4
-   - Arquitectura: client_id (TEXT), plan.slug, await params
-   - 5 módulos: Chat, E-commerce (3 opciones), POS
-   - 66 rutas API documentadas
-   - Bugs históricos resueltos con soluciones
-
-2. .claude/SKILL.md
-   - 10 reglas antes de escribir código
-   - 12 patrones obligatorios con ejemplos reales
-   - 10 cosas PROHIBIDAS y 10 OBLIGATORIAS
-   - 7 errores comunes y sus soluciones
-   - Checklist QA de 13 puntos
-
-3. CHANGELOG.md
-   - Último entry: [2026-06-26] Optimizaciones POS y Documentación
-   - Features completadas: KDS, Caja, Configuración POS
-   - Bugs corregidos: Timer UTC, estados finales, JSON doble
-   - APIs creadas: status, comandas, completadas
-   - Pendientes: testing, performance, integraciones
-
-Confirma que entendiste:
-- Stack completo (Next.js 16, sin TypeScript, Supabase)
-- Convenciones críticas (client_id TEXT, plan.slug, await params)
-- Último trabajo: POS KDS, Caja, Documentación completa
-- Restricciones: no alert(), no console.log, no UUIDs de plan
-- Estado actual del proyecto y módulos funcionales
-```
+Cómo usar este archivo:
+1. Busca la sección que necesitas
+2. Copia el bloque marcado como ═══ COPIAR ═══
+3. Pégalo en el chat con la IA
+4. Rellena los espacios entre [corchetes]
+5. Envía
 
 ---
 
-## 2. CORREGIR UN BUG
+## SECCIÓN 1 — INICIAR UNA SESIÓN NUEVA
+Úsalo cada vez que abras un chat nuevo con la IA.
 
-```
-TENGO UN BUG EN EL PROYECTO:
+DÓNDE: Al inicio de cualquier conversación nueva.
 
-Error exacto:
-[COPIA AQUÍ EL ERROR COMPLETO DEL TERMINAL O CONSOLA]
+═══ COPIAR ═══
+Lee estos archivos del proyecto en orden:
+1. cat SYSTEM_CONTEXT.md
+2. cat .claude/SKILL.md
+3. cat CHANGELOG.md
 
-Dónde aparece:
-[BROWSER CONSOLE / TERMINAL DEL DEV SERVER / SUPABASE / OTRO]
+Cuando termines confirma:
+- Stack tecnológico del proyecto
+- Reglas críticas que no se pueden violar
+- Módulos implementados y su estado
+- Último trabajo realizado y pendientes
 
-Archivo afectado:
-[RUTA COMPLETA, e.g.: app/pos/[clientId]/caja/page.js]
-
-Síntomas específicos:
-- [SÍNTOMA 1, e.g.: "Órdenes cobradas siguen en KDS"]
-- [SÍNTOMA 2, e.g.: "Timer muestra valores negativos"]
-
-Pasos para reproducir:
-1. [PASO 1]
-2. [PASO 2]
-3. [PASO 3]
-
-Antes de corregir:
-1. Busca si está documentado en SYSTEM_CONTEXT.md sección "Bugs"
-2. Si ya está resuelto, muestra la solución histórica
-3. Si es bug nuevo, muestra el código actual del archivo
-4. Propón solución MÍNIMA sin romper nada más
-5. Actualiza CHANGELOG.md con: [FECHA] Bugs Corregidos: descripción
-```
-
-**Ejemplo real:**
-```
-TENGO UN BUG EN EL PROYECTO:
-
-Error exacto:
-TypeError: Cannot read property 'numero_orden' of undefined
-
-Dónde aparece:
-Browser console al cargar /pos/bava/caja
-
-Archivo afectado:
-app/pos/[clientId]/caja/page.js línea 242
-
-Síntomas específicos:
-- Las cards de órdenes no se renderizan
-- Console muestra error de undefined
-
-Pasos para reproducir:
-1. Ir a http://localhost:3000/pos/bava
-2. Login con PIN
-3. Click en "Caja"
-4. Ver órdenes pendientes
-```
+No escribas código hasta confirmar todo esto.
+═══════════════
 
 ---
 
-## 3. IMPLEMENTAR UNA FEATURE NUEVA
+## SECCIÓN 2 — CORREGIR UN BUG
+Úsalo cuando algo no funciona.
 
-```
-QUIERO IMPLEMENTAR UNA FEATURE NUEVA:
+DÓNDE: En el chat después de haber iniciado sesión.
 
-Descripción de la feature:
-[QUÉ VA A HACER]
-Ejemplo: "Agregar filtro de fecha en historial de órdenes POS"
+ANTES DE COPIAR necesitas tener:
+- El error completo del terminal del servidor
+- El error completo de la consola del browser
+- El nombre del archivo donde ocurre
 
-Ubicación donde va:
-[DÓNDE VA A VIVIR: URL, API, BD, componente]
-Ejemplo: "/admin/pos-ordenes página con nuevo filtro"
+═══ COPIAR ═══
+Tengo un bug. Antes de proponer solución:
+1. Verifica si este error ya está en 
+   SYSTEM_CONTEXT.md sección Bugs Históricos
+2. Muéstrame el código actual del archivo afectado
+3. Propón solo el cambio mínimo necesario
+4. No modifiques archivos que no sean necesarios
 
-Requisitos funcionales:
-- [REQUISITO 1]
-- [REQUISITO 2]
-- [REQUISITO 3]
+ERROR EN TERMINAL:
+[pega aquí el error del servidor]
 
-Requisitos técnicos:
-- ¿Necesita tabla nueva en BD?
-- ¿Necesita API nueva?
-- ¿Necesita cambiar componentes existentes?
+ERROR EN BROWSER:
+[pega aquí el error de la consola]
 
-Restricciones y limitaciones:
-- [RESTRICCIÓN 1, e.g., "Solo en plan enterprise"]
-- [RESTRICCIÓN 2, e.g., "Sin modificar tabla existing"]
+ARCHIVO AFECTADO:
+[nombre del archivo]
 
-Antes de implementar:
-1. Verifica que algo similar NO existe ya
-2. Identifica TODOS los archivos a crear/modificar
-3. Verifica compatibilidad con planes (basic/pro/enterprise)
-4. Crea el plan PASO A PASO
-5. Espera aprobación antes de escribir código
-6. Sigue TODAS las reglas de .claude/SKILL.md
-7. Actualiza CHANGELOG.md cuando termines
-```
+QUÉ ESTABA HACIENDO:
+[describe qué acción causó el error]
+═══════════════
 
-**Ejemplo real:**
-```
-QUIERO IMPLEMENTAR UNA FEATURE NUEVA:
+EJEMPLO DE CÓMO SE VE RELLENO:
+---
+Tengo un bug. Antes de proponer solución:
+1. Verifica si este error ya está en 
+   SYSTEM_CONTEXT.md sección Bugs Históricos
+2. Muéstrame el código actual del archivo afectado
+3. Propón solo el cambio mínimo necesario
+4. No modifiques archivos que no sean necesarios
 
-Descripción de la feature:
-"Agregar reportes de ventas por método de pago en /admin/pos-ordenes"
+ERROR EN TERMINAL:
+Could not find the 'cliente_nombre_pos' column
+of 'orders' in the schema cache
+POST /api/pos/bava 500 in 235ms
 
-Ubicación donde va:
-/admin/pos-ordenes → nueva sección "Reportes"
+ERROR EN BROWSER:
+POST http://localhost:3000/api/pos/bava 500
 
-Requisitos funcionales:
-- Mostrar total de ventas por método de pago (efectivo, tarjeta, etc)
-- Filtro por rango de fechas
-- Tabla con totales
-- Exportar a CSV
+ARCHIVO AFECTADO:
+app/api/pos/[clientId]/route.js
 
-Requisitos técnicos:
-- Nueva API: GET /api/admin/pos-orders/report
-- Modificar: app/admin/pos-ordenes/page.js
-- Componente: Tabla de reportes
-
-Restricciones:
-- Solo acceso admin
-- Solo para órdenes con origen='pos'
-```
+QUÉ ESTABA HACIENDO:
+Intentando crear una orden desde el POS,
+después de agregar el módulo de punto de venta
+---
 
 ---
 
-## 4. CONTINUAR TRABAJO ANTERIOR
+## SECCIÓN 3 — IMPLEMENTAR FEATURE NUEVA
+Úsalo cuando quieres agregar algo nuevo al sistema.
 
-```
-CONTINUAR DESARROLLO DESDE ÚLTIMA SESIÓN:
+DÓNDE: En el chat después de haber iniciado sesión.
 
-Última sesión:
-[DESCRIBE DÓNDE SE QUEDÓ O USA CHANGELOG]
+ANTES DE COPIAR necesitas saber:
+- Qué quieres implementar
+- Quién lo va a usar
+- En qué parte del sistema vivirá
 
-Tareas completadas:
-- [TAREA 1 ✅]
-- [TAREA 2 ✅]
+═══ COPIAR ═══
+Quiero implementar una feature nueva.
+Antes de escribir código:
+1. Verifica en SYSTEM_CONTEXT.md que no existe 
+   algo similar ya implementado
+2. Verifica si afecta los planes basic/pro/enterprise
+3. Preséntame el plan completo:
+   - Archivos que vas a crear
+   - Archivos que vas a modificar
+   - SQL necesario (si aplica)
+   - Impacto en lo que ya existe
+4. Espera mi aprobación antes de implementar
+5. Aplica los cambios uno por uno
 
-Tareas pendientes:
-- [TAREA PENDIENTE 1]
-- [TAREA PENDIENTE 2]
+FEATURE:
+[describe qué quieres implementar]
 
-Dificultades encontradas:
-[SI HUBO PROBLEMAS, DESCRIBE CUÁL FUE]
+PARA QUIÉN:
+[admin / cajero / mesero / cliente / cocina]
 
-Antes de continuar:
+DÓNDE VIVIRÁ:
+[panel admin / POS / tienda / catálogo / API]
+
+CONTEXTO ADICIONAL:
+[detalles del negocio que la IA deba conocer]
+═══════════════
+
+EJEMPLO DE CÓMO SE VE RELLENO:
+---
+Quiero implementar una feature nueva.
+Antes de escribir código:
+1. Verifica en SYSTEM_CONTEXT.md que no existe 
+   algo similar ya implementado
+2. Verifica si afecta los planes basic/pro/enterprise
+3. Preséntame el plan completo con archivos y SQL
+4. Espera mi aprobación antes de implementar
+5. Aplica los cambios uno por uno
+
+FEATURE:
+Descuento manual que el cajero pueda aplicar 
+a una orden antes de cobrar, puede ser 
+porcentaje o monto fijo
+
+PARA QUIÉN:
+cajero y supervisor del POS
+
+DÓNDE VIVIRÁ:
+pantalla de caja /pos/[clientId]/caja
+
+CONTEXTO ADICIONAL:
+Solo cajero y supervisor pueden aplicarlo.
+Debe quedar registrado en el historial de la orden.
+---
+
+---
+
+## SECCIÓN 4 — CONTINUAR TRABAJO ANTERIOR
+Úsalo cuando retomas trabajo de una sesión pasada.
+
+DÓNDE: Al inicio del chat después del prompt de inicio.
+
+═══ COPIAR ═══
+Continúa el trabajo de la sesión anterior.
 1. Lee el último entry de CHANGELOG.md
-2. Verifica qué está marcado como "Pendientes"
-3. Continúa desde donde se quedó
-4. Actualiza CHANGELOG.md con progreso
-```
-
-**Ejemplo real:**
-```
-CONTINUAR DESARROLLO DESDE ÚLTIMA SESIÓN:
-
-Última sesión:
-2026-06-26 - Documentación completa del sistema
-
-Tareas completadas:
-- SYSTEM_CONTEXT.md (632 líneas) ✅
-- .claude/SKILL.md (740 líneas) ✅
-- CHANGELOG.md (513 líneas) ✅
-- INSTRUCCIONES_DESARROLLO.md (500 líneas) ✅
-
-Tareas pendientes:
-- Testing de POS (KDS, Caja, Entregas)
-- Performance optimization
-- Pago online integrado (Stripe)
-
-Dificultades encontradas:
-Ninguna en la sesión anterior
-```
+2. Dime qué se completó
+3. Dime qué quedó pendiente
+4. Propón por dónde continuar
+5. Espera mi confirmación antes de proceder
+═══════════════
 
 ---
 
-## 5. REVISAR O REFACTORIZAR CÓDIGO
+## SECCIÓN 5 — REVISAR CÓDIGO EXISTENTE
+Úsalo cuando quieres mejorar código sin agregar features.
 
-```
-REVISAR CÓDIGO EN BÚSQUEDA DE PROBLEMAS:
+DÓNDE: En el chat después de haber iniciado sesión.
 
-Archivo/Módulo a revisar:
-[RUTA O NOMBRE DEL MÓDULO]
-Ejemplo: app/pos/[clientId]/caja/page.js
+ANTES DE COPIAR necesitas saber:
+- Qué archivo o módulo quieres revisar
 
-Objetivo de la revisión:
-- [ ] Buscar violaciones de .claude/SKILL.md
-- [ ] Optimizar performance
-- [ ] Mejorar legibilidad
-- [ ] Encontrar memory leaks
-- [ ] Otro: [ESPECIFICA]
+═══ COPIAR ═══
+Revisa este archivo y:
+1. Lee .claude/SKILL.md antes de revisar
+2. Lista todos los problemas encontrados con nivel:
+   CRITICO / MEDIO / BAJO
+3. Ordénalos de mayor a menor prioridad
+4. Propón los cambios antes de aplicar
+5. Aplica uno por uno con mi aprobación
+6. No cambies lógica de negocio sin confirmarme
 
-Enfoque específico:
-[SI HAY ÁREA ESPECÍFICA A REVISAR, DESCRIBE]
+ARCHIVO A REVISAR:
+[nombre del archivo]
 
-Líneas aproximadas (si aplica):
-[LÍNEAS ESPECÍFICAS, e.g., "100-150"]
-
-Luego de revisar:
-1. Lista TODOS los problemas encontrados
-2. Ordena por prioridad/impacto (CRÍTICO > IMPORTANTE > MENOR)
-3. Propone cambios UNO POR UNO
-4. Espera aprobación antes de cada cambio
-5. Ejecuta los cambios aprobados
-6. Actualiza CHANGELOG.md
-```
-
-**Ejemplo real:**
-```
-REVISAR CÓDIGO EN BÚSQUEDA DE PROBLEMAS:
-
-Archivo/Módulo a revisar:
-app/api/pos/[clientId]/orders/[orderId]/status/route.js
-
-Objetivo de la revisión:
-- Buscar violaciones de .claude/SKILL.md
-- Verificar manejo de errores
-- Validar lógica de status transitions
-
-Enfoque específico:
-Asegurar que los status transitions de POS son correctos
-(enviada → en_preparacion → lista → facturado_finalizado)
-
-Líneas aproximadas:
-Archivo completo (68 líneas)
-```
+QUÉ BUSCAR:
+[ ] console.log de debug
+[ ] alert() o confirm() nativos
+[ ] Valores hardcodeados
+[ ] Timestamps sin la Z de UTC
+[ ] Fetches innecesarios o lentos
+[ ] Todo lo anterior
+═══════════════
 
 ---
 
-## 6. DEPURACIÓN DE PROBLEMA INEXPLICABLE
+## SECCIÓN 6 — CAMBIO EN BASE DE DATOS
+Úsalo cuando necesitas agregar tablas o columnas.
 
-```
-TENGO UN ERROR INEXPLICABLE:
+DÓNDE: En el chat después de haber iniciado sesión.
 
-El problema:
-[DESCRIBE EXACTAMENTE QUÉ ESTÁ PASANDO]
+IMPORTANTE: La IA te muestra el SQL, 
+TÚ lo ejecutas en Supabase → SQL Editor.
+La IA no ejecuta SQL directamente.
 
-Lo que intenté:
-- [INTENTO 1]
-- [INTENTO 2]
-- [INTENTO 3]
+═══ COPIAR ═══
+Necesito un cambio en la base de datos.
+1. Muéstrame el SQL completo antes de ejecutar
+2. Usa IF NOT EXISTS para columnas y tablas nuevas
+3. Incluye política RLS si es tabla nueva
+4. Dime si hay datos existentes que migrar
+5. Yo ejecuto el SQL en Supabase y te confirmo
+6. Solo después de mi confirmación actualiza el código
 
-Síntomas extraños:
-[QUÉ HACE QUE SEA EXTRAÑO]
+CAMBIO NECESARIO:
+[describe qué necesitas agregar o modificar]
 
-Archivos afectados:
-[LISTA DE ARCHIVOS]
+TABLA AFECTADA:
+[nombre de la tabla existente o "tabla nueva"]
 
-Logs o errores (si los hay):
-[COPIA AQUÍ CUALQUIER LOG/ERROR]
+POR QUÉ SE NECESITA:
+[explica para qué sirve el cambio]
+═══════════════
 
-Antes de hacer nada:
-1. Ejecuta: rm -rf .next && npm run dev
-2. Recarga el browser (Ctrl+Shift+R para caché limpio)
-3. Si persiste, copia-pega este prompt
-4. Describe el problema exacto después del reinicio
-```
+EJEMPLO DE CÓMO SE VE RELLENO:
+---
+Necesito un cambio en la base de datos.
+1. Muéstrame el SQL completo antes de ejecutar
+2. Usa IF NOT EXISTS
+3. Incluye RLS si es tabla nueva
+4. Yo ejecuto el SQL en Supabase y te confirmo
+5. Solo después actualiza el código
 
-**Ejemplo real:**
-```
-TENGO UN ERROR INEXPLICABLE:
+CAMBIO NECESARIO:
+Agregar columna updated_at con trigger de 
+auto-actualización
 
-El problema:
-Las rutas /api/admin/* dan 404 aunque existen los archivos
+TABLA AFECTADA:
+orders
 
-Lo que intenté:
-- Verificar que los archivos existen (existen)
-- Revisar npm run build (sin errores)
-- Revisar middleware (parece OK)
-
-Síntomas extraños:
-- /api/admin/me retorna HTML 404 en lugar de JSON
-- npm run build compila exitosamente
-- Los archivos route.js están ahí
-
-Archivos afectados:
-- app/api/admin/me/route.js
-- app/api/admin/tenants/route.js
-- middleware.ts
-
-Solución:
-rm -rf .next && npm run dev
-```
+POR QUÉ SE NECESITA:
+El KDS necesita ordenar por fecha de última 
+actualización y la columna no existe
+---
 
 ---
 
-## 7. ACTUALIZAR DOCUMENTACIÓN DESPUÉS DE CAMBIOS
+## SECCIÓN 7 — CONSULTA TÉCNICA
+Úsalo cuando tienes una duda sin querer cambiar código.
 
-```
-ACTUALIZAR DOCUMENTACIÓN DESPUÉS DE CAMBIOS:
+DÓNDE: En el chat en cualquier momento de la sesión.
 
-Tipo de cambio:
-- [ ] Nueva tabla en BD
-- [ ] Nueva API endpoint
-- [ ] Nuevo módulo/feature
-- [ ] Bug corregido
-- [ ] Cambio importante en código
+═══ COPIAR ═══
+Tengo una consulta sobre el proyecto.
+Responde basándote en SYSTEM_CONTEXT.md y el 
+código actual. Si no estás seguro dilo claramente,
+no inventes.
 
-Archivos a actualizar:
+PREGUNTA:
+[tu pregunta]
 
-1. SYSTEM_CONTEXT.md:
-   - Sección: [SECCIÓN A ACTUALIZAR]
-   - Cambio: [QUÉ VA A CAMBIAR]
-
-2. .claude/SKILL.md:
-   - Error nuevo encontrado: [DESCRIBE]
-   - Patrón nuevo usado: [DESCRIBE]
-
-3. CHANGELOG.md:
-   Nuevo entry:
-   ```markdown
-   ## [FECHA] — [DESCRIPCIÓN DE LO HECHO]
-   
-   ### ✅ Completado
-   - Feature/Bug: descripción
-   
-   ### APIs Creadas
-   - POST/GET/PUT /api/ruta
-   
-   ### Cambios BD
-   - Nueva tabla o campos
-   ```
-```
-
-**Ejemplo real:**
-```
-ACTUALIZAR DOCUMENTACIÓN DESPUÉS DE CAMBIOS:
-
-Tipo de cambio:
-- [x] Nueva API endpoint
-- [x] Bug corregido
-- [x] Cambio importante en código
-
-Archivos a actualizar:
-
-1. SYSTEM_CONTEXT.md:
-   - Sección: "Módulos del Sistema - 5.5 POS"
-   - Cambio: Agregar regla crítica de modalidad restaurante
-
-2. .claude/SKILL.md:
-   - Error encontrado: "facturado_pendiente_entrega no está en filtro"
-   - Patrón nuevo: Validar posModalidad antes de determinar nextStatus
-
-3. CHANGELOG.md:
-   Nuevo entry:
-   ## [2026-06-26] — Optimizaciones POS
-   
-   ### ✅ Completado
-   - Lógica de status por modalidad
-   
-   ### APIs Modificadas
-   - PUT /api/pos/[clientId]/orders/[orderId]/status
-```
+POR QUÉ LO NECESITO SABER:
+[contexto de para qué usarás la respuesta]
+═══════════════
 
 ---
 
-## 8. CREAR COMMIT CON CAMBIOS
+## SECCIÓN 8 — CERRAR SESIÓN Y HACER PUSH
+Úsalo siempre antes de terminar y hacer push.
 
-```
-COMMIT Y PUSH DE CAMBIOS:
+DÓNDE: Al final de cada sesión de trabajo.
 
-Tipo de cambio:
-- [ ] feat: Feature nueva
-- [ ] fix: Bug corregido
-- [ ] docs: Solo documentación
-- [ ] refactor: Limpieza de código
+PASO 1 — Pega esto en el chat para que la IA 
+actualice la documentación:
 
-Descripción breve:
-[UNA LÍNEA DESCRIBIENDO EL CAMBIO]
+═══ COPIAR ═══
+Antes de terminar actualiza estos archivos 
+con todo lo que trabajamos hoy:
 
-Archivos modificados:
-- [ARCHIVO 1]
-- [ARCHIVO 2]
+1. CHANGELOG.md — agrega al inicio:
+## [fecha de hoy]
+### Agregado
+- (lo nuevo que se implementó)
+### Corregido
+- (bugs: síntoma, causa y solución)
+### Modificado
+- (cambios en código o BD existente)
+### Pendientes
+- (lo que quedó sin terminar)
 
-Por qué este cambio:
-[RAZÓN O BENEFICIO DEL CAMBIO]
+2. SYSTEM_CONTEXT.md — actualiza si hubo:
+- APIs nuevas
+- Tablas o columnas nuevas en BD
+- Módulos o pantallas nuevas
+- Bugs nuevos resueltos
 
-Checklist antes de push:
-- [ ] CHANGELOG.md actualizado
-- [ ] SYSTEM_CONTEXT.md si hay cambios importantes
-- [ ] .claude/SKILL.md si hay nuevos aprendizajes
-- [ ] Sin console.log de debug
-- [ ] Sin alert() ni confirm()
-- [ ] Sin valores hardcodeados
-- [ ] Probado el flujo completo
-- [ ] git diff revisado antes de push
-```
+3. .claude/SKILL.md — agrega si aplica:
+- Errores nuevos y su solución exacta
+- Patrones nuevos usados
+- Restricciones nuevas descubiertas
 
-**Ejemplo real:**
-```
-COMMIT Y PUSH DE CAMBIOS:
+Cuando termines dame el comando git 
+para hacer el push.
+═══════════════
 
-Tipo de cambio:
-- [x] fix: Bug corregido
-- [x] docs: Actualizar documentación
+PASO 2 — La IA te dará un comando así, 
+ejecútalo en tu terminal:
 
-Descripción breve:
-"Fix: Lógica de status de cobro para modalidades y filtro de completadas"
-
-Archivos modificados:
-- app/pos/[clientId]/caja/page.js
-- app/api/pos/[clientId]/comandas/route.js
-- app/api/pos/[clientId]/comandas/completed/route.js
-- CHANGELOG.md
-
-Por qué este cambio:
-Restaurante SIEMPRE debe finalizar directo al cobrar,
-no usar flujo area_entrega. Ordenesfinalizadas deben
-estar en modal completadas.
-```
+git add .
+git commit -m "descripción del trabajo realizado"
+git push
 
 ---
 
-## 9. PLANTILLA GENÉRICA PARA CUALQUIER TAREA
+## SECCIÓN 9 — VERIFICAR ANTES DEL PUSH
+Úsalo justo antes de ejecutar el comando git push.
 
-```
-TAREA GENERAL:
+DÓNDE: En el chat antes del paso 2 de la sección 8.
 
-Qué necesito:
-[DESCRIBE EXACTAMENTE QUÉ NECESITAS]
+═══ COPIAR ═══
+Antes del push verifica que todo esté correcto:
 
-Por qué lo necesito:
-[CONTEXTO: CUÁL ES EL OBJETIVO FINAL]
+DOCUMENTACIÓN:
+[ ] CHANGELOG.md tiene entry con fecha de hoy
+[ ] SYSTEM_CONTEXT.md está actualizado
+[ ] .claude/SKILL.md tiene nuevos aprendizajes
 
-Restricciones:
-- [RESTRICCIÓN 1]
-- [RESTRICCIÓN 2]
+CÓDIGO en archivos modificados:
+[ ] Sin console.log de debug
+[ ] Sin alert() ni confirm()
+[ ] Sin valores hardcodeados
+[ ] Sin UUID de plan (usar slug)
+[ ] Timestamps con Z donde aplica
 
-Ejemplos de lo que espero:
-[DESCRIBE CON EJEMPLOS]
+FUNCIONALIDAD:
+[ ] Se probó el flujo completo
+[ ] No se rompió funcionalidad existente
+[ ] SQL nuevo ya ejecutado en Supabase
 
-Archivos involucrados:
-[LISTA DE ARCHIVOS QUE SE VERÁN AFECTADOS]
-
-Antes de continuar:
-1. Confirma que entendiste la tarea
-2. Lista el plan paso a paso
-3. Espera aprobación
-4. Implementa
-5. Actualiza documentación
-```
-
----
-
-## 10. SOLICITAR REVISIÓN DE CÓDIGO
-
-```
-REVISAR MI CÓDIGO:
-
-El código:
-[PEGA AQUÍ EL CÓDIGO A REVISAR]
-
-Contexto:
-[QUÉ HACE ESTE CÓDIGO]
-
-Dónde va:
-[ARCHIVO Y LÍNEA APROXIMADA]
-
-Mis dudas:
-- [DUDA 1]
-- [DUDA 2]
-
-Después de revisar:
-1. Señala problemas contra .claude/SKILL.md
-2. Sugiere mejoras
-3. Propone código alternativo si hay
-4. Explica el por qué de cada sugerencia
-```
-
-**Ejemplo real:**
-```
-REVISAR MI CÓDIGO:
-
-El código:
-const parseDate = (dateStr) => {
-  if (!dateStr) return new Date()
-  if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
-    return new Date(dateStr + 'Z')
-  }
-  return new Date(dateStr)
-}
-
-Contexto:
-Esta función parsea timestamps de Supabase que vienen sin 'Z'
-
-Dónde va:
-app/pos/[clientId]/area/[areaId]/page.js
-
-Mis dudas:
-- ¿El logic de condición es correcto?
-- ¿Hay edge cases que no cubro?
-```
+Dime qué encontraste en cada punto.
+═══════════════
 
 ---
 
-## Referencia Rápida — Stack Real del Proyecto
+## SECCIÓN 10 — RECUPERAR CONTEXTO PERDIDO
+Úsalo si la IA empieza a cometer errores básicos.
 
-```
-Frontend:
-- Next.js 16.2.9 (App Router, sin TypeScript)
-- React 19.2.4
-- TailwindCSS 4
+SEÑALES de que la IA perdió el contexto:
+- Propone usar alert() o confirm()
+- Usa UUID en lugar de slug para planes
+- No muestra código antes de modificar
+- Sugiere algo ya documentado como bug resuelto
+- Modifica muchos archivos a la vez sin pedir permiso
 
-Backend:
-- Next.js API Routes
-- Supabase (PostgreSQL) con RLS
-- Autenticación: Supabase Auth (admin) + PIN (POS)
+DÓNDE: En cualquier momento del chat.
 
-IA:
-- Anthropic SDK 0.104.2 (principal)
-- OpenAI, Gemini, Groq, Mistral (fallback)
+═══ COPIAR ═══
+Para. Estás cometiendo errores del proyecto.
+Lee nuevamente:
+1. cat SYSTEM_CONTEXT.md
+2. cat .claude/SKILL.md
 
-Otros:
-- Email: Resend 6.14.0
-- Push: web-push 3.6.7
-- Documentos: PDF, Word, Excel, CSV
-- Deploy: Vercel
-```
+Errores que estás cometiendo:
+[describe qué está haciendo mal]
 
----
-
-## Referencia Rápida — Convenciones Críticas
-
-```
-Identificadores:
-- client_id: TEXT (nunca UUID)
-- plan: slug TEXT ('basic', 'pro', 'enterprise')
-- Campos en BD: snake_case
-- Campos en JS: camelCase
-
-Route Handlers:
-- SIEMPRE: const { param } = await params
-
-Timestamps:
-- SIEMPRE: agregar 'Z' al parsear de Supabase
-- Ejemplo: new Date(timestamp + 'Z')
-
-Supabase:
-- Admin: createSupabaseAdmin()
-- NUNCA: .not() encadenado, filtrar en JS
-
-UI:
-- NUNCA: alert(), confirm() → usar ConfirmModal
-- NUNCA: console.log debug → solo console.error
-- NUNCA: valores hardcodeados → constants o env
-```
+Cuando termines de leer retoma desde:
+[describe el último punto correcto]
+═══════════════
 
 ---
 
-*Última actualización: 2026-06-26*
-*Todos los ejemplos son reales del proyecto actual*
+## RESUMEN RÁPIDO
+
+| Situación | Sección |
+|-----------|---------|
+| Abrir chat nuevo | Sección 1 |
+| Algo no funciona | Sección 2 |
+| Agregar algo nuevo | Sección 3 |
+| Retomar trabajo | Sección 4 |
+| Mejorar código | Sección 5 |
+| Modificar BD | Sección 6 |
+| Tengo una duda | Sección 7 |
+| Terminar sesión | Sección 8 |
+| Antes del push | Sección 9 |
+| IA con errores | Sección 10 |
+
+---
+
+Última actualización: 2026-06-26
