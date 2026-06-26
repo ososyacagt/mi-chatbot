@@ -163,103 +163,96 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
-      {/* Selectores */}
-      <div className="mb-8 space-y-4">
-        {/* Período */}
-        <div className="flex gap-2 flex-wrap">
-          {['hoy', 'semana', 'mes'].map((p) => (
-            <button
-              key={p}
-              onClick={() => handlePeriodChange(p)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                periodo === p
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
-              }`}
-            >
-              {p === 'hoy' ? 'Hoy' : p === 'semana' ? 'Esta semana' : 'Este mes'}
-            </button>
-          ))}
+      {/* Botones de Período */}
+      <div className="mb-6 flex gap-2 flex-wrap">
+        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 pt-2">Período:</span>
+        {['hoy', 'semana', 'mes'].map((p) => (
           <button
-            onClick={() => handlePeriodChange('custom')}
+            key={p}
+            onClick={() => handlePeriodChange(p)}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              periodo === 'custom'
+              periodo === p
                 ? 'bg-blue-600 text-white'
                 : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
             }`}
           >
-            Rango personalizado
+            {p === 'hoy' ? 'Hoy' : p === 'semana' ? 'Esta semana' : 'Este mes'}
           </button>
-        </div>
+        ))}
+        <button
+          onClick={() => handlePeriodChange('custom')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            periodo === 'custom'
+              ? 'bg-blue-600 text-white'
+              : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
+          }`}
+        >
+          🗓️ Rango personalizado
+        </button>
+      </div>
 
-        {/* Custom range inputs */}
-        {console.log('[Analytics Render] periodo:', periodo, 'custom?:', periodo === 'custom')}
-        {periodo === 'custom' && (
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800 p-4 rounded-lg">
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                Selecciona el rango de fechas:
+      {/* Inputs de Rango Personalizado - SIEMPRE VISIBLES CUANDO SE SELECCIONA */}
+      {periodo === 'custom' && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-400 dark:border-blue-600 rounded-lg">
+          <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-4">
+            📅 Selecciona un rango de fechas
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                Desde:
               </label>
-              <div className="flex gap-2 items-center flex-wrap">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400">Desde:</label>
-                  <input
-                    type="date"
-                    value={customStart || ''}
-                    onChange={(e) => {
-                      console.log('customStart cambió a:', e.target.value)
-                      setCustomStart(e.target.value)
-                    }}
-                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
-                  />
-                </div>
-                <span className="text-zinc-600 dark:text-zinc-400 font-medium">→</span>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400">Hasta:</label>
-                  <input
-                    type="date"
-                    value={customEnd || ''}
-                    onChange={(e) => {
-                      console.log('customEnd cambió a:', e.target.value)
-                      setCustomEnd(e.target.value)
-                    }}
-                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
-                  />
-                </div>
-              </div>
-              {!customStart || !customEnd ? (
-                <div className="text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
-                  ℹ️ Completa ambas fechas para cargar los datos
-                </div>
-              ) : customStart > customEnd ? (
-                <div className="text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 p-2 rounded">
-                  ❌ La fecha "Desde" debe ser menor que "Hasta"
-                </div>
-              ) : null}
+              <input
+                type="date"
+                value={customStart || ''}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                Hasta:
+              </label>
+              <input
+                type="date"
+                value={customEnd || ''}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-medium"
+              />
             </div>
           </div>
-        )}
-
-        {/* Tipo */}
-        <div className="flex gap-2 flex-wrap">
-          {[
-            { value: 'all', label: 'Todo' },
-            { value: 'ecommerce', label: 'Solo E-commerce' },
-            { value: 'pos', label: 'Solo POS' }
-          ].map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setTipo(value)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
-                tipo === value
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {!customStart || !customEnd ? (
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/50 border border-blue-400 dark:border-blue-700 rounded text-blue-800 dark:text-blue-200 text-sm font-medium">
+              ℹ️ Completa ambas fechas para ver los datos
+            </div>
+          ) : customStart > customEnd ? (
+            <div className="p-3 bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-700 rounded text-red-800 dark:text-red-200 text-sm font-medium">
+              ❌ La fecha "Desde" debe ser menor que "Hasta"
+            </div>
+          ) : null}
         </div>
+      )}
+
+      {/* Botones de Tipo */}
+      <div className="mb-8 flex gap-2 flex-wrap">
+        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 pt-2">Datos:</span>
+        {[
+          { value: 'all', label: 'Todo' },
+          { value: 'ecommerce', label: 'Solo E-commerce' },
+          { value: 'pos', label: 'Solo POS' }
+        ].map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setTipo(value)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+              tipo === value
+                ? 'bg-indigo-600 text-white'
+                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Tarjetas de resumen */}
