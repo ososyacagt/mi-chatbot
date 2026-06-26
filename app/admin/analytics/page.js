@@ -194,42 +194,51 @@ export default function AnalyticsPage() {
 
         {/* Custom range inputs */}
         {console.log('[Analytics Render] periodo:', periodo, 'custom?:', periodo === 'custom')}
-        {periodo === 'custom' ? (
-          <>
-            <div className="flex gap-2 items-center flex-wrap">
-              <input
-                type="date"
-                value={customStart || ''}
-                onChange={(e) => {
-                  console.log('customStart cambió a:', e.target.value)
-                  setCustomStart(e.target.value)
-                }}
-                className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
-                placeholder="Fecha inicio"
-              />
-              <span className="text-zinc-600 dark:text-zinc-400 font-medium">a</span>
-              <input
-                type="date"
-                value={customEnd || ''}
-                onChange={(e) => {
-                  console.log('customEnd cambió a:', e.target.value)
-                  setCustomEnd(e.target.value)
-                }}
-                className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
-                placeholder="Fecha fin"
-              />
+        {periodo === 'custom' && (
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800 p-4 rounded-lg">
+            <div className="flex flex-col gap-3">
+              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                Selecciona el rango de fechas:
+              </label>
+              <div className="flex gap-2 items-center flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400">Desde:</label>
+                  <input
+                    type="date"
+                    value={customStart || ''}
+                    onChange={(e) => {
+                      console.log('customStart cambió a:', e.target.value)
+                      setCustomStart(e.target.value)
+                    }}
+                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                  />
+                </div>
+                <span className="text-zinc-600 dark:text-zinc-400 font-medium">→</span>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400">Hasta:</label>
+                  <input
+                    type="date"
+                    value={customEnd || ''}
+                    onChange={(e) => {
+                      console.log('customEnd cambió a:', e.target.value)
+                      setCustomEnd(e.target.value)
+                    }}
+                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+              {!customStart || !customEnd ? (
+                <div className="text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
+                  ℹ️ Completa ambas fechas para cargar los datos
+                </div>
+              ) : customStart > customEnd ? (
+                <div className="text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 p-2 rounded">
+                  ❌ La fecha "Desde" debe ser menor que "Hasta"
+                </div>
+              ) : null}
             </div>
-            {!customStart || !customEnd ? (
-              <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
-                ⚠️ Completa ambas fechas para ver los datos
-              </div>
-            ) : customStart > customEnd ? (
-              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-2 rounded">
-                ❌ Fecha inicio debe ser menor que fecha fin
-              </div>
-            ) : null}
-          </>
-        ) : null}
+          </div>
+        )}
 
         {/* Tipo */}
         <div className="flex gap-2 flex-wrap">
