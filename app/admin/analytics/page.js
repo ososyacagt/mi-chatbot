@@ -193,32 +193,41 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Custom range inputs */}
-        {console.log('[Analytics] periodo:', periodo, 'customStart:', customStart, 'customEnd:', customEnd) || null}
         {periodo === 'custom' && (
-          <div className="flex gap-2 items-center">
-            <input
-              type="date"
-              value={customStart || ''}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
-            />
-            <span className="text-zinc-600 dark:text-zinc-400 font-medium">a</span>
-            <input
-              type="date"
-              value={customEnd || ''}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
-            />
+          <>
+            <div className="flex gap-2 items-center flex-wrap">
+              <input
+                type="date"
+                value={customStart || ''}
+                onChange={(e) => {
+                  console.log('customStart cambió a:', e.target.value)
+                  setCustomStart(e.target.value)
+                }}
+                className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                placeholder="Fecha inicio"
+              />
+              <span className="text-zinc-600 dark:text-zinc-400 font-medium">a</span>
+              <input
+                type="date"
+                value={customEnd || ''}
+                onChange={(e) => {
+                  console.log('customEnd cambió a:', e.target.value)
+                  setCustomEnd(e.target.value)
+                }}
+                className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                placeholder="Fecha fin"
+              />
+            </div>
             {!customStart || !customEnd ? (
-              <span className="text-xs text-amber-600 dark:text-amber-400">
-                Completa ambas fechas
-              </span>
+              <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
+                ⚠️ Completa ambas fechas para ver los datos
+              </div>
             ) : customStart > customEnd ? (
-              <span className="text-xs text-red-600 dark:text-red-400">
-                Fecha inicio debe ser menor
-              </span>
+              <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-2 rounded">
+                ❌ Fecha inicio debe ser menor que fecha fin
+              </div>
             ) : null}
-          </div>
+          </>
         )}
 
         {/* Tipo */}
