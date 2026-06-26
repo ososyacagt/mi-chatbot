@@ -191,7 +191,8 @@ body: JSON.stringify({
 | `/admin/login` | `app/admin/login/page.js` | Público | Login de admin |
 | `/admin/inventario` | `app/admin/inventario/page.js` | Admin | Gestión de productos, categorías, reglas |
 | `/admin/planes` | `app/admin/planes/page.js` | Admin | Gestión de planes |
-| `/admin/metricas` | `app/admin/metricas/page.js` | Admin | Análisis y reportes |
+| `/admin/metricas` | `app/admin/metricas/page.js` | Admin | Análisis de chat (conversaciones, mensajes) |
+| `/admin/analytics` | `app/admin/analytics/page.js` | Admin | Analíticas de negocio (ventas, productos, equipo) |
 | `/admin/pos-ordenes` | `app/admin/pos-ordenes/page.js` | Admin | Historial de órdenes POS |
 | `/catalogo/[clientId]` | `app/catalogo/[clientId]/page.js` | Público | Catálogo de productos |
 | `/chat/[clientId]` | `app/chat/[clientId]/page.js` | Público | Interfaz de chat |
@@ -214,6 +215,7 @@ body: JSON.stringify({
 - `PUT /api/admin/inventory/config` — Guardar configuración
 - `GET /api/admin/plans` — Listar planes
 - `POST /api/admin/plans` — Crear plan
+- `GET /api/admin/analytics` — Analíticas de negocio (ventas, productos, métodos pago, horas pico, rendimiento equipo)
 - `GET /api/admin/pos-orders` — Historial POS
 - `GET /api/admin/pos-users` — Usuarios POS
 
@@ -424,6 +426,97 @@ body: JSON.stringify({
 - SIEMPRE ConfirmModal para acciones destructivas
 - Toast para feedback
 - Tabs dinámicas según `config.posModalidad`
+
+### 5.6 Analíticas y Reportes
+
+**URL:** `/admin/analytics?clientId=X`
+
+**Propósito:** Dashboard de análisis en tiempo real con 6 secciones de visibilidad de negocio.
+
+**Secciones:**
+
+1. **Tarjetas de Resumen**
+   - Ventas hoy vs ayer (con % de cambio, verde/rojo)
+   - Ventas mes vs mes anterior (con % de cambio)
+   - Órdenes hoy (número)
+   - Ticket promedio (ventas hoy / órdenes hoy)
+
+2. **Gráfica de Ventas por Período**
+   - Selector: Hoy | Semana | Mes | Rango personalizado
+   - Barras verticales CSS (height proporcional al máximo)
+   - Tooltip al pasar mouse (fecha + total)
+   - Scroll horizontal si hay muchos días
+   - Datos: agrupación por fecha, suma de totales
+
+3. **Top 10 Productos**
+   - Tabla: # | Producto | Cantidad | Total
+   - Ordenado por cantidad DESC
+   - Extrae de `orders.items` (JSONB array)
+   - Maneja serialización doble con `parseJsonbArray()`
+
+4. **Ventas por Método de Pago**
+   - Gráfica horizontal (width proporcional)
+   - Colores: efectivo (verde), tarjeta (azul), transferencia (púrpura), WhatsApp (teal), otros (gris)
+   - Info: método | barra | total | % | ordenes
+   - Agrupa por `order.metodo_pago`
+
+5. **Horas Pico**
+   - Barras verticales 24 horas (0-23h)
+   - Hora con más órdenes en color primario
+   - Resto en zinc
+   - Extrae hora de `created_at` substring(11,13)
+
+6. **Rendimiento del Equipo (solo POS)**
+   - Tabla: Cajero | Órdenes | Total cobrado
+   - Agrupa por `cajero_id` → join con `pos_users` por id
+   - Ordenado por total DESC
+   - Oculto si no hay datos POS
+
+**Filtros:**
+- Período: Hoy | Semana | Mes | Rango personalizado (date inputs)
+- Tipo: Todo | Solo E-commerce | Solo POS
+- Recarga datos al cambiar cualquier filtro
+
+**Tecnología:**
+- Gráficas CSS puras (divs con height/width proporcional)
+- Sin librerías gráficas (no se agregó Chart.js)
+- Colores: usa `tenant.colorPrimary` como color primario
+- Toast para feedback
+
+**API: `GET /api/admin/analytics`**
+
+Parámetros:
+- `clientId` (required)
+- `fechaInicio` (default: primer día del mes)
+- `fechaFin` (default: hoy)
+- `tipo` (default: 'all') — 'ecommerce' | 'pos' | 'all'
+
+Autenticación:
+- `getSession()` → `getAdminUser()` → `isSuperAdmin()` check
+
+Queries (Promise.all):
+- Órdenes: SELECT `id, total, metodo_pago, items, created_at, cajero_id, origen, status`
+- Usuarios POS: SELECT `id, nombre` (para mapear cajero_id)
+
+Cálculos en JS:
+- Filtrado por origen (pos vs ecommerce)
+- Agrupación por fecha, método, producto, hora, cajero
+- Cálculo de porcentajes y cambios
+- Top items (slice 10)
+
+Respuesta:
+```json
+{
+  "resumen": { "ventasHoy", "ventasAyer", "cambioHoy", "ventasMes", "ventasMesAnt", "cambioMes", "ordenesHoy", "ticketPromedio" },
+  "ventasPorDia": [{ "fecha", "total", "ordenes" }],
+  "topProductos": [{ "nombre", "cantidad", "total" }],
+  "porMetodoPago": [{ "metodo", "total", "ordenes", "porcentaje" }],
+  "horasPico": [{ "hora", "ordenes" }],
+  "rendimientoEquipo": [{ "nombre", "ordenes", "total" }]
+}
+```
+
+---
 
 ## 6. Esquema de Base de Datos
 

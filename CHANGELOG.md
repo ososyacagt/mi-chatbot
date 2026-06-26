@@ -4,6 +4,67 @@ Historial completo de desarrollo de la plataforma SaaS de Chatbot Multi-tenant.
 
 ---
 
+## [2026-06-26] — Módulo de Analíticas y Reportes
+
+### ✅ Agregado
+
+#### Dashboard de Analíticas y Reportes del Negocio
+- **URL:** `/admin/analytics?clientId=X`
+- **6 secciones de análisis en tiempo real:**
+  1. **Tarjetas de resumen:** Ventas hoy vs ayer (con % de cambio), ventas mes vs mes anterior, órdenes hoy, ticket promedio
+  2. **Gráfica de ventas por período:** Selector (hoy/semana/mes/rango personalizado), líneas de ventas totales con scroll horizontal
+  3. **Top 10 productos:** Tabla con producto, cantidad vendida, total en ventas, con barra de progreso CSS
+  4. **Ventas por método de pago:** Gráfica horizontal con efectivo, tarjeta, transferencia, WhatsApp, con colores distinguibles
+  5. **Horas pico:** Barras verticales (0-23h), coloreadas por volumen, identifica hora con más órdenes
+  6. **Rendimiento del equipo:** Tabla de cajeros (solo POS), órdenes cobradas, total cobrado, ordenado por mayor venta
+
+#### Filtros Dinámicos
+- Selector de período: Hoy | Esta semana | Este mes | Rango personalizado
+- Selector de origen: Todo | Solo E-commerce | Solo POS
+- Recalcula datos automáticamente al cambiar filtros
+
+#### Datos Extractados de BD
+- Tabla `orders`: total, metodo_pago, items (JSONB), created_at, cajero_id, origen, status
+- Tabla `pos_users`: para mapear cajero_id → nombre
+- Agrupaciones: por fecha, método, producto, hora, cajero
+- Cálculos: % cambio, promedio, top items por cantidad
+
+#### Interfaz
+- Gráficas con CSS puro (barras verticales/horizontales con `height`/`width` proporcional)
+- Sin nuevas dependencias (no se agregó Chart.js)
+- Responsive: grid de cards, scroll en gráficas largas
+- Toast para feedback
+- Colores por método de pago (efectivo=#10b981, tarjeta=#3b82f6, transferencia=#a855f7, WhatsApp=#14b8a6)
+
+#### Botón en Admin Dashboard
+- TenantCard: grid de gestión cambió de `grid-cols-4` a `grid-cols-5`
+- Nuevo botón "Analíticas" entre Métricas e Inventario
+- Ícono de gráfica de barras (SVG)
+- Link: `/admin/analytics?clientId={tenant.client_id}`
+
+### APIs Creadas
+- `GET /api/admin/analytics` — Parámetros: `clientId` (required), `fechaInicio`, `fechaFin`, `tipo`
+  - Retorna: resumen, ventasPorDia, topProductos, porMetodoPago, horasPico, rendimientoEquipo
+  - Queries paralelas (Promise.all): órdenes + usuarios POS
+  - Autenticación: getSession() + getAdminUser() + isSuperAdmin check
+
+### Páginas Creadas
+- `app/admin/analytics/page.js` (519 líneas) — Dashboard completo con 6 secciones
+- `app/api/admin/analytics/route.js` (233 líneas) — API de análisis
+
+### Páginas Modificadas
+- `app/admin/page.js` — Grid gestión 5 cols + botón Analíticas + ícono analytics
+
+### Reglas Aplicadas
+- ✅ Timestamps con 'Z': `new Date(ts + 'Z')` para parsear created_at
+- ✅ Nunca `.not()` encadenado: filtrar origen en JS
+- ✅ `parseJsonbArray()` para items (puede ser string o array)
+- ✅ `client_id` TEXT en queries
+- ✅ Promise.all para queries paralelas
+- ✅ Sin `console.log` (solo console.error en API)
+
+---
+
 ## [2026-06-26] — Componentes de Producto, Bloqueo de Cobro y UX Mejoras
 
 ### ✅ Agregado
